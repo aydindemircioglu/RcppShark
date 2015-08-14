@@ -13,19 +13,3 @@ DeepNetworkWrapperPredict <- function(X, Y, weights, nHidden1, nHidden2, inputSi
     .Call('RcppShark_DeepNetworkWrapperPredict', PACKAGE = 'RcppShark', X, Y, weights, nHidden1, nHidden2, inputSize, outputSize, verbose)
 }
 
-ELMWrapperTrain <- function(X, Y, nHidden, verbose = FALSE) {
-    .Call('RcppShark_ELMWrapperTrain', PACKAGE = 'RcppShark', X, Y, nHidden, verbose)
-}
-
-ELMWrapperPredict <- function(X, Y, weights, normalizerWeights, nHidden, inputSize, outputSize, verbose = FALSE) {
-    .Call('RcppShark_ELMWrapperPredict', PACKAGE = 'RcppShark', X, Y, weights, normalizerWeights, nHidden, inputSize, outputSize, verbose)
-}
-
-applyKMeansFromCSVFile <- function(filename) {
-    invisible(.Call('RcppShark_applyKMeansFromCSVFile', PACKAGE = 'RcppShark', filename))
-}
-
-applyKMeans <- function(X) {
-    .Call('RcppShark_applyKMeans', PACKAGE = 'RcppShark', X)
-}
-

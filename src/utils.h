@@ -33,6 +33,7 @@ using namespace shark;
 
 Data<unsigned int> NumericVectorToLabels (NumericVector X, bool verbose = false);
 UnlabeledData<RealVector> NumericMatrixToUnlabeledData (NumericMatrix X, bool verbose = false);
+Data<RealVector> NumericMatrixToDataRealVector (NumericMatrix X, bool verbose = false);
 
 NumericMatrix UnlabeledDataToNumericMatrix (UnlabeledData<RealVector> X, bool verbose = false);
 NumericMatrix DataRealVectorToNumericMatrix (Data<RealVector> X, bool verbose = false);

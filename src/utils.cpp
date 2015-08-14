@@ -43,10 +43,17 @@ Data<unsigned int> NumericVectorToLabels (NumericVector X, bool verbose) {
 
 
 UnlabeledData<RealVector> NumericMatrixToUnlabeledData (NumericMatrix X, bool verbose) {
+	UnlabeledData<RealVector> outputStd;
+	outputStd.inputs() = NumericMatrixToDataRealVector (X, verbose);
+	return (outputStd);
+}
+
+
+Data<RealVector> NumericMatrixToDataRealVector (NumericMatrix X, bool verbose) {
 	if (verbose) Rcout  << "Converting data.. \n";
-
+	
 	std::vector<RealVector> outputStd;
-
+	
 	// probably stupid and slow, but for now its ok
 	unsigned int examples = X.rows();
 	for (size_t e = 0; e < examples; e++) {
@@ -55,9 +62,11 @@ UnlabeledData<RealVector> NumericMatrixToUnlabeledData (NumericMatrix X, bool ve
 		std::copy (zzrow.begin(), zzrow.end(), tmpRV.begin());
 		outputStd.push_back(tmpRV);
 	}
-
+	
 	return (createDataFromRange (outputStd));
 }
+
+
 
 
 

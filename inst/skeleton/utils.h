@@ -1,8 +1,10 @@
-// RShark -- R interface to the Shark libraries
 //
-// Copyright (C) 2010  Shane Conway	<shane.conway@gmail.com>
+// utils.h
+//			this is part of the RcppShark package (http://github.com/aydindemircioglu/RcppShark)
 //
-// This file is part of the RShark library for GNU R.
+// Copyright (C) 2015 		Aydin Demircioglu <aydin.demircioglu/at/ini.rub.de>
+//
+// This file is part of the RcppShark library for GNU R.
 // It is made available under the terms of the GNU General Public
 // License, version 2, or at your option, any later version,
 // incorporated herein by reference.
@@ -12,28 +14,37 @@
 // warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.  See the GNU General Public License for more
 // details.
+// 
+// Please do not use this software to destroy or spy on people, environment or things.
+// All negative use is prohibited.
 //
-// You should have received a copy of the GNU General Public
-// License along with this program; if not, write to the Free
-// Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-// MA 02111-1307, USA
 
-#ifndef RcppShark_hpp
-#define RcppShark_hpp
+#ifndef utils_h
+#define utils_h
 
 using namespace std;
 
 #include <shark/Data/Dataset.h>
 #include <Rcpp.h>
 
-using namespace shark;
 using namespace Rcpp;
+using namespace shark;
 
 
 Data<unsigned int> NumericVectorToLabels (NumericVector X, bool verbose = false);
 UnlabeledData<RealVector> NumericMatrixToUnlabeledData (NumericMatrix X, bool verbose = false);
+Data<RealVector> NumericMatrixToDataRealVector (NumericMatrix X, bool verbose = false);
+
 NumericMatrix UnlabeledDataToNumericMatrix (UnlabeledData<RealVector> X, bool verbose = false);
+NumericMatrix DataRealVectorToNumericMatrix (Data<RealVector> X, bool verbose = false);
+
+Data<RealVector> NumericVectorToDataRealVector (NumericVector X, bool verbose = false);
+
 NumericVector LabelsToNumericVector (Data<unsigned int> X, bool verbose = false);
 
+RealVector NumericVectorToRealVector (NumericVector X, bool verbose = false);
+
+NumericVector RealVectorToNumericVector (RealVector X, bool verbose = false);
+	
 
 #endif

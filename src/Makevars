@@ -10,7 +10,7 @@ Rprop.o \
 Csv.o
 
 
-PKGOBJECTS = RcppExports.o KMeansWrapper.o BSGDWrapper.o DeepNetworkWrapper.o ELMWrapper.o
+PKGOBJECTS = RcppExports.o BSGDWrapper.o DeepNetworkWrapper.o
 
 OBJECTS= $(SHARKOBJECTS) $(PKGOBJECTS)
 

@@ -26,11 +26,6 @@ SwissRoll <- function(N=2000, Height=30) {
 # SVM:  budgeted SGD
 	#	s = bsgd (x, y, gamma = 1, epochs = 3, budget = 500)
 
-
-# simple kmeans 
-	c = applyKMeans (x)
-	print(c)
-	
 	
 # four-layer (deep) neural network with pretraining
 	cat("\nDeep network example.\n")
@@ -43,21 +38,4 @@ SwissRoll <- function(N=2000, Height=30) {
 	networkPrediction = apply (results$prediction, 1, which.max) - 1
 	errors = sum(y - networkPrediction)/length(y)
 	cat("Network produced ", errors, "errors.\n")
-
-
-# Extreme learning machine
-	cat("\nELM network example.\n")
-	
-	# create a swiss role
-	x = SwissRoll (2000)
-	y = x[,4]/max(x[,4])
-	x = x[,1:3]
-	model = ELMNetworkTrain (x, y)
-	results = ELMNetworkPredict (x, y, model, verbose = TRUE)
-
-	# regression, use squared loss
-	print (y[1:10])
-	print (results$prediction[1:10])
-	error = sum(y - results$prediction)^2/length(y)
-	cat("Network error on test set is ", error, "\n")
 

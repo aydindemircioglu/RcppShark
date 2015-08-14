@@ -1,3 +1,0 @@
-
-stopifnot(require(RcppShark))
-
