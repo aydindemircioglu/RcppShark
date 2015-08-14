@@ -1,0 +1,71 @@
+#CXX_STD = CXX11
+
+SHARKOBJECTS=\
+KernelBasisDistance.o\
+utils.o \
+LinearRegression.o \
+Centroids.o \
+KMeans.o \
+Rprop.o \
+Csv.o
+
+
+PKGOBJECTS = RcppExports.o KMeansWrapper.o BSGDWrapper.o DeepNetworkWrapper.o ELMWrapper.o
+
+OBJECTS= $(SHARKOBJECTS) $(PKGOBJECTS)
+
+PKG_CPPFLAGS= -I . $(CLINK_CPPFLAGS) -I $(R_INCLUDE_DIR)
+PKG_CXXFLAGS= $(CXXFLAGS) -D BOOST_DISABLE_ASSERTS  -fPIC -DNDEBUG -DRELEASE -I .
+PKG_LIBS= $(LDFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+
+all: $(SHLIB) userLibrary 
+
+## we place it inside the inst/ directory so that it gets installed by the package
+USERDIR =	../inst/lib
+
+USERLIB	=	libRcppShark$(DYLIB_EXT)
+USERLIBST =	libRcppShark.a
+
+userLibrary: 	$(USERLIB) $(USERLIBST)
+		-@if test ! -e $(USERDIR)$(R_ARCH); then mkdir -p $(USERDIR)$(R_ARCH); fi
+		cp $(USERLIB) $(USERDIR)$(R_ARCH)
+		cp $(USERLIBST) $(USERDIR)$(R_ARCH)
+		rm $(USERLIB) $(USERLIBST)
+
+$(USERLIB): 	$(OBJECTS)
+		$(SHLIB_CXXLD) -o $(USERLIB) $(OBJECTS) $(SHLIB_CXXLDFLAGS) $(ALL_LIBS)
+		@if test -e "/usr/bin/install_name_tool"; then /usr/bin/install_name_tool -id $(R_PACKAGE_DIR)/lib$(R_ARCH)/$(USERLIB) $(USERLIB); fi
+
+$(USERLIBST): 	$(OBJECTS)
+		$(AR) qc $(USERLIBST) $(OBJECTS)
+		@if test -n "$(RANLIB)"; then $(RANLIB) $(USERLIBST); fi
+
+Centroids.o:
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c ./src/Models/Centroids.cpp 
+
+KernelBasisDistance.o:		
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c ./src/ObjectiveFunctions/KernelBasisDistance.cpp 
+		
+KMeans.o:
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)  -c ./src/Algorithms/KMeans.cpp 
+
+LinearRegression.o:
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)  -c ./src/Algorithms/LinearRegression.cpp 
+		
+Csv.o:
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c ./src/Data/Csv.cpp 
+
+Rprop.o:
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c ./src/Algorithms/GradientDescent/Rprop.cpp 
+
+
+utils.o:
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c ./utils.cpp
+
+		
+.PHONY: 	all clean userLibrary 
+
+clean:
+		rm -f $(OBJECTS) $(SHLIB) $(USERLIB) $(USERLIBST)
+
+
