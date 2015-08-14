@@ -42,15 +42,24 @@ using namespace Rcpp;
 
 //' Budgeted SGD wrapper.
 //'
-//' @param X		matrix with input data
-//' @param Y		labels
+//' @param X		matrix with training data
+//' @param Y		labels for X
 //' @param C		regularization constant
+//' @param budget	size of budget
+//' @param gamma		kernel bandwidth
+//' @param epochs		number of iterations through data set 
+//' @param budgetMaintenanceStrategy		strategy to use to maintain the budget size. 
+//' 		choises are 'Merge', 'RemoveSmallest', 'RemoveRandom, 'Project'
+//' @param useBias		should the underlying SVM use an offset/bias term?
+//' @param verbose		verbose output?
 //'
 //' @export
 //'
+//' @note	only fo binary classification. no checks are done.
+//'
 // [[Rcpp::depends(BH)]]    
 // [[Rcpp::export]]	
-List BSGDWrapper(NumericMatrix X, NumericVector Y, double C, size_t budget, double gamma, 
+List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, size_t budget, double gamma, 
 				 double epochs, std::string budgetMaintenanceStrategy, bool useBias = true, bool verbose = false) {
 
 	try {
@@ -125,6 +134,9 @@ List BSGDWrapper(NumericMatrix X, NumericVector Y, double C, size_t budget, doub
 			double currentAlpha = row (fAlpha, x)[0];
 			alpha[x] = currentAlpha;
 		}
+		
+		// create data with support vectors
+		Data<RealVector> supportvectors = kc.decisionFunction().basis();
 
 		double offset = kc.decisionFunction().offset()[0];
 		
@@ -132,10 +144,71 @@ List BSGDWrapper(NumericMatrix X, NumericVector Y, double C, size_t budget, doub
 		rl = Rcpp::List::create(Rcpp::Named("error") = trainError,
         		Rcpp::Named("offset") = offset,
         		Rcpp::Named("nSV") = nSV,
-        		Rcpp::Named("alpha") = alpha);
+				Rcpp::Named("SV") = DataRealVectorToNumericMatrix (supportvectors),
+				Rcpp::Named("alpha") = alpha);
 		return rl;
     } catch(...) {
 		stop ("Unknown exception occured. Check also your budget strategy.");
 	}
 }
 
+
+
+//' Budgeted SGD wrapper.
+//'
+//' @param X		matrix with input data
+//' @param alpha		alpha for support vectors
+//' @param SV		support vectors of model
+//' @param offset		offset/bias term
+//' @param verbose		verbose output?
+//'
+//' @note	Currently works only for binary classification.
+//'
+//' @export
+//'
+// [[Rcpp::depends(BH)]]    
+// [[Rcpp::export]]	
+List BSGDWrapperPredict(NumericMatrix X, NumericVector alpha, NumericMatrix SV, double offset, double gamma, bool verbose = false) {
+
+	try {
+		if (verbose == true) {
+			Rcout << "Parameters:\n";
+			Rcout<<"\tgamma: \t\t" << gamma << "\n";
+		}
+		
+		// convert data
+		if (verbose) Rcout << "Converting data.. " << std::endl;
+		Data<RealVector> testData = NumericMatrixToDataRealVector (X);
+		Data<RealVector> supportVectors= NumericMatrixToDataRealVector (SV);
+		RealVector alphas = NumericVectorToRealVector (alpha);
+		
+		// initialize kernel classifier
+		KernelExpansion<RealVector> sharkModel;
+		GaussianRbfKernel<> kernel (gamma);
+		sharkModel.setStructure (&kernel, supportVectors, true, 2);
+		
+		// now copy over all alphas into the parameter vector
+		RealVector parameters (alphas.size() + 1);
+		for (size_t r = 0; r < alphas.size(); r++) {
+			parameters[r] = alphas (r);
+		}
+		parameters[parameters.size() - 1] = offset;
+		
+		// have model its parameters.
+		sharkModel.setParameterVector (parameters);
+		
+		
+		// do prediction
+		KernelClassifier<RealVector> kc (sharkModel);
+		Data<unsigned int> label = kc (testData);
+		NumericVector prediction = LabelsToNumericVector (label);
+
+		Rcpp::List rl = R_NilValue;
+		rl = Rcpp::List::create(Rcpp::Named("prediction") = prediction);
+		return rl;
+	} catch(...) {
+		stop ("Unknown exception occured.");
+	}
+}
+				 
+				 

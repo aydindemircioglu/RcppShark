@@ -11,9 +11,9 @@ The package can be loaded by
 
 > library(RcppShark)
 
-We only added one tutorial example to just see how all of this works. Remember, the goal of the package is not to wrap all existing functionality of Shark in R, but to give you access to a very powerful  and fast machine learning library (We might add more pre-wrapped code in future, if enough interest and time is given). Now to use the Shark Budgedet Stochastic Gradient Descent algorithm on your data, you can call
+We added only two basic examples, Budgeted Stochastic Gradient Descend (BSGD) and a four layered Deep Neural Network, to give a feeling how RcppShark works. Remember, the goal of the package is not to wrap all existing functionality of Shark in R, but to give you access to a very powerful and fast machine learning library (We might add more pre-wrapped code in future, if enough interest and time is given). Now to use the Budgeted Stochastic Gradient Descend algorithm from Shark on your data, you can call
 
-> bsgd (x, y, gamma = 0.5, C = 1.0, epsilon = 1e-7, budget = 500)
+> SharkBSGD (x, y, gamma = 0.5, C = 1.0, epsilon = 1e-7, budget = 500)
 
 The data has  to be binary, with 0-1 labels. (TODO: check this in code).
 
@@ -133,7 +133,7 @@ library (devtools)
 load_all (".")
 
 # convert iris to matrix
-x = as.matrix(iris[,1:4])
+data = as.matrix(iris[,1:4])
 
 model = SharkKMeansTrain (data, 3)
 labels = SharkKMeansPredict (data, model$centroids)
@@ -141,7 +141,32 @@ labels = SharkKMeansPredict (data, model$centroids)
 
 Note that we need the devtools package, as we develop a new package.  The output should be look similar to this:
 
-...
+```R
+> model
+$labels
+  [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+ [38] 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+ [75] 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 1 2 2 2 2 1 2 2 2 2
+[112] 2 2 1 1 2 2 2 2 1 2 1 2 1 2 2 1 1 2 2 2 2 2 1 2 2 2 2 1 2 2 2 1 2 2 2 1 2
+[149] 2 1
+
+$centroids
+         [,1]     [,2]     [,3]     [,4]
+[1,] 5.006000 3.428000 1.462000 0.246000
+[2,] 5.901613 2.748387 4.393548 1.433871
+[3,] 6.850000 3.073684 5.742105 2.071053
+
+> labels
+$labels
+  [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+ [38] 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+ [75] 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 1 2 2 2 2 1 2 2 2 2
+[112] 2 2 1 1 2 2 2 2 1 2 1 2 1 2 2 1 1 2 2 2 2 2 1 2 2 2 2 1 2 2 2 1 2 2 2 1 2
+[149] 2 1
+```
+
+For convenience every new created skeleton contains the above KMeans example.
+
 
 
 ## Notes

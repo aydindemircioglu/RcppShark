@@ -5,9 +5,9 @@
 
 using namespace Rcpp;
 
-// BSGDWrapper
-List BSGDWrapper(NumericMatrix X, NumericVector Y, double C, size_t budget, double gamma, double epochs, std::string budgetMaintenanceStrategy, bool useBias, bool verbose);
-RcppExport SEXP RcppShark_BSGDWrapper(SEXP XSEXP, SEXP YSEXP, SEXP CSEXP, SEXP budgetSEXP, SEXP gammaSEXP, SEXP epochsSEXP, SEXP budgetMaintenanceStrategySEXP, SEXP useBiasSEXP, SEXP verboseSEXP) {
+// BSGDWrapperTrain
+List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, size_t budget, double gamma, double epochs, std::string budgetMaintenanceStrategy, bool useBias, bool verbose);
+RcppExport SEXP RcppShark_BSGDWrapperTrain(SEXP XSEXP, SEXP YSEXP, SEXP CSEXP, SEXP budgetSEXP, SEXP gammaSEXP, SEXP epochsSEXP, SEXP budgetMaintenanceStrategySEXP, SEXP useBiasSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -20,7 +20,23 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type budgetMaintenanceStrategy(budgetMaintenanceStrategySEXP);
     Rcpp::traits::input_parameter< bool >::type useBias(useBiasSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    __result = Rcpp::wrap(BSGDWrapper(X, Y, C, budget, gamma, epochs, budgetMaintenanceStrategy, useBias, verbose));
+    __result = Rcpp::wrap(BSGDWrapperTrain(X, Y, C, budget, gamma, epochs, budgetMaintenanceStrategy, useBias, verbose));
+    return __result;
+END_RCPP
+}
+// BSGDWrapperPredict
+List BSGDWrapperPredict(NumericMatrix X, NumericVector alpha, NumericMatrix SV, double offset, double gamma, bool verbose);
+RcppExport SEXP RcppShark_BSGDWrapperPredict(SEXP XSEXP, SEXP alphaSEXP, SEXP SVSEXP, SEXP offsetSEXP, SEXP gammaSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type X(XSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type SV(SVSEXP);
+    Rcpp::traits::input_parameter< double >::type offset(offsetSEXP);
+    Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    __result = Rcpp::wrap(BSGDWrapperPredict(X, alpha, SV, offset, gamma, verbose));
     return __result;
 END_RCPP
 }

@@ -24,7 +24,9 @@ SwissRoll <- function(N=2000, Height=30) {
 
 
 # SVM:  budgeted SGD
-	#	s = bsgd (x, y, gamma = 1, epochs = 3, budget = 500)
+	model = BSGDWrapperTrain (x, y, C = 1, budget = 15, gamma = 1, epochs = 5, budgetMaintenanceStrategy = "Merge")
+	model$gamma = 1
+	BSGDWrapperPredict (x, model$alpha, model$SV, model$offset, model$gamma)
 
 	
 # four-layer (deep) neural network with pretraining

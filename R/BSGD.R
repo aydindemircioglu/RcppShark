@@ -19,12 +19,10 @@
 ## MA 02111-1307, USA
 
 
-bsgd <- function(x, y = NULL, 
+SharkBSGDTrain <- function(x, y = NULL, 
                  verbose = TRUE, budget = 500, useBias = TRUE,
                  strategy = "Merge",
-                 C = 1, gamma=1,  epochs = 1,
-                 ...,
-                 subset, na.action = na.omit)
+                 C = 1, gamma=1,  epochs = 1)
 {
     type <- match.arg(type)
 
@@ -49,24 +47,15 @@ bsgd <- function(x, y = NULL,
 				verbose = verbose,
 				PACKAGE="RcppShark")
     print("Finished..")
-    class(val) <- c("shark.svm")
+    class(val) <- c("RcppShark.BSGD")
     val
 }
 
 
 
-
-plot.svm <- function(x, ...) {
-	warning("No plotting available for class", class(x)[1],"\n")
-	invisible(x)
-}
-
-print.svm <- function(x, digits=5, ...) {
-	cat("Error term", x, "\n")
-	invisible(x)
-}
-
-summary.svm <- function(object, digits=5, ...) {
-	cat("Detailed summary of SVM model for", class(object)[1], "\n")
-	invisible(object)
+SharkBSGDPredict <- function(x, y = NULL, 
+                 verbose = TRUE, budget = 500, useBias = TRUE,
+                 strategy = "Merge",
+                 C = 1, gamma=1,  epochs = 1)
+{
 }
