@@ -310,8 +310,8 @@ for  includeDir in includeDirs:
 						data = re.sub(r'(?ism)^#include', r'#include <Rcpp.h>\n#include', data, 1)
 
 					if len(re.findall("rand[\s]*\(", data)) > 0:
-						data = re.sub(r'(?is)rand[\s]*\([\s]*\)', r' int( round (Rcpp::R::runif(0,RAND_MAX)) ) ', data)
-						data = re.sub(r'(?ism)^#include', r'#include <Rcpp.h>\n#include', data, 1)
+						data = re.sub(r'(?is)rand[\s]*\([\s]*\)', r' int( round (R::runif(0,RAND_MAX)) ) ', data)
+						data = re.sub(r'(?ism)^#include', r'#include <Rcpp.h>\nusing namespace Rcpp;\n#include', data, 1)
 
 					# could be done for Rng.h only, more specific, but heck.
 					if len(re.findall("boost::mt19937", data)) > 0:

@@ -34,6 +34,7 @@
 #define SHARK_COMPILE_DLL
 
 #include <Rcpp.h>
+using namespace Rcpp;
 #include <shark/Algorithms/Trainers/RFTrainer.h>
 #include <shark/Models/Trees/RFClassifier.h>
 #include <boost/range/algorithm_ext/iota.hpp>
@@ -586,7 +587,7 @@ void RFTrainer::splitAttributeTables(const AttributeTables& tables, std::size_t 
 void RFTrainer::generateRandomTableIndicies(set<std::size_t>& tableIndicies){
 	//Draw the m_try Generate the random attributes to search for the split
 	while(tableIndicies.size()<m_try){
-		tableIndicies.insert(  int( round (Rcpp::R::runif(0,RAND_MAX)) )  % m_inputDimension);
+		tableIndicies.insert(  int( round (R::runif(0,RAND_MAX)) )  % m_inputDimension);
 	}
 }
 

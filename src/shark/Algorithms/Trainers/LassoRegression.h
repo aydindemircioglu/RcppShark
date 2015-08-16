@@ -37,6 +37,7 @@
 #define SHARK_ALGORITHMS_TRAINERS_LASSOREGRESSION_H
 
 #include <Rcpp.h>
+using namespace Rcpp;
 #include <Rcpp.h>
 #include <shark/Models/LinearModel.h>
 #include <shark/Algorithms/Trainers/AbstractTrainer.h>
@@ -212,7 +213,7 @@ protected:
 				
 				unsigned int m = (unsigned int)floor(n);
 				double prob = n - m;
-				if ((double) int( round (Rcpp::R::runif(0,RAND_MAX)) )  / (double)RAND_MAX < prob) m++;
+				if ((double) int( round (R::runif(0,RAND_MAX)) )  / (double)RAND_MAX < prob) m++;
 				for (std::size_t  j=0; j<m; j++)
 				{
 					index[pos] = i;
@@ -223,7 +224,7 @@ protected:
 			}
 			for (std::size_t i=0; i<dim; i++)
 			{
-				std::size_t r =  int( round (Rcpp::R::runif(0,RAND_MAX)) )  % dim;
+				std::size_t r =  int( round (R::runif(0,RAND_MAX)) )  % dim;
 				std::swap(index[r], index[i]);
 			}
 

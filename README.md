@@ -179,6 +179,8 @@ For convenience every new created skeleton contains the above KMeans example.
 
 - This was forked from the very old RcppShark project (see https://github.com/eddelbuettel/RcppShark), which was a prototype of an RcppBridge for the old Shark 2.x version. But as the package is nearly independent of the old project, there is no link on github anymore.
 
+- To avoid crossplatform problems, the header SimulatedBinaryCrossover.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination is renamed to BinaryCrossover.h
+
 
 
 ### Internal notes
