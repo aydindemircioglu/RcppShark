@@ -140,7 +140,7 @@ std::size_t shark::blas::pivotingRQ
 	//The goal is to compute from the single householder transformations a matrix incorporating all of them
 	//it turns out, that this is:
 	//(I-u_1u_1^T)*...(I-u_lu_rank^T)= I-UT^-1U
-	//with T = upperDiag(U^TU) -1/2 diagof(U^T U)
+	//with T = uppeRcppShark::blas::diag (U^TU) -1/2 diagof(U^T U)
 	//this is of course for column major lower triangular matrices, 
 	//meaning that we have to transpose our matrices U.
 	Mat T(rank,rank);

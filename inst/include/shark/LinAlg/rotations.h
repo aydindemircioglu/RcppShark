@@ -176,7 +176,7 @@ void randomRotationMatrix(matrix_container<MatrixT>& matrixC,RngType& rng){
 	SIZE_CHECK(matrix.size1() > 0);
 	Normal< RngType > normal( rng, 0, 1 );
 	size_t size = matrix.size1();
-	diag(matrix) = repeat(1.0,size);
+	shark::blas::diag (matrix) = repeat(1.0,size);
 	//the first element is just -1 or 1
 	matrix(size-1,size-1) = normal();
 	matrix(size-1,size-1) /= std::abs(matrix(size-1,size-1));

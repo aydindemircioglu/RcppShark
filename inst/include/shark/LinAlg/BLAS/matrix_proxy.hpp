@@ -1356,7 +1356,7 @@ private:
 ///     (7 8 9)
 ///
 /// the diag operation results in
-/// diag(A) = (1,5,9)
+/// shark::blas::diag (A) = (1,5,9)
 template<class Matrix>
 matrix_vector_range<Matrix const> diag(matrix_expression<Matrix> const& mat){
 	SIZE_CHECK(mat().size1() == mat().size2());
@@ -1372,7 +1372,7 @@ matrix_vector_range<Matrix const> diag(matrix_expression<Matrix> const& mat){
 ///     (7 8 9)
 ///
 /// the diag operation results in
-/// diag(A) = (1,5,9)
+/// shark::blas::diag (A) = (1,5,9)
 template<class Matrix>
 temporary_proxy< matrix_vector_range<Matrix> > diag(matrix_expression<Matrix>& mat){
 	SIZE_CHECK(mat().size1() == mat().size2());

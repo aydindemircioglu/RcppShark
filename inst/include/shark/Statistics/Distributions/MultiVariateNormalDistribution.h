@@ -151,11 +151,6 @@ public:
         /// \brief Stores/Restores the distribution from the supplied archive.
         ///\param [in,out] ar The archive to read from/write to.
         ///\param [in] version Currently unused.
-        template<typename Archive>
-        void serialize( Archive & ar, const unsigned int version ) {
-                ar & BOOST_SERIALIZATION_NVP( m_lowerCholesky);
-        }
-
         /// \brief Resizes the distribution. Updates both eigenvectors and eigenvalues.
         /// \param [in] size The new size of the distribution
         void resize( unsigned int size ) {

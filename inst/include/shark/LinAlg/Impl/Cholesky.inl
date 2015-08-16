@@ -127,7 +127,7 @@ std::size_t shark::blas::pivotingCholeskyDecompositionInPlace(
 	RealVector pivotValues(m);
 	
 	//stopping criterion
-	double epsilon = shark::sqr(m) * std::numeric_limits<Value>::epsilon() * norm_inf(diag(L));
+	double epsilon = shark::sqr(m) * std::numeric_limits<Value>::epsilon() * norm_inf(shark::blas::diag (L));
 	//double epsilon = 1.e-15;
 	typedef matrix_range<MatrixL> SubL;
 	
@@ -138,7 +138,7 @@ std::size_t shark::blas::pivotingCholeskyDecompositionInPlace(
 		vector_range<RealVector> pivots = subrange(pivotValues,k,m);
 		//we have to dynamically update the pivot values
 		//we start every block anew to prevent accumulation of rounding errors
-		noalias(pivots) = diag(Lk);
+		noalias(pivots) = shark::blas::diag (Lk);
 		
 		//update current block L11
 		for(std::size_t j = 0; j != currentSize; ++j){

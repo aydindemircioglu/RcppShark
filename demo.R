@@ -24,10 +24,10 @@ SwissRoll <- function(N=2000, Height=30) {
 
 
 # SVM:  budgeted SGD
-	model = BSGDWrapperTrain (x, y, C = 1, budget = 15, gamma = 1, epochs = 5, budgetMaintenanceStrategy = "Merge")
+	model = BSGDWrapperTrain (x, y, C = 0.0001, budget = 5, gamma = 1, epochs = 1, budgetMaintenanceStrategy = "Merge")
 	model$gamma = 1
-	BSGDWrapperPredict (x, model$alpha, model$SV, model$offset, model$gamma)
-
+	results = BSGDWrapperPredict (x, model$alpha, model$SV, model$offset, model$gamma)
+	cat ("\nBSGD training error is ", sum(abs(y - results$predictions))/length(y), "\n")
 	
 # four-layer (deep) neural network with pretraining
 	cat("\nDeep network example.\n")
@@ -38,6 +38,6 @@ SwissRoll <- function(N=2000, Height=30) {
 
 	# prediction is not argmaxed yet
 	networkPrediction = apply (results$prediction, 1, which.max) - 1
-	errors = sum(y - networkPrediction)/length(y)
+	errors = sum(abs(y - networkPrediction))/length(y)
 	cat("Network produced ", errors, "errors.\n")
 

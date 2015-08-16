@@ -109,12 +109,6 @@ public:
 
         typename base_type::ResultType validation;
                 
-        template<typename Archive>
-        void serialize( Archive & archive, const unsigned int /*version*/ ) {
-                archive & boost::serialization::base_object<base_type >(*this);
-                archive & validation;
-        }
-        
         /// \brief Compares two ValidatedSingleObjectiveResultSets. Returns true if op1.validation < op2.validation
         friend bool operator<(ValidatedSingleObjectiveResultSet const& op1, ValidatedSingleObjectiveResultSet const& op2){
                 return op1.validation < op2.validation;

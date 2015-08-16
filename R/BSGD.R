@@ -58,4 +58,5 @@ SharkBSGDPredict <- function(x, y = NULL,
                  strategy = "Merge",
                  C = 1, gamma=1,  epochs = 1)
 {
+	
 }

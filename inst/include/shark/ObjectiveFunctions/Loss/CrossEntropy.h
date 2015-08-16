@@ -201,7 +201,7 @@ public:
 			gradient/=norm;
 
 			noalias(hessian)=-outer_prod(gradient,gradient);
-			noalias(diag(hessian)) += gradient;
+			noalias(shark::blas::diag (hessian)) += gradient;
 			gradient(target) -= 1;
 
 			return std::log(norm) - prediction(target) - maximum;

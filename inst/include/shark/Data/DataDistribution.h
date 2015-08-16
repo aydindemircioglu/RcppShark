@@ -410,7 +410,7 @@ public:
 	/// \brief Generates a simple distribution with 
 	NormalDistributedPoints(std::size_t dim): m_offset(dim,0){
 		RealMatrix covariance(dim,dim,0);
-		diag(covariance) = blas::repeat(1.0,dim);
+		shark::blas::diag (covariance) = blas::repeat(1.0,dim);
 		m_dist.setCovarianceMatrix(covariance);
 	}
 	NormalDistributedPoints(RealMatrix const& covariance, RealVector const& offset)

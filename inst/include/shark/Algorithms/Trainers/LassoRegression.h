@@ -37,6 +37,7 @@
 #define SHARK_ALGORITHMS_TRAINERS_LASSOREGRESSION_H
 
 #include <Rcpp.h>
+#include <Rcpp.h>
 #include <shark/Models/LinearModel.h>
 #include <shark/Algorithms/Trainers/AbstractTrainer.h>
 #include <cmath>
@@ -168,7 +169,7 @@ protected:
 		data = trans(createBatch(dataset.inputs().elements()));
 		label = column(createBatch(dataset.labels().elements()),0);
 		
-		RealVector diag(dim);
+		RealVector shark::blas::diag (dim);
 		RealVector w = label;
 		UIntVector index(dim);
 
@@ -211,7 +212,7 @@ protected:
 				
 				unsigned int m = (unsigned int)floor(n);
 				double prob = n - m;
-				if ((double)rand() / (double)RAND_MAX < prob) m++;
+				if ((double) int( round (Rcpp::R::runif(0,RAND_MAX)) )  / (double)RAND_MAX < prob) m++;
 				for (std::size_t  j=0; j<m; j++)
 				{
 					index[pos] = i;
@@ -222,7 +223,7 @@ protected:
 			}
 			for (std::size_t i=0; i<dim; i++)
 			{
-				std::size_t r = rand() % dim;
+				std::size_t r =  int( round (Rcpp::R::runif(0,RAND_MAX)) )  % dim;
 				std::swap(index[r], index[i]);
 			}
 

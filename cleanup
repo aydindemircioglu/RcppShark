@@ -4,3 +4,14 @@ find . -name \*.so -exec rm {} \;
 find . -name "#*#" -exec rm {} \;
 
 rm -rf ./inst/lib
+
+# prepare inst folder
+# copy over all sources from Shark!
+rm -rf ./inst/include/shark
+mkdir -p ./inst/include
+cp -R ./src/shark ./inst/include/shark
+
+# copy over utils
+cp ./src/utils.h ./inst/skeleton
+cp ./src/utils.cpp ./inst/skeleton
+

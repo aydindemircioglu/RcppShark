@@ -13,7 +13,7 @@ The package can be loaded by
 
 We added only two basic examples, Budgeted Stochastic Gradient Descend (BSGD) and a four layered Deep Neural Network, to give a feeling how RcppShark works. Remember, the goal of the package is not to wrap all existing functionality of Shark in R, but to give you access to a very powerful and fast machine learning library (We might add more pre-wrapped code in future, if enough interest and time is given). Now to use the Budgeted Stochastic Gradient Descend algorithm from Shark on your data, you can call
 
-> SharkBSGD (x, y, gamma = 0.5, C = 1.0, epsilon = 1e-7, budget = 500)
+> SharkBSGDTrain (x, y, gamma = 0.5, C = 1.0, budget = 500)
 
 The data has  to be binary, with 0-1 labels. (TODO: check this in code).
 

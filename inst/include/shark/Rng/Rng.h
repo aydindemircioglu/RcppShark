@@ -32,13 +32,14 @@
 #ifndef SHARK_RNG_RNG_H
 #define SHARK_RNG_RNG_H
 
+#include <shark/Rng/Runif.h>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/linear_congruential.hpp>
 
 namespace shark {
 
 	/** \brief Default RNG of the shark library. */
-	typedef boost::mt19937	DefaultRngType;
+	typedef boost::rand47	DefaultRngType;
 
 	/** \brief Fast RNG type. */
 	typedef boost::rand48	FastRngType;
