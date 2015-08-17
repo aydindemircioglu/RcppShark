@@ -127,7 +127,7 @@ public:
     { return x.size(); }
 
     /// query the kernel access counter
-    unsigned long long getAccessCount() const
+    size_t getAccessCount() const
     { return m_accessCounter; }
 
     /// reset the kernel access counter
@@ -146,7 +146,7 @@ protected:
     double m_gamma;
 
     /// counter for the kernel accesses
-    mutable unsigned long long m_accessCounter;
+    mutable size_t m_accessCounter;
 };
 
 }

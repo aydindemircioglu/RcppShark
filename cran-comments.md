@@ -1,10 +1,11 @@
-## Submission
-This is a new submission. In this version I have:
+## Resubmission
+This is a resubmission. In this version I have:
 
-* The package is larger than usual, as it contains the whole Shark machine learning library. Shark is programmed in C++/Boost and contains hundred of classes and methods.
-
+* Replace all "unsigned long long" with size_t to avoid "warning: 'long long' is a C++11 extension [-Wc++11-long-long]". Note that this code is part of the underlying Shark library, and actually should be handled by the Shark community. 
+ 
  
 ## Test environments
+
 * local ubuntu 15.10 alpha2 install (64bit), R 3.2.2 RC r68609
 * win-builder (devel and release)
 * virtual sun os 11 (32bit) R 3.1.1

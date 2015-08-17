@@ -88,7 +88,7 @@ public:
     { return x.size(); }
 
     /// query the kernel access counter
-    unsigned long long getAccessCount() const
+    size_t getAccessCount() const
     { return m_accessCounter; }
 
     /// reset the kernel access counter
@@ -148,7 +148,7 @@ protected:
     /// Array of data pointers for kernel evaluations
     std::vector<PointerType> x;
     /// counter for the kernel accesses
-    mutable unsigned long long m_accessCounter;
+    mutable size_t m_accessCounter;
 
 private:
 

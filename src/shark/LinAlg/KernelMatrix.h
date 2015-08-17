@@ -134,7 +134,7 @@ public:
     { return x.size(); }
 
     /// query the kernel access counter
-    unsigned long long getAccessCount() const
+    size_t getAccessCount() const
     { return m_accessCounter; }
 
     /// reset the kernel access counter
@@ -152,7 +152,7 @@ protected:
     std::vector<PointerType> x;
 
     /// counter for the kernel accesses
-    mutable unsigned long long m_accessCounter;
+    mutable size_t m_accessCounter;
 };
 
 //~ ///\brief Specialization for dense vectors which often can be computed much faster
@@ -253,7 +253,7 @@ protected:
     //~ { return x.size(); }
     
     //~ /// query the kernel access counter
-    //~ unsigned long long getAccessCount() const
+    //~ size_t getAccessCount() const
     //~ { return m_accessCounter; }
 
     //~ /// reset the kernel access counter
@@ -272,7 +272,7 @@ protected:
 
     //~ std::vector<std::size_t> m_batchStart;
 
-    //~ mutable unsigned long long m_accessCounter;
+    //~ mutable size_t m_accessCounter;
 //~ };
 
 }

@@ -400,8 +400,8 @@ public:
 		QpSolutionProperties* prop = NULL
 	){
 		double start_time = Timer::now();
-		unsigned long long iter = 0;
-		unsigned long long shrinkCounter = 0;
+		size_t iter = 0;
+		size_t shrinkCounter = 0;
 
 		SelectionStrategy workingSet;
 

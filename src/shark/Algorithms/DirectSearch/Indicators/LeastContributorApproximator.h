@@ -315,9 +315,9 @@ struct LeastContributorApproximator {
 		double m_approximatedContribution;
 		double m_overlappingVolume;
 
-		unsigned long long m_noOperations;
-		unsigned long long m_noSamples;
-		unsigned long long m_noSuccessfulSamples;
+		size_t m_noOperations;
+		size_t m_noSamples;
+		size_t m_noSuccessfulSamples;
 
 		template<typename Stream>
 		void print( Stream & s ) const
@@ -347,7 +347,7 @@ struct LeastContributorApproximator {
 	double m_startDelta;
 	double m_multiplierDelta;
 	double m_minimumMultiplierDelta;
-	unsigned long long m_maxNumSamples;
+	size_t m_maxNumSamples;
 	double m_gamma;
 
 	unsigned int m_round;
@@ -374,7 +374,7 @@ struct LeastContributorApproximator {
 	LeastContributorApproximator( double startDelta = this_type::DEFAULT_START_DELTA(),
 	                              double multiplierDelta = this_type::DEFAULT_MULTIPLIER_DELTA(),
 	                              double minimumDeltaMultiplier = this_type::DEFAULT_MINIMUM_MULTIPLIER_DELTA(),
-	                              unsigned long long maxNumSamples = this_type::DEFAULT_MAX_NUM_SAMPLES(),
+	                              size_t maxNumSamples = this_type::DEFAULT_MAX_NUM_SAMPLES(),
 	                              double gamma = this_type::DEFAULT_GAMMA(),
 				      double delta = 1.E-2,
 				      double eps = 1.E-2

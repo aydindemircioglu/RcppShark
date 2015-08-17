@@ -329,6 +329,9 @@ for  includeDir in includeDirs:
 						data = re.sub(r'(?ism)^#include <boost/range/algorithm/random_shuffle.hpp>', r'', data)
 						data = re.sub(r'(?ism)^#include', r'#include <shark/Rng/GlobalRng.h>\n#include', data, 1)
 					
+					# long long cat
+					data = re.sub(r'(?i)unsigned long long', r'size_t', data)
+
 
 					#print (data)
 				# save file to our local path

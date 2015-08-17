@@ -134,13 +134,13 @@ public:
 	{ return m_verbosity; }
 
 	/// Number of kernel accesses
-	unsigned long long const& accessCount() const
+	size_t const& accessCount() const
 	{ return m_accessCount; }
 
 	// Set threshold for minimum dual accuracy stopping condition
 	void setMinAccuracy(double a) { m_stoppingcondition.minAccuracy = a; }
 	// Set number of iterations for maximum number of iterations stopping condition
-	void setMaxIterations(unsigned long long i) { m_stoppingcondition.maxIterations = i; }
+	void setMaxIterations(size_t i) { m_stoppingcondition.maxIterations = i; }
 	// Set values for target value stopping condition
 	void setTargetValue(double v) { m_stoppingcondition.targetValue = v; }
 	// Set maximum training time in seconds for the maximum seconds stopping condition
@@ -162,7 +162,7 @@ protected:
 	/// verbosity level (currently unused)
 	unsigned int m_verbosity;
 	/// kernel access count
-	unsigned long long m_accessCount;
+	size_t m_accessCount;
 };
 
 

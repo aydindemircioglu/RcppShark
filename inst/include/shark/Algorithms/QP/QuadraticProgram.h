@@ -96,7 +96,7 @@ enum QpStopType
 struct QpStoppingCondition
 {
 	/// Constructor
-	QpStoppingCondition(double accuracy = 0.001, unsigned long long iterations = 0xffffffff, double value = 1e100, double seconds = 1e100)
+	QpStoppingCondition(double accuracy = 0.001, size_t iterations = 0xffffffff, double value = 1e100, double seconds = 1e100)
 	{
 		minAccuracy = accuracy;
 		maxIterations = iterations;
@@ -108,7 +108,7 @@ struct QpStoppingCondition
 	double minAccuracy;
 
 	/// maximum number of decomposition iterations (default to 0 - not used)
-	unsigned long long maxIterations;
+	size_t maxIterations;
 
 	/// target objective function value (defaults to 1e100 - not used)
 	double targetValue;
@@ -143,7 +143,7 @@ struct QpSolutionProperties
 
 	QpStopType type;						///< reason for the solver to stop
 	double accuracy;						///< typically the maximal KKT violation
-	unsigned long long iterations;			///< number of decomposition iterations
+	size_t iterations;			///< number of decomposition iterations
 	double value;							///< value of the objective function
 	double seconds;							///< training time
 };

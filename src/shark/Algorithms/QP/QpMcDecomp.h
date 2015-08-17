@@ -350,7 +350,7 @@ public:
 		if (useShrinking) shrink(stop.minAccuracy);
 
 		// decomposition loop
-		unsigned long long iter = 0;
+		size_t iter = 0;
 		while (iter != stop.maxIterations)
 		{
 			// select a working set and check for optimality
@@ -695,7 +695,7 @@ solutionGradient(w) = gradient(v);
 		if (useShrinking) shrink(stop.minAccuracy);
 
 		// decomposition loop
-		unsigned long long iter = 0;
+		size_t iter = 0;
 		while (iter != stop.maxIterations)
 		{
 			// select a working set and check for optimality

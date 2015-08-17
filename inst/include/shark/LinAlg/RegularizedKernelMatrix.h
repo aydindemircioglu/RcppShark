@@ -124,7 +124,7 @@ public:
     { return m_matrix.size(); }
 
     /// query the kernel access counter
-    unsigned long long getAccessCount() const
+    size_t getAccessCount() const
     { return m_matrix.getAccessCount(); }
 
     /// reset the kernel access counter
