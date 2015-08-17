@@ -50,17 +50,16 @@ using namespace Rcpp;
 //' @param epochs		number of iterations through data set 
 //' @param budgetMaintenanceStrategy		strategy to use to maintain the budget size. 
 //' 		choises are 'Merge', 'RemoveSmallest', 'RemoveRandom, 'Project'
-//' @param useBias		should the underlying SVM use an offset/bias term?
 //' @param verbose		verbose output?
 //'
 //' @export
 //'
-//' @note	only fo binary classification. no checks are done.
+//' @note	only fo binary classification. no checks are done. always uses a bias term.
 //'
 // [[Rcpp::depends(BH)]]    
 // [[Rcpp::export]]	
 List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long budget, double gamma, 
-				 double epochs, std::string budgetMaintenanceStrategy, bool useBias = true, bool verbose = false) {
+				 double epochs, std::string budgetMaintenanceStrategy, bool verbose = false) {
 
 	try {
 		AbstractBudgetMaintenanceStrategy <RealVector> *strategy = NULL;
@@ -89,10 +88,9 @@ List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long 
 			Rcout << "Parameters:\n";
 			Rcout<<"\tC: \t\t" << C << "\n";
 			Rcout<<"\tgamma: \t\t" << gamma << "\n";
-			Rcout<<"\tbudget: \t\t" << budget << "\n";
-			Rcout<<"\tepochs: \t\t" << epochs << "\n";
-			Rcout<<"\tbias: \t\t" << useBias << "\n";
-			Rcout<<"\tstrategy: \t\t" << budgetMaintenanceStrategy << "\n";
+			Rcout<<"\tbudget: \t" << budget << "\n";
+			Rcout<<"\tepochs: \t" << epochs << "\n";
+			Rcout<<"\tstrategy: \t" << budgetMaintenanceStrategy << "\n";
 		}
 		
 		// probably stupid, but for now its ok
@@ -112,7 +110,7 @@ List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long 
 		// train
 		HingeLoss hingeLoss;
 		KernelBudgetedSGDTrainer<RealVector> *kernelBudgetedSGDtrainer = 
-			new KernelBudgetedSGDTrainer<RealVector> (&kernel, &hingeLoss, C, useBias, false, budget, strategy);
+			new KernelBudgetedSGDTrainer<RealVector> (&kernel, &hingeLoss, C, true, false, budget, strategy);
 		kernelBudgetedSGDtrainer -> setEpochs (epochs);
 		kernelBudgetedSGDtrainer -> setMinMargin (1.0);
 		kernelBudgetedSGDtrainer->train (kc, trainingData);
@@ -135,19 +133,23 @@ List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long 
 			alpha[x] = currentAlpha;
 		}
 		
-		// create data with support vectors
+		// retrieve model data
 		Data<RealVector> supportvectors = kc.decisionFunction().basis();
+		RealVector offset = kc.decisionFunction().offset();
 
-		double offset = kc.decisionFunction().offset()[0];
+		// free memory
+		delete kernelBudgetedSGDtrainer;		
+		delete strategy;
 		
 		Rcpp::List rl = R_NilValue;
 		rl = Rcpp::List::create(Rcpp::Named("error") = trainError,
-        		Rcpp::Named("offset") = offset,
+        		Rcpp::Named("offset") = RealVectorToNumericVector (offset),
         		Rcpp::Named("nSV") = nSV,
 				Rcpp::Named("SV") = DataRealVectorToNumericMatrix (supportvectors),
 				Rcpp::Named("alpha") = alpha);
 		return rl;
     } catch(...) {
+		// free memory
 		stop ("Unknown exception occured. Check also your budget strategy.");
 	}
 	
@@ -163,16 +165,16 @@ List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long 
 //' @param X		matrix with input data
 //' @param alpha		alpha for support vectors
 //' @param SV		support vectors of model
-//' @param offset		offset/bias term
+//' @param offset		offset/bias terms
 //' @param verbose		verbose output?
 //'
-//' @note	Currently works only for binary classification.
+//' @note	Currently works only for binary classification. No checks are done.
 //'
 //' @export
 //'
 // [[Rcpp::depends(BH)]]    
 // [[Rcpp::export]]	
-List BSGDWrapperPredict(NumericMatrix X, NumericVector alpha, NumericMatrix SV, double offset, double gamma, bool verbose = false) {
+List BSGDWrapperPredict(NumericMatrix X, NumericVector alpha, NumericMatrix SV, NumericVector offset, double gamma, bool verbose = false) {
 
 	try {
 		if (verbose == true) {
@@ -185,18 +187,27 @@ List BSGDWrapperPredict(NumericMatrix X, NumericVector alpha, NumericMatrix SV, 
 		Data<RealVector> testData = NumericMatrixToDataRealVector (X);
 		Data<RealVector> supportVectors= NumericMatrixToDataRealVector (SV);
 		RealVector alphas = NumericVectorToRealVector (alpha);
+		if (verbose) Rcout << "Alpha size.. " << alpha.size() << std::endl;
+		RealVector offsets = NumericVectorToRealVector (offset);
+		if (verbose) Rcout << "Offsets size.. " << offsets.size() << std::endl;
 		
 		// initialize kernel classifier
 		KernelExpansion<RealVector> sharkModel;
 		GaussianRbfKernel<> kernel (gamma);
-		sharkModel.setStructure (&kernel, supportVectors, true, 2);
+		sharkModel.setStructure (&kernel, supportVectors, true, 1);
+		
+		// note that this works for binary problems only.
 		
 		// now copy over all alphas into the parameter vector
 		RealVector parameters (alphas.size() + 1);
 		for (size_t r = 0; r < alphas.size(); r++) {
 			parameters[r] = alphas (r);
 		}
-		parameters[parameters.size() - 1] = offset;
+		
+		for (size_t c = 0; c < 1; c++) {
+			parameters[alphas.size() + c] = offsets[c];
+		}
+		
 		
 		// have model its parameters.
 		sharkModel.setParameterVector (parameters);

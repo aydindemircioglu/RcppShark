@@ -1,5 +1,5 @@
 //
-// BSGDWrapper.cpp
+// DeepNetworkWrapper.cpp
 //			this is part of the RcppShark package (http://github.com/aydindemircioglu/RcppShark)
 //
 // Copyright (C) 2015 		Aydin Demircioglu <aydin.demircioglu/at/ini.rub.de>
@@ -231,7 +231,6 @@ List DeepNetworkWrapperTrain (Rcpp::NumericMatrix X, Rcpp::NumericVector Y,
 // [[Rcpp::depends(BH)]]    
 // [[Rcpp::export]]	
 List DeepNetworkWrapperPredict (Rcpp::NumericMatrix X, 
-								Rcpp::NumericVector Y,
 								Rcpp::NumericVector weights,
 								unsigned long nHidden1,
 								unsigned long nHidden2,
@@ -253,13 +252,6 @@ List DeepNetworkWrapperPredict (Rcpp::NumericMatrix X,
 		
 		double predictionError = -1;
 		Data<RealVector> prediction = network (inputs);
-		if (Y.size () > 0) {
-			ZeroOneLoss <unsigned int, RealVector> loss01;
-			predictionError = loss01.eval (NumericVectorToLabels (Y), prediction);
-			if (verbose) {
-				Rcpp::Rcout << "Prediction Error is " << predictionError;
-			}
-		}
 		
 		Rcpp::List rl = R_NilValue;
 		rl = Rcpp::List::create(
@@ -275,5 +267,5 @@ List DeepNetworkWrapperPredict (Rcpp::NumericMatrix X,
 	// this should never happen, but CMD check doesnt like it like this
 	Rcpp::List rl = R_NilValue;
 	return rl;
-								}
+}
 

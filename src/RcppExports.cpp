@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // BSGDWrapperTrain
-List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long budget, double gamma, double epochs, std::string budgetMaintenanceStrategy, bool useBias, bool verbose);
-RcppExport SEXP RcppShark_BSGDWrapperTrain(SEXP XSEXP, SEXP YSEXP, SEXP CSEXP, SEXP budgetSEXP, SEXP gammaSEXP, SEXP epochsSEXP, SEXP budgetMaintenanceStrategySEXP, SEXP useBiasSEXP, SEXP verboseSEXP) {
+List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long budget, double gamma, double epochs, std::string budgetMaintenanceStrategy, bool verbose);
+RcppExport SEXP RcppShark_BSGDWrapperTrain(SEXP XSEXP, SEXP YSEXP, SEXP CSEXP, SEXP budgetSEXP, SEXP gammaSEXP, SEXP epochsSEXP, SEXP budgetMaintenanceStrategySEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -18,14 +18,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP);
     Rcpp::traits::input_parameter< double >::type epochs(epochsSEXP);
     Rcpp::traits::input_parameter< std::string >::type budgetMaintenanceStrategy(budgetMaintenanceStrategySEXP);
-    Rcpp::traits::input_parameter< bool >::type useBias(useBiasSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    __result = Rcpp::wrap(BSGDWrapperTrain(X, Y, C, budget, gamma, epochs, budgetMaintenanceStrategy, useBias, verbose));
+    __result = Rcpp::wrap(BSGDWrapperTrain(X, Y, C, budget, gamma, epochs, budgetMaintenanceStrategy, verbose));
     return __result;
 END_RCPP
 }
 // BSGDWrapperPredict
-List BSGDWrapperPredict(NumericMatrix X, NumericVector alpha, NumericMatrix SV, double offset, double gamma, bool verbose);
+List BSGDWrapperPredict(NumericMatrix X, NumericVector alpha, NumericMatrix SV, NumericVector offset, double gamma, bool verbose);
 RcppExport SEXP RcppShark_BSGDWrapperPredict(SEXP XSEXP, SEXP alphaSEXP, SEXP SVSEXP, SEXP offsetSEXP, SEXP gammaSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
@@ -33,7 +32,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericMatrix >::type X(XSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type SV(SVSEXP);
-    Rcpp::traits::input_parameter< double >::type offset(offsetSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type offset(offsetSEXP);
     Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
     __result = Rcpp::wrap(BSGDWrapperPredict(X, alpha, SV, offset, gamma, verbose));
@@ -61,20 +60,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // DeepNetworkWrapperPredict
-List DeepNetworkWrapperPredict(Rcpp::NumericMatrix X, Rcpp::NumericVector Y, Rcpp::NumericVector weights, unsigned long nHidden1, unsigned long nHidden2, unsigned long inputSize, unsigned long outputSize, bool verbose);
-RcppExport SEXP RcppShark_DeepNetworkWrapperPredict(SEXP XSEXP, SEXP YSEXP, SEXP weightsSEXP, SEXP nHidden1SEXP, SEXP nHidden2SEXP, SEXP inputSizeSEXP, SEXP outputSizeSEXP, SEXP verboseSEXP) {
+List DeepNetworkWrapperPredict(Rcpp::NumericMatrix X, Rcpp::NumericVector weights, unsigned long nHidden1, unsigned long nHidden2, unsigned long inputSize, unsigned long outputSize, bool verbose);
+RcppExport SEXP RcppShark_DeepNetworkWrapperPredict(SEXP XSEXP, SEXP weightsSEXP, SEXP nHidden1SEXP, SEXP nHidden2SEXP, SEXP inputSizeSEXP, SEXP outputSizeSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type Y(YSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
     Rcpp::traits::input_parameter< unsigned long >::type nHidden1(nHidden1SEXP);
     Rcpp::traits::input_parameter< unsigned long >::type nHidden2(nHidden2SEXP);
     Rcpp::traits::input_parameter< unsigned long >::type inputSize(inputSizeSEXP);
     Rcpp::traits::input_parameter< unsigned long >::type outputSize(outputSizeSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    __result = Rcpp::wrap(DeepNetworkWrapperPredict(X, Y, weights, nHidden1, nHidden2, inputSize, outputSize, verbose));
+    __result = Rcpp::wrap(DeepNetworkWrapperPredict(X, weights, nHidden1, nHidden2, inputSize, outputSize, verbose));
     return __result;
 END_RCPP
 }

@@ -176,5 +176,3 @@ KernelBasisDistance.o :
 clean:
 		rm -f $(OBJECTS) $(SHLIB) $(USERLIB) $(USERLIBST)
 
-
-		
