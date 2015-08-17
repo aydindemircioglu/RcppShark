@@ -317,6 +317,11 @@ for  includeDir in includeDirs:
 					if len(re.findall("boost::mt19937", data)) > 0:
 						data = re.sub(r'(?i)boost::mt19937', r'boost::rand47', data)
 						data = re.sub(r'(?ism)^#include', r'#include <shark/Rng/Runif.h>\n#include', data, 1)
+
+					if len(re.findall("boost::random_shuffle", data)) > 0:
+						data = re.sub(r'(?i)boost::random_shuffle.subsetIndices.;', r'DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); boost::random_shuffle(subsetIndices, uniform);', data)
+						data = re.sub(r'(?ism)^#include', r'#include <shark/Rng/GlobalRng.h>\n#include', data, 1)
+
 						
 					#print (data)
 				# save file to our local path

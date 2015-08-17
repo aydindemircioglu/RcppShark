@@ -59,7 +59,7 @@ using namespace Rcpp;
 //'
 // [[Rcpp::depends(BH)]]    
 // [[Rcpp::export]]	
-List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, size_t budget, double gamma, 
+List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long budget, double gamma, 
 				 double epochs, std::string budgetMaintenanceStrategy, bool useBias = true, bool verbose = false) {
 
 	try {
@@ -126,11 +126,11 @@ List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, size_t budget,
 		// Find the support vector
 		if (verbose) Rcout << "Obtaining support vectors:\t" << endl;
 		RealMatrix fAlpha = kc.decisionFunction().alpha();
-		size_t nSV = fAlpha.size1();
+		unsigned long nSV = fAlpha.size1();
 		if (verbose) Rcout << "\t" << nSV << " support vectors" << endl;
 
 		Rcpp::NumericVector alpha(nSV);
-		for (size_t x = 0; x < nSV; x++) {
+		for (unsigned long x = 0; x < nSV; x++) {
 			double currentAlpha = row (fAlpha, x)[0];
 			alpha[x] = currentAlpha;
 		}

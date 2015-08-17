@@ -64,6 +64,9 @@ for root, subFolders, files in os.walk(includeDir):
 		
 		# for each file we have, we create one entry for the object list
 		stem = os.path.splitext (file)[0]
+		if (stem == "Version"):
+			continue
+		
 		objects = objects + stem + ".o" + "\\\n"
 		
 		# add a rule

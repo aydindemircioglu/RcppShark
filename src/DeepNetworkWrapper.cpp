@@ -50,14 +50,14 @@ using namespace Rcpp;
 template<class AutoencoderModel>
 AutoencoderModel trainAutoencoderModel(
 	UnlabeledData<RealVector> const& data,//the data to train with
-	std::size_t numHidden,//number of features in the AutoencoderModel
+	unsigned long numHidden,//number of features in the AutoencoderModel
 	double regularisation,//strength of the regularisation
 	double noiseStrength, // strength of the added noise
-	std::size_t iterations, //number of iterations to optimize
+	unsigned long iterations, //number of iterations to optimize
 	bool verbose = false
 ){
 	//create the model
-	std::size_t inputs = dataDimension(data);
+	unsigned long inputs = dataDimension(data);
 	AutoencoderModel baseModel;
 	baseModel.setStructure(inputs, numHidden);
 	initRandomUniform(baseModel,-0.1*std::sqrt(1.0/inputs),0.1*std::sqrt(1.0/inputs));
@@ -75,7 +75,7 @@ AutoencoderModel trainAutoencoderModel(
 	IRpropPlusFull optimizer;
 	optimizer.init(error);
 	if (verbose == true) Rcout<<"Optimizing model: "+model.name()<<std::endl;
-	for(std::size_t i = 0; i != iterations; ++i){
+	for(unsigned long i = 0; i != iterations; ++i){
 		optimizer.step(error);
 		if (verbose == true) Rcout<<i<<" "<<optimizer.solution().value<<std::endl;
 	}
@@ -93,8 +93,8 @@ typedef FFNet<RectifierNeuron,LinearNeuron> Network;//final supervised trained s
 //   unsupervised pre training of a network with two hidden layers
 Network unsupervisedPreTraining(
 	UnlabeledData<RealVector> const& data,
-	std::size_t numHidden1,std::size_t numHidden2, std::size_t numOutputs,
-	double regularisation, double noiseStrength, std::size_t iterations,
+	unsigned long numHidden1, unsigned long numHidden2, unsigned long numOutputs,
+	double regularisation, double noiseStrength, unsigned long iterations,
 	bool verbose = false)
 {	
 	//train the first hidden layer
@@ -146,13 +146,13 @@ Network unsupervisedPreTraining(
 // [[Rcpp::depends(BH)]]    
 // [[Rcpp::export]]	
 List DeepNetworkWrapperTrain (Rcpp::NumericMatrix X, Rcpp::NumericVector Y, 
-							  size_t nHidden1 = 8,
-							  size_t nHidden2 = 8,
+							  unsigned long nHidden1 = 8,
+							  unsigned long nHidden2 = 8,
 							  double unsupRegularisation = 0.001,
 							  double noiseStrength = 0.3,
-							  std::size_t unsupIterations = 100,
+							  unsigned long unsupIterations = 100,
 							  double regularisation = 0.0001,
-							  std::size_t iterations = 200,
+							  unsigned long iterations = 200,
 							  bool verbose = false) {
 
 	try {
@@ -186,7 +186,7 @@ List DeepNetworkWrapperTrain (Rcpp::NumericMatrix X, Rcpp::NumericVector Y,
 		if (verbose == true) Rcpp::Rcout << "Training supervised model" << std::endl;
 		IRpropPlusFull optimizer;
 		optimizer.init(error);
-		for(std::size_t i = 0; i != iterations; ++i){
+		for (unsigned long i = 0; i != iterations; ++i){
 			optimizer.step(error);
 			if (verbose == true) Rcout << "  " << i << " " << optimizer.solution().value << std::endl;
 		}
@@ -229,10 +229,10 @@ List DeepNetworkWrapperTrain (Rcpp::NumericMatrix X, Rcpp::NumericVector Y,
 List DeepNetworkWrapperPredict (Rcpp::NumericMatrix X, 
 								Rcpp::NumericVector Y,
 								Rcpp::NumericVector weights,
-								size_t nHidden1,
-								size_t nHidden2,
-								size_t inputSize,
-								size_t outputSize,
+								unsigned long nHidden1,
+								unsigned long nHidden2,
+								unsigned long inputSize,
+								unsigned long outputSize,
 								bool verbose = false) {
 	
 	try {

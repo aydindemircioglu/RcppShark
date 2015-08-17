@@ -31,7 +31,6 @@ CG.o\
 CMA.o\
 CMSA.o\
 ElitistCMA.o\
-Version.o\
 DiscreteLoss.o\
 ROC.o\
 KernelBasisDistance.o
@@ -160,9 +159,6 @@ CMSA.o :
 
 ElitistCMA.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/DirectSearch/ElitistCMA.cpp
-
-Version.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Core/Version.cpp
 
 DiscreteLoss.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/ObjectiveFunctions/DiscreteLoss.cpp
