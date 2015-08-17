@@ -31,7 +31,7 @@ using namespace Rcpp;
 Data<unsigned int> NumericVectorToLabels (NumericVector X, bool verbose) {
 	if (verbose) Rcout  << "Converting data.. \n";
 	
-	// probably stupid and slow, but for now its ok
+	// explicit rounding.. (maybe can be done better)
 	std::vector<unsigned int> outputStd (X.size());
 	for (unsigned int i = 0; i < X.size(); i++) {
 		outputStd [i] = round (X[i]);
@@ -49,12 +49,13 @@ UnlabeledData<RealVector> NumericMatrixToUnlabeledData (NumericMatrix X, bool ve
 }
 
 
+
 Data<RealVector> NumericMatrixToDataRealVector (NumericMatrix X, bool verbose) {
 	if (verbose) Rcout  << "Converting data.. \n";
 	
 	std::vector<RealVector> outputStd;
 	
-	// probably stupid and slow, but for now its ok
+	// probably a bit slow, but for now its ok
 	unsigned int examples = X.rows();
 	for (size_t e = 0; e < examples; e++) {
 		NumericMatrix::Row zzrow = X( e, _);
@@ -65,8 +66,6 @@ Data<RealVector> NumericMatrixToDataRealVector (NumericMatrix X, bool verbose) {
 	
 	return (createDataFromRange (outputStd));
 }
-
-
 
 
 
@@ -81,25 +80,7 @@ NumericMatrix DataRealVectorToNumericMatrix (Data<RealVector> X, bool verbose) {
 	
 	NumericMatrix C(X.numberOfElements(), dataDimension(X));
 	
-	
-	///typedef Data<RealVector> Set;
-	/// Set data;
-	/// for(Set::element_iterator pos=data.elemBegin();pos!= data.elemEnd();++pos){
-	///     Rcpp::Rcout<<*pos<<" ";
-	///     Set::element_reference ref=*pos;
-	
-	
-	/*
-	 *	typedef UnlabeledData<RealVector>::element_range Elements;
-	 *	Elements elements = X.inputs().elements();
-	 * 
-	 */
-	
-	//	DataView<Data<RealVector> > view (X);
-	//	for(std::size_t i = 0; i!=view.size(); ++i){
-	//	std::copy(view.begin(), view.end(), C.begin());
-	
-	// probably stupid and slow, but for now its ok
+	// probably a bit slow, but for now its ok
 	unsigned int examples = X.numberOfElements();
 	for (size_t e = 0; e < examples; e++) {
 		RealVector p = X.element(e);
@@ -112,13 +93,12 @@ NumericMatrix DataRealVectorToNumericMatrix (Data<RealVector> X, bool verbose) {
 
 
 
-
 NumericVector LabelsToNumericVector (Data<unsigned int> X, bool verbose) {
 	if (verbose) Rcout  << "Converting data.. \n";
 
 	NumericVector C(X.numberOfElements());
 	
-	// probably stupid and slow, but for now its ok
+	// probably a bit slow, but for now its ok
 	for (unsigned int i = 0; i < X.numberOfElements(); i++) {
 		C [i] = X.element(i);
 	}
@@ -133,7 +113,7 @@ Data<RealVector> NumericVectorToDataRealVector (NumericVector X, bool verbose) {
 
 	std::vector<RealVector> outputStd;
 	
-	// probably stupid and slow, but for now its ok
+	// probably a bit slow, but for now its ok
 	unsigned int examples = X.size();
 	for (size_t e = 0; e < examples; e++) {
 		RealVector tmpRV (1);
@@ -149,7 +129,7 @@ Data<RealVector> NumericVectorToDataRealVector (NumericVector X, bool verbose) {
 RealVector NumericVectorToRealVector (NumericVector X, bool verbose) {
 	if (verbose) Rcout  << "Converting data.. \n";
 	
-	// probably stupid and slow, but for now its ok
+	// probably a bit slow, but for now its ok
 	RealVector p (X.size());
 	std::copy (X.begin(), X.end(), p.begin());
 
@@ -161,7 +141,7 @@ RealVector NumericVectorToRealVector (NumericVector X, bool verbose) {
 NumericVector RealVectorToNumericVector (RealVector X, bool verbose) {
 	if (verbose) Rcout  << "Converting data.. \n";
 	
-	// probably stupid and slow, but for now its ok
+	// probably a bit slow, but for now its ok
 	NumericVector p (X.size());
 	std::copy (X.begin(), X.end(), p.begin());
 	

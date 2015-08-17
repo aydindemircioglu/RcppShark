@@ -5,7 +5,7 @@
 \title{Budgeted SGD Train.}
 \usage{
 SharkBSGDTrain(x, y = NULL, verbose = FALSE, budget = 500,
-  useBias = TRUE, strategy = "Merge", C = 1, gamma = 1, epochs = 1)
+  strategy = "Merge", C = 1, gamma = 1, epochs = 1)
 }
 \arguments{
 \item{x}{matrix with input data}
@@ -15,8 +15,6 @@ SharkBSGDTrain(x, y = NULL, verbose = FALSE, budget = 500,
 \item{verbose}{verbose output?}
 
 \item{budget}{size of budget}
-
-\item{useBias}{should the underlying SVM use an offset/bias term?}
 
 \item{strategy}{strategy to use to maintain the budget size.
 choises are 'Merge', 'RemoveSmallest', 'RemoveRandom, 'Project'}

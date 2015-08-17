@@ -5,6 +5,7 @@ Goal of this package is to allow users to use the
 in their own R projects.
 
 
+
 ### Basic Example 
 
 This package is meant to be used as a basis for other packages. Nonetheless you can use this directly.
@@ -12,13 +13,15 @@ It can be loaded by
 
 > library(RcppShark)
 
-We added only two basic examples, Budgeted Stochastic Gradient Descend (BSGD) and a four layered Deep Neural Network, to give a feeling how RcppShark works. Remember, the goal of the package is not to wrap all existing functionality of Shark in R, but to give you access to a very powerful and fast machine learning library (We might add more pre-wrapped code in future, if enough interest and time is given). Now to use the Budgeted Stochastic Gradient Descend algorithm from Shark on your data, you can call
+We added only two basic examples, Budgeted Stochastic Gradient Descend (BSGD) and a four layered Deep Neural Network, to give you a feeling how RcppShark works. Remember, the goal of the package is not to wrap all existing functionality of Shark in R, but to give you access to a very powerful and fast machine learning library (We might add more pre-wrapped code in future, if there is enough interest). Now to use the Budgeted Stochastic Gradient Descend algorithm from Shark on your data, perpare a binary classification problem. Then you can call the wrapper with
 
-> SharkBSGDTrain (x, y, gamma = 0.5, C = 1.0, budget = 500)
+> model = SharkBSGDTrain (x, y, gamma = 0.5, C = 1.0, budget = 500)
 
-The data has  to be binary, with 0-1 labels. (TODO: check this in code).
+The data has to be binary, with 0-1 labels (We do not check for that!). Notice that SharkBSGDTrain is just a nice wrapper for the underlying C++ implementation called BSGDWrapperTrain in BSGDWrapper.cpp. We exported this function too, in case you want to meddle directly with the underlying code. To predict, you simply go ahead and push your test data as well as the model the training produced to the predict function:
 
+> results = SharkBSGDPredict (x, model)
 
+The results are now the predicted labels. You can go ahead and compute with your favorite R function statistics like test error etc.
 
 
 ## Notes
@@ -54,12 +57,15 @@ Aydin Demircioglu (aydin.demircioglu /at/ ini.rub.de)
 ### Credits
 
 This package uses infrastructure from different packages. Thanks for their efforts go to
+
 - Shane Conway and Dirk Eddelbuettel (original rShark package)
 - Qiang Kou (original RcppMLPACK package)
+
+and obviously to all the R and Shark people for creating such nice packages.
 
 
 
 ### License
 
-GPL 3.0 for the R package, Shark 3.0 itself is license under the LGPL
+GPL 3.0 for the R package, Shark 3.0 itself is licensed under LGPL.
 

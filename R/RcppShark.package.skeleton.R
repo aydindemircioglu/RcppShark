@@ -1,21 +1,27 @@
-## RcppShark.package.skeleton.R: makes a skeleton for a package that wants to use RcppShark
+## RcppShark -- An R interface to the Shark machine learning library
 ##
 ## Copyright (C)  2014  Qiang Kou
-##
 ## This file was part of RcppMLPACK.
 ##
-## RcppMLPACK is free software: you can redistribute it and/or modify it
-## under the terms of the GNU General Public License as published by
-## the Free Software Foundation, either version 2 of the License, or
-## (at your option) any later version.
+## Copyright (C) 2015  Aydin Demircioglu
 ##
-## RcppMLPACK distributed in the hope that it will be useful, but
-## WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+## This file is part of the RcppShark library for GNU R.
+## It is made available under the terms of the GNU General Public
+## License, version 3, or at your option, any later version,
+## incorporated herein by reference.
 ##
-## You should have received a copy of the GNU General Public License
-## along with RcppMLPACK.  If not, see <http://www.gnu.org/licenses/>.
+## This program is distributed in the hope that it will be
+## useful, but WITHOUT ANY WARRANTY; without even the implied
+## warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+## PURPOSE.  See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public
+## License along with this program; if not, write to the Free
+## Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+## MA 02111-1307, USA
+
+
 
 #' create a skeleton for a package using RcppShark
 #'

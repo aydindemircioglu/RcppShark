@@ -31,19 +31,74 @@ using namespace Rcpp;
 using namespace shark;
 
 
+//' Convert numeric vector to Data<unsigned int> (aka labels).
+//'
+//' @param X		NumericVector to convert
+//' @param verbose		be verbose?
 Data<unsigned int> NumericVectorToLabels (NumericVector X, bool verbose = false);
+
+
+
+//' Convert NumericMatrix to UnlabeledData<RealVector>.
+//'
+//' @param X		NumericMatrix to convert
+//' @param verbose		be verbose?
 UnlabeledData<RealVector> NumericMatrixToUnlabeledData (NumericMatrix X, bool verbose = false);
+
+
+
+//' Convert NumericMatrix to Data<RealVector>.
+//'
+//' @param X		NumericMatrix to convert
+//' @param verbose		be verbose?
 Data<RealVector> NumericMatrixToDataRealVector (NumericMatrix X, bool verbose = false);
 
+
+
+//' Convert UnlabeledData<RealVector> to NumericMatrix.
+//'
+//' @param X		UnlabeledData<RealVector> to convert
+//' @param verbose		be verbose?
 NumericMatrix UnlabeledDataToNumericMatrix (UnlabeledData<RealVector> X, bool verbose = false);
+
+
+
+//' Convert Data<RealVector> to NumericMatrix.
+//'
+//' @param X		NumericVector to convert
+//' @param verbose		be verbose?
 NumericMatrix DataRealVectorToNumericMatrix (Data<RealVector> X, bool verbose = false);
 
+
+
+//' Convert NumericVector to Data<RealVector>.
+//'
+//' @param X		NumericVector to convert
+//' @param verbose		be verbose?
 Data<RealVector> NumericVectorToDataRealVector (NumericVector X, bool verbose = false);
 
+
+
+//' Convert Data<unsigned int> (aka labels) to NumericVector.
+//'
+//' @param X		NumericVector to convert
+//' @param verbose		be verbose?
 NumericVector LabelsToNumericVector (Data<unsigned int> X, bool verbose = false);
 
+
+
+//' Convert NumericVector to RealVector.
+//'
+//' @param X		NumericVector to convert
+//' @param verbose		be verbose?
 RealVector NumericVectorToRealVector (NumericVector X, bool verbose = false);
 
+
+
+//' Convert RealVector to NumericVector.
+//'
+//' @param X		NumericVector to convert
+//' @param verbose		be verbose?
 NumericVector RealVectorToNumericVector (RealVector X, bool verbose = false);
 	
 

@@ -25,7 +25,8 @@ x = as.matrix(iris[,1:4])
 		y = as.vector(as.numeric(iris[,5]))
 		y = replace(y, y == 2, 0)
 		y = replace(y, y == 3, 0)
-		model = SharkBSGDTrain (x, y, C = 0.0001, budget = 5, gamma = 1, epochs = 1, strategy = "Merge")
+		model = SharkBSGDTrain (x, y, C = 0.0001,
+		      budget = 5, gamma = 1, epochs = 1, strategy = "Merge")
 		results = SharkBSGDPredict (x, model)
 		cat ("BSGD training error is ", sum(abs(y - results$predictions))/length(y), "\\n")
 }
