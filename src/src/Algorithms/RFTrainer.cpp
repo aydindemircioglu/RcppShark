@@ -34,12 +34,13 @@
 #define SHARK_COMPILE_DLL
 
 #include <shark/Rng/GlobalRng.h>
+#include <shark/Rng/GlobalRng.h>
 #include <Rcpp.h>
 using namespace Rcpp;
 #include <shark/Algorithms/Trainers/RFTrainer.h>
 #include <shark/Models/Trees/RFClassifier.h>
 #include <boost/range/algorithm_ext/iota.hpp>
-#include <boost/range/algorithm/random_shuffle.hpp>
+
 #include <shark/Data/DataView.h>
 #include <set>
 #include <shark/Core/OpenMP.h>
@@ -115,7 +116,7 @@ void RFTrainer::train(RFClassifier& model, const RegressionDataset& dataset)
 		//generate indices of the dataset (pick k out of n elements)
 		std::vector<std::size_t> subsetIndices(dataset.numberOfElements());
 		boost::iota(subsetIndices,0);
-		DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); boost::random_shuffle(subsetIndices, uniform);
+		DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); std::random_shuffle(subsetIndices.begin(), subsetIndices.end(), uniform);
 
 		// create oob indices
 		std::vector<std::size_t>::iterator oobStart = subsetIndices.begin() + subsetSize;
@@ -192,7 +193,7 @@ void RFTrainer::train(RFClassifier& model, const ClassificationDataset& dataset)
 		//generate indices of the dataset (pick k out of n elements)
 		std::vector<std::size_t> subsetIndices(dataset.numberOfElements());
 		boost::iota(subsetIndices,0);
-		DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); boost::random_shuffle(subsetIndices, uniform);
+		DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); std::random_shuffle(subsetIndices.begin(), subsetIndices.end(), uniform);
 
 		// create oob indices
 		std::vector<std::size_t>::iterator oobStart = subsetIndices.begin() + subsetSize;

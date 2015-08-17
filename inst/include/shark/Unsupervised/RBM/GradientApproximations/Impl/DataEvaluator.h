@@ -30,6 +30,7 @@
 #ifndef SHARK_UNSUPERVISED_RBM_IMPL_DATAEVALUATOR_H
 #define SHARK_UNSUPERVISED_RBM_IMPL_DATAEVALUATOR_H
 
+#include <shark/Rng/GlobalRng.h>
 #include <shark/Unsupervised/RBM/Sampling/GibbsOperator.h>
 #include <algorithm>
 namespace shark{

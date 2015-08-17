@@ -33,6 +33,7 @@
 #ifndef SHARK_CORE_FUNCTIONAL_H
 #define SHARK_CORE_FUNCTIONAL_H
 
+#include <shark/Rng/GlobalRng.h>
 #include <boost/range/numeric.hpp>
 #include <boost/range/algorithm/nth_element.hpp>
 #include <boost/bind.hpp>

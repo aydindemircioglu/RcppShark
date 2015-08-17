@@ -319,10 +319,17 @@ for  includeDir in includeDirs:
 						data = re.sub(r'(?ism)^#include', r'#include <shark/Rng/Runif.h>\n#include', data, 1)
 
 					if len(re.findall("boost::random_shuffle", data)) > 0:
-						data = re.sub(r'(?i)boost::random_shuffle.subsetIndices.;', r'DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); boost::random_shuffle(subsetIndices, uniform);', data)
+						data = re.sub(r'(?i)boost::random_shuffle.subsetIndices.;', r'DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); std::random_shuffle(subsetIndices.begin(), subsetIndices.end(), uniform);', data)
+						data = re.sub(r'(?ism)^#include <boost/range/algorithm/random_shuffle.hpp>', r'', data)
 						data = re.sub(r'(?ism)^#include', r'#include <shark/Rng/GlobalRng.h>\n#include', data, 1)
 
-						
+					# there is another place where std::random_shuffle is being used :(
+					if len(re.findall("std::random_shuffle", data)) > 0:
+						data = re.sub(r'(?i)std::random_shuffle[\s]*.v.begin[\s]*.[\s]*., v.end[\s]*.[\s]*.[\s]*.;', r'DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); std::random_shuffle(v.begin(), v.end(), uniform);', data)
+						data = re.sub(r'(?ism)^#include <boost/range/algorithm/random_shuffle.hpp>', r'', data)
+						data = re.sub(r'(?ism)^#include', r'#include <shark/Rng/GlobalRng.h>\n#include', data, 1)
+					
+
 					#print (data)
 				# save file to our local path
 				newPath = os.path.relpath(filepath, originalDir )

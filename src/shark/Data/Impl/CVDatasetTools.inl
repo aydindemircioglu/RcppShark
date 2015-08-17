@@ -3,6 +3,7 @@
 #define SHARK_DATA_CVDATASETTOOLS_INL
 
 
+#include <shark/Rng/GlobalRng.h>
 #include <shark/Rng/DiscreteUniform.h>
 #include <algorithm>
 

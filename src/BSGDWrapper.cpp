@@ -150,6 +150,10 @@ List BSGDWrapperTrain(NumericMatrix X, NumericVector Y, double C, unsigned long 
     } catch(...) {
 		stop ("Unknown exception occured. Check also your budget strategy.");
 	}
+	
+	// this should never happen, but CMD check doesnt like it like this
+	Rcpp::List rl = R_NilValue;
+	return rl;
 }
 
 
@@ -209,6 +213,10 @@ List BSGDWrapperPredict(NumericMatrix X, NumericVector alpha, NumericMatrix SV, 
 	} catch(...) {
 		stop ("Unknown exception occured.");
 	}
+	
+	// this should never happen, but CMD check doesnt like it like this
+	Rcpp::List rl = R_NilValue;
+	return rl;
 }
 				 
 				 

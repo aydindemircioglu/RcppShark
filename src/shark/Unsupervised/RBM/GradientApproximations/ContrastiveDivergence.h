@@ -30,6 +30,7 @@
 #ifndef SHARK_UNSUPERVISED_RBM_GRADIENTAPPROXIMATIONS_CONTRASTIVEDIVERGENCE_H
 #define SHARK_UNSUPERVISED_RBM_GRADIENTAPPROXIMATIONS_CONTRASTIVEDIVERGENCE_H
 
+#include <shark/Rng/GlobalRng.h>
 #include <shark/ObjectiveFunctions/AbstractObjectiveFunction.h>
 #include <shark/Unsupervised/RBM/Energy.h>
 

@@ -35,6 +35,7 @@
 #ifndef SHARK_DATA_CVDATASETTOOLS_H
 #define SHARK_DATA_CVDATASETTOOLS_H
 
+#include <shark/Rng/GlobalRng.h>
 #include <shark/Data/Dataset.h>
 #include <shark/Rng/DiscreteUniform.h>
 #include <algorithm>

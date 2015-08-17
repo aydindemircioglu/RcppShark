@@ -207,6 +207,10 @@ List DeepNetworkWrapperTrain (Rcpp::NumericMatrix X, Rcpp::NumericVector Y,
     } catch(...) {
 		Rcpp::stop ("Unknown exception occured.");
 	}
+	
+	// this should never happen, but CMD check doesnt like it like this
+	Rcpp::List rl = R_NilValue;
+	return rl;
 }
 
 
@@ -267,5 +271,9 @@ List DeepNetworkWrapperPredict (Rcpp::NumericMatrix X,
 	} catch(...) {
 		Rcpp::stop ("Unknown exception occured.");
 	}
-}
+	
+	// this should never happen, but CMD check doesnt like it like this
+	Rcpp::List rl = R_NilValue;
+	return rl;
+								}
 

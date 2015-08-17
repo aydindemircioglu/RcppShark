@@ -36,6 +36,7 @@
 #ifndef SHARK_ALGORITHMS_KMEANS_H
 #define SHARK_ALGORITHMS_KMEANS_H
 
+#include <shark/Rng/GlobalRng.h>
 #include <shark/Core/DLLSupport.h>
 #include <shark/Data/Dataset.h>
 #include <shark/Models/Clustering/Centroids.h>

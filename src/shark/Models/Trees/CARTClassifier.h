@@ -36,6 +36,7 @@
 #define SHARK_MODELS_TREES_CARTCLASSIFIER_H
 
 
+#include <shark/Rng/GlobalRng.h>
 #include <Rcpp.h>
 #include <shark/Models/AbstractModel.h>
 #include <shark/ObjectiveFunctions/Loss/ZeroOneLoss.h>
@@ -232,7 +233,7 @@ public:
 
                         // permute current dimension
                         RealVector v = getColumn(pDataOOB.inputs(), i);
-                        std::random_shuffle(v.begin(), v.end());
+                        DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); std::random_shuffle(v.begin(), v.end(), uniform);
                         setColumn(pDataOOB.inputs(), i, v);
 
                         // evaluate the data set for which one feature dimension was permuted with this tree
@@ -267,7 +268,7 @@ public:
 
                         // permute current dimension
                         RealVector v = getColumn(pDataOOB.inputs(), i);
-                        std::random_shuffle(v.begin(), v.end());
+                        DiscreteUniform < shark::Rng::rng_type > uniform(shark::Rng::globalRng, 0, RAND_MAX ); std::random_shuffle(v.begin(), v.end(), uniform);
                         setColumn(pDataOOB.inputs(), i, v);
 
                         // evaluate the data set for which one feature dimension was permuted with this tree
