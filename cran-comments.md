@@ -7,7 +7,7 @@ This is a new submission. In this version I have:
 ## Test environments
 * local ubuntu 15.10 alpha2 install (64bit), R 3.2.2 RC r68609
 * win-builder (devel and release)
-* virtual sun os 11 (32bit) R latest
+* virtual sun os 11 (32bit) R 3.1.1
 
 
 

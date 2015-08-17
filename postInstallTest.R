@@ -1,4 +1,5 @@
 
+	devtools::install()
 	library(RcppShark)
 
 	packageName = "testPackage"
