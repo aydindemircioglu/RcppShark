@@ -1,8 +1,12 @@
 ## Resubmission
+
 This is a resubmission. In this version I have:
 
 * Replace all "unsigned long long" with size_t to avoid "warning: 'long long' is a C++11 extension [-Wc++11-long-long]". Note that this code is part of the underlying Shark library, and actually should be handled by the Shark community. 
- 
+
+* Remove dummy test and add a very basic check for budget size of BSGD (Note that BSGD is only an example on how to use the package)
+
+
  
 ## Test environments
 
