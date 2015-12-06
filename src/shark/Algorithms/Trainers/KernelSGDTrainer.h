@@ -140,7 +140,7 @@ public:
 	void train(ClassifierType& classifier, const LabeledData<InputType, unsigned int>& dataset)
 	{
 		std::size_t ell = dataset.numberOfElements();
-		unsigned int classes = numberOfClasses(dataset);
+		std::size_t classes = numberOfClasses(dataset);
 		ModelType& model = classifier.decisionFunction();
 
 		model.setStructure(m_kernel, dataset.inputs(), m_offset, classes);
@@ -174,9 +174,8 @@ public:
 			const double eta = 1.0 / (lambda * (iter + ell));
 
 			// compute prediction
-			f_b.clear();
 			K.row(b, kernelRow);
-			axpy_prod(trans(alpha), kernelRow, f_b, false, alphaScale);
+			noalias(f_b) = alphaScale * prod(trans(alpha), kernelRow);
 			if(m_offset) noalias(f_b) += model.offset();
 
 			// stochastic gradient descent (SGD) step
@@ -279,3 +278,4 @@ protected:
 
 }
 #endif
+

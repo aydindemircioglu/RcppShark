@@ -1,3 +1,30 @@
+/*!
+ * \brief       Sparse matrix class
+ * 
+ * \author      O. Krause
+ * \date        2013
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_MATRIX_SPARSE_HPP
 #define SHARK_LINALG_BLAS_MATRIX_SPARSE_HPP
 
@@ -29,8 +56,8 @@ public:
                 }
                 value_type& ref() const {
                         //get array bounds
-                        index_type const *start = &m_matrix.m_indices[m_matrix.m_rowStart[m_i]];
-                        index_type const *end = &m_matrix.m_indices[m_matrix.m_rowEnd[m_i]];
+                        index_type const *start = m_matrix.inner_indices() + m_matrix.m_rowStart[m_i];
+                        index_type const *end = m_matrix.inner_indices() + m_matrix.m_rowEnd[m_i];
                         //find position of the index in the array
                         index_type const *pos = std::lower_bound(start,end,m_j);
 
@@ -86,6 +113,7 @@ public:
         typedef matrix_reference<self_type> closure_type;
 
         typedef sparse_tag storage_category;
+        typedef elementwise_tag evaluation_category;
         typedef row_major orientation;
 
         // Construction and destruction
@@ -105,7 +133,7 @@ public:
                 , m_rowStart(e().size1() + 1, 0)
                 , m_rowEnd(e().size1(), 0)
                 , m_indices(non_zeros), m_values(non_zeros), m_zero(0) {
-                kernels::assign(*this, e);
+                assign(*this, e);
         }
 
         // Accessors
@@ -131,28 +159,44 @@ public:
         }
 
         index_type const *outer_indices() const {
+                if(m_rowStart.empty())
+                        return 0;
                 return &m_rowStart[0];
         }
         index_type const *outer_indices_end() const {
+                if(m_rowEnd.empty())
+                        return 0;
                 return &m_rowEnd[0];
         }
         index_type const *inner_indices() const {
+                if(nnz_capacity() == 0)
+                        return 0;
                 return &m_indices[0];
         }
         value_type const *values() const {
+                if(nnz_capacity() == 0)
+                        return 0;
                 return &m_values[0];
         }
 
         index_type *outer_indices() {
+                if(m_rowStart.empty())
+                        return 0;
                 return &m_rowStart[0];
         }
         index_type *outer_indices_end() {
+                if(m_rowEnd.empty())
+                        return 0;
                 return &m_rowEnd[0];
         }
         index_type *inner_indices() {
+                if(nnz_capacity() == 0)
+                        return 0;
                 return &m_indices[0];
         }
         value_type *values() {
+                if(nnz_capacity() == 0)
+                        return 0;
                 return &m_values[0];
         }
 
@@ -190,7 +234,7 @@ public:
         void reserve_row(std::size_t row, std::size_t non_zeros) {
                 RANGE_CHECK(row < size1());
                 non_zeros = std::min(m_size2,non_zeros);
-                if (non_zeros < row_capacity(row)) return;
+                if (non_zeros <= row_capacity(row)) return;
                 std::size_t spaceDifference = non_zeros-row_capacity(row);
 
                 //check if there is place in the end of the container to store the elements
@@ -199,10 +243,10 @@ public:
                 }
                 //move the elements of the next rows to make room for the reserved space
                 for (std::size_t i = size1()-1; i != row; --i) {
-                        value_type *values = &m_values[m_rowStart[i]];
-                        value_type *valueRowEnd = &m_values[m_rowEnd[i]];
-                        index_type *indices = &m_indices[m_rowStart[i]];
-                        index_type *indicesEnd = &m_indices[m_rowEnd[i]];
+                        value_type *values = this->values() + m_rowStart[i];
+                        value_type *valueRowEnd = this->values() + m_rowEnd[i];
+                        index_type *indices = inner_indices() + m_rowStart[i];
+                        index_type *indicesEnd = inner_indices() + m_rowEnd[i];
                         std::copy_backward(values,valueRowEnd, valueRowEnd+spaceDifference);
                         std::copy_backward(indices,indicesEnd, indicesEnd+spaceDifference);
                         m_rowStart[i]+=spaceDifference;
@@ -222,8 +266,8 @@ public:
                 SIZE_CHECK(i < size1());
                 SIZE_CHECK(j < size2());
                 //get array bounds
-                index_type const *start = &m_indices[m_rowStart[i]];
-                index_type const *end = &m_indices[m_rowEnd[i]];
+                index_type const *start = inner_indices() + m_rowStart[i];
+                index_type const *end = inner_indices() + m_rowEnd[i];
                 //find position of the index in the array
                 index_type const *pos = std::lower_bound(start,end,j);
 
@@ -243,59 +287,13 @@ public:
         template<class C>          // Container assignment without temporary
         compressed_matrix &operator = (const matrix_container<C> &m) {
                 resize(m().size1(), m().size2());
-                assign(m);
-                return *this;
-        }
-        compressed_matrix &assign_temporary(compressed_matrix &m) {
-                swap(m);
+                assign(*this, m);
                 return *this;
         }
         template<class E>
         compressed_matrix &operator = (const matrix_expression<E> &e) {
                 self_type temporary(e, nnz_capacity());
-                return assign_temporary(temporary);
-        }
-        template<class E>
-        compressed_matrix &assign(const matrix_expression<E> &e) {
-                kernels::assign(*this, e);
-                return *this;
-        }
-        template<class E>
-        compressed_matrix &operator += (const matrix_expression<E> &e) {
-                self_type temporary(*this + e, nnz_capacity());
-                return assign_temporary(temporary);
-        }
-        template<class C>          // Container assignment without temporary
-        compressed_matrix &operator += (const matrix_container<C> &m) {
-                plus_assign(m);
-                return *this;
-        }
-        template<class E>
-        compressed_matrix &plus_assign(const matrix_expression<E> &e) {
-                kernels::assign<scalar_plus_assign> (*this, e);
-                return *this;
-        }
-        template<class E>
-        compressed_matrix &operator -= (const matrix_expression<E> &e) {
-                self_type temporary(*this - e, nnz_capacity());
-                return assign_temporary(temporary);
-        }
-        template<class C>          // Container assignment without temporary
-        compressed_matrix &operator -= (const matrix_container<C> &m) {
-                minus_assign(m);
-                return *this;
-        }
-        template<class E>
-        compressed_matrix &minus_assign(const matrix_expression<E> &e) {
-                kernels::assign<scalar_minus_assign> (*this, e);
-                return *this;
-        }
-        compressed_matrix &operator *= (value_type t) {
-                kernels::assign<scalar_multiply_assign> (*this, t);
-                return *this;
-        }
-        compressed_matrix &operator /= (value_type t) {
-                kernels::assign<scalar_divide_assign> (*this, t);
+                swap(temporary);
                 return *this;
         }
 
@@ -333,10 +331,10 @@ public:
                 SIZE_CHECK(b.row_capacity(j) >= nnzi);
                 SIZE_CHECK(a.row_capacity(i) >= nnzj);
                 
-                index_type* indicesi = &a.m_indices[a.m_rowStart[i]];
-                index_type* indicesj = &b.m_indices[b.m_rowStart[j]];
-                value_type* valuesi = &a.m_values[a.m_rowStart[i]];
-                value_type* valuesj = &b.m_values[b.m_rowStart[j]];
+                index_type* indicesi = a.inner_indices() + a.m_rowStart[i];
+                index_type* indicesj = b.inner_indices() + b.m_rowStart[j];
+                value_type* valuesi = a.values() + a.m_rowStart[i];
+                value_type* valuesj = b.values() + b.m_rowStart[j];
                 
                 //swap all elements of j with the elements in i, don't care about unitialized elements in j
                 std::swap_ranges(indicesi,indicesi+nnzi,indicesj);
@@ -472,7 +470,22 @@ struct matrix_temporary_type<T,row_major,sparse_bidirectional_iterator_tag> {
         typedef compressed_matrix<T> type;
 };
 
+template<class T>
+struct matrix_temporary_type<T,unknown_orientation,sparse_bidirectional_iterator_tag> {
+        typedef compressed_matrix<T> type;
+};
+
+template<class T, class I>
+struct const_expression<compressed_matrix<T,I> >{
+        typedef compressed_matrix<T,I> const type;
+};
+template<class T, class I>
+struct const_expression<compressed_matrix<T,I> const>{
+        typedef compressed_matrix<T,I> const type;
+};
+
 }
 }
 
 #endif
+

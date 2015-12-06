@@ -83,3 +83,4 @@ void DiscreteLoss::defineBalancedCost(UnlabeledData<unsigned int> const& labels)
 		m_cost(i, i) = 0.0;
 	}
 }
+

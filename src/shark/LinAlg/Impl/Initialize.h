@@ -570,3 +570,4 @@ SHARK_SPLIT_PROXY_COMMA(shark::blas::matrix_column<Sink>)
 }}}
 
 #endif
+

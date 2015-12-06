@@ -211,3 +211,4 @@ protected:
 } // namespace shark {
 
 #endif // SHARK_MODEL_NB_CLASSIFIER_H
+

@@ -179,3 +179,4 @@ KernelBasisDistance::ResultType KernelBasisDistance::evalDerivative( const Searc
 	
 	return errorOfSolution(beta,Kz,linear);
 }
+

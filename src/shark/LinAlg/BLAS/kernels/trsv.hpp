@@ -1,7 +1,7 @@
 /*!
  * 
  *
- * \brief       -
+ * \brief       Triangular solve kernel for vector expressions.
  *
  * \author      O. Krause
  * \date        2012
@@ -32,7 +32,7 @@
 #define SHARK_LINALG_BLAS_KERNELS_TRSV_HPP
 
 #ifdef SHARK_USE_CBLAS
-#include "atlas/trsv.hpp"
+#include "cblas/trsv.hpp"
 #else
 // if no bindings are included, we have to provide the default has_optimized_gemv 
 // otherwise the binding will take care of this
@@ -65,3 +65,4 @@ void trsv(
 }}}
 
 #endif
+

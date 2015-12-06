@@ -113,3 +113,4 @@ double entropy(const Normal< RngType > & normal);
 } // namespace shark {
 
 #endif // SHARK_RNG_NORMAL_H
+

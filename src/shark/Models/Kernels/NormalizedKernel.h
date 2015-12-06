@@ -279,3 +279,4 @@ typedef NormalizedKernel<CompressedRealVector> CompressedNormalizedKernel;
 
 }
 #endif
+

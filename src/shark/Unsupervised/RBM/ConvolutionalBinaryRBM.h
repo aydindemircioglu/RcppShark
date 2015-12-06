@@ -54,3 +54,4 @@ typedef SingleChainApproximator<ConvolutionalBinaryPTChain> ConvolutionalBinaryP
 }
 
 #endif
+

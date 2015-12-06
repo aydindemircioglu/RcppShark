@@ -1,3 +1,30 @@
+/*!
+ * \brief       Kernels for matrix-expression assignments
+ * 
+ * \author      O. Krause
+ * \date        2013
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_KERNELS_MATRIX_ASSIGN_HPP
 #define SHARK_LINALG_BLAS_KERNELS_MATRIX_ASSIGN_HPP
 
@@ -32,6 +59,7 @@ public:
 	typedef internal_transpose_proxy<M> closure_type;
 	typedef typename M::orientation::transposed_orientation orientation;
 	typedef typename M::storage_category storage_category;
+	typedef typename M::evaluation_category evaluation_category;
 
 	// Construction and destruction
 	explicit internal_transpose_proxy(matrix_closure_type m):
@@ -56,11 +84,6 @@ public:
 	// Element access
 	reference operator()(size_type i, size_type j)const{
 		return m_expression(j, i);
-	}
-
-	// Closure comparison
-	bool same_closure(internal_transpose_proxy const& mu2) const {
-		return m_expression.same_closure(mu2.m_expression);
 	}
 
 	typedef typename matrix_closure_type::const_column_iterator const_row_iterator;
@@ -167,7 +190,7 @@ void assign(
 	typename M::value_type t, 
 	packed<Orientation,Triangular>
 ){
-	assign(m,t,Orientation());
+	assign<F>(m,t,Orientation());
 }
 
 // Dispatcher
@@ -194,7 +217,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		matrix_row<M> rowM(m(),i);
-		assign(rowM,row(e,i));
+		kernels::assign(rowM,row(e,i));
 	}
 }
 
@@ -245,7 +268,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size2(); ++i){
 		matrix_column<M> columnM(m(),i);
-		assign(columnM,column(e,i));
+		kernels::assign(columnM,column(e,i));
 	}
 }
 
@@ -259,7 +282,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		matrix_column<M> rowM(m(),i);
-		assign(rowM,row(e,i));
+		kernels::assign(rowM,row(e,i));
 	}
 }
 
@@ -424,7 +447,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		matrix_row<M> rowM(m(),i);
-		assign<F>(rowM,row(e,i));
+		kernels::assign<F>(rowM,row(e,i));
 	}
 }
 
@@ -476,7 +499,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size2(); ++i){
 		matrix_column<M> columnM(m(),i);
-		assign<F>(columnM,column(e,i));
+		kernels::assign<F>(columnM,column(e,i));
 	}
 }
 
@@ -489,7 +512,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		matrix_column<M> rowM(m(),i);
-		assign<F>(rowM,row(e,i));
+		kernels::assign<F>(rowM,row(e,i));
 	}
 }
 
@@ -702,3 +725,4 @@ void assign(matrix_expression<M> &m, const matrix_expression<E> &e) {
 }}}
 
 #endif
+

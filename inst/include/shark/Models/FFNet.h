@@ -275,7 +275,7 @@ public:
 
                 //calculate activation. first compute the linear part and the optional bias and then apply
                 // the non-linearity
-                axpy_prod(patterns,trans(layerMatrix(layer)),outputs);
+                noalias(outputs) = prod(patterns,trans(layerMatrix(layer)));
                 if(!bias().empty()){
                         noalias(outputs) += repeat(bias(layer),numPatterns);
                 }
@@ -322,7 +322,7 @@ public:
 
                         //calculate activation. first compute the linear part and the optional bias and then apply
                         // the non-linearity
-                        axpy_prod(weights,input,responses);
+                        noalias(responses) = prod(weights,input);
                         if(!bias().empty()){
                                 //the bias of the layer is shifted as input units can not have bias.
                                 ConstRealVectorRange bias = subrange(m_bias,beginNeuron-inputSize(),endNeuron-inputSize());
@@ -336,7 +336,7 @@ public:
                                 else {
                                         //add shortcuts if necessary
                                         if(m_inputOutputShortcut.size1() != 0){
-                                                axpy_prod(m_inputOutputShortcut,trans(patterns),responses,false);
+                                                noalias(responses) += prod(m_inputOutputShortcut,trans(patterns));
                                         }
                                         noalias(responses) = m_outputNeuron(responses);
                                 }
@@ -599,7 +599,7 @@ public:
                         RealSubMatrix layerDeltaInput = rows(delta,endNeuron,endNeuron+weights.size2());
                         ConstRealSubMatrix layerResponse = rows(s.responses,beginNeuron,endNeuron);
 
-                        axpy_prod(weights,layerDeltaInput,layerDelta,false);//add the values to the maybe non-empty delta part
+                        noalias(layerDelta) += prod(weights,layerDeltaInput);//add the values to the maybe non-empty delta part
                         if(layer != 0){
                                 noalias(layerDelta) *= m_hiddenNeuron.derivative(layerResponse);
                         }
@@ -610,7 +610,7 @@ public:
                 
                 //add the shortcut deltas if necessary
                 if(inputOutputShortcut().size1() != 0)
-                        axpy_prod(trans(inputOutputShortcut()),outputDelta,rows(delta,0,inputSize()),false);
+                        noalias(rows(delta,0,inputSize())) += prod(trans(inputOutputShortcut()),outputDelta);
         }
         
         void computeParameterDerivative(RealMatrix const& delta, State const& state, RealVector& gradient)const{
@@ -695,3 +695,4 @@ public:
 
 }
 #endif
+

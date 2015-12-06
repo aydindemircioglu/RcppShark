@@ -1,3 +1,30 @@
+/*!
+ * \brief       Some special matrix-products
+ * 
+ * \author      O. Krause
+ * \date        2013
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_OPERATION_HPP
 #define SHARK_LINALG_BLAS_OPERATION_HPP
 
@@ -5,6 +32,7 @@
 #include "kernels/gemm.hpp"
 #include "kernels/tpmv.hpp"
 #include "kernels/trmv.hpp"
+#include "kernels/trmm.hpp"
 
 namespace shark {
 namespace blas {
@@ -173,7 +201,7 @@ void symm_prod(
 /// \brief Computes x=Ax for a triangular matrix A
 ///
 /// The first template argument governs the type
-/// of triangular matrix: Lower, Upper, UnitLower and UnitUpper.
+/// of triangular matrix: lower, upper, unit_lower and unit_upper.
 ///
 ///Example: triangular_prod<lower>(A,x);
 template<class TriangularType, class MatrixA, class V>
@@ -184,19 +212,29 @@ void triangular_prod(
 	kernels::trmv<TriangularType::is_upper, TriangularType::is_unit>(A, x);
 }
 
-/// \brief Computes x=Ax for a triangular matrix A
+/// \brief Computes B=AB for a triangular matrix A and a dense matrix B in place
 ///
-/// This is the version for temporary proxy objects
 /// The first template argument governs the type
-/// of triangular matrix: Lower, Upper, UnitLower and UnitUpper.
+/// of triangular matrix: lower, upper, unit_lower and unit_upper.
 ///
-///Example: triangular_prod<lower>(A,x);
-template<class TriangularType, class MatrixA, class V>
+///Example: triangular_prod<lower>(A,B);
+template<class TriangularType, class MatrixA, class MatB>
 void triangular_prod(
 	matrix_expression<MatrixA> const& A,
-	temporary_proxy<V> x
+	matrix_expression<MatB>& B
 ) {
-	triangular_prod<TriangularType>(A, static_cast<V&>(x));
+	kernels::trmm<TriangularType::is_upper, TriangularType::is_unit>(A, B);
+}
+
+/// \brief triangular prod for temporary left-hand side arguments
+///
+/// Dispatches to the other versions of triangular_prod, see their documentation
+template<class TriangularType, class MatrixA, class E>
+void triangular_prod(
+	matrix_expression<MatrixA> const& A,
+	temporary_proxy<E> e
+) {
+	triangular_prod<TriangularType>(A, static_cast<E&>(e));
 }
 
 
@@ -204,3 +242,4 @@ void triangular_prod(
 }
 
 #endif
+

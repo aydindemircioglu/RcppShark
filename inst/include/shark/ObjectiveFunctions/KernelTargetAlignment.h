@@ -219,7 +219,7 @@ private:
 	LabeledData<InputType,LabelType> m_data;      ///< data points
 	RealVector m_columnMeanY;                        ///< mean label vector
 	double m_meanY;                                  ///< mean label element
-	unsigned int m_numberOfClasses;                  ///< number of classes
+	std::size_t m_numberOfClasses;                  ///< number of classes
 	std::size_t m_elements;                          ///< number of data points
 
 	struct KernelMatrixResults{
@@ -264,7 +264,7 @@ private:
 		std::size_t blockSize2 = labelsj.size();
 		//todo optimize the i=j case
 		double result = 0;
-		double dm1 = m_numberOfClasses-1;
+		double dm1 = m_numberOfClasses-1.0;
 		for(std::size_t k = 0; k != blockSize1; ++k){
 			for(std::size_t l = 0; l != blockSize2; ++l){
 				if(labelsi(k) == labelsj(l))
@@ -294,7 +294,7 @@ private:
 	void computeBlockY(UIntVector const& labelsi,UIntVector const& labelsj, RealMatrix& blockY)const{
 		std::size_t blockSize1 = labelsi.size();
 		std::size_t blockSize2 = labelsj.size();
-		double dm1 = m_numberOfClasses-1;
+		double dm1 = m_numberOfClasses-1.0;
 		for(std::size_t k = 0; k != blockSize1; ++k){
 			for(std::size_t l = 0; l != blockSize2; ++l){
 				if( labelsi(k) ==  labelsj(l))
@@ -342,7 +342,7 @@ private:
 		blockW-=repeat(subrange(KcKc*m_columnMeanY - YcKc*matrixStatistics.k,start2,start2+blockSize2),blockSize1);
 		blockW-=trans(repeat(subrange(KcKc*m_columnMeanY - YcKc*matrixStatistics.k,start1,start1+blockSize1),blockSize2));
 		// + (\langle Kc,Kc \rangle  my-2\langle Y, Kc \rangle mk) u u^T
-		blockW+= blas::repeat(KcKc*m_meanY-YcKc*meanK,blockSize1,blockSize2);
+		blockW+= KcKc*m_meanY-YcKc*meanK;
 		blockW /= KcKc*std::sqrt(KcKc);
 		//Rcpp::Rcout<<blockW<<std::endl;
 		//symmetry
@@ -423,3 +423,4 @@ private:
 
 }
 #endif
+

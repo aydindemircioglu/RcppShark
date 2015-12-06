@@ -139,3 +139,4 @@ private:
 } // namespace shark {
 
 #endif // SHARK_ALGORITHMS_TRAINERS_NB_CLASSIFIER_TRAINER_H
+

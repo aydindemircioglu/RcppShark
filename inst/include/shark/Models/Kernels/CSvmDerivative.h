@@ -91,14 +91,14 @@ protected:
         // convenience copies from the CSvmTrainer and the underlying kernel function
         double m_C; ///< the regularization parameter value with which the SvmTrainer trained the KernelExpansion
         bool m_unconstrained; ///< is the unconstrained flag of the SvmTrainer set? Influences the derivatives!
-        unsigned int m_nkp; ///< convenience member holding the Number of Kernel Parameters.
-        unsigned int m_nhp; ///< convenience member holding the Number of Hyper Parameters.
+        std::size_t m_nkp; ///< convenience member holding the Number of Kernel Parameters.
+        std::size_t m_nhp; ///< convenience member holding the Number of Hyper Parameters.
 
         // information calculated from the KernelExpansion state in the prepareDerivative-step
-        unsigned int m_noofFreeSVs; ///< number of free SVs
-        unsigned int m_noofBoundedSVs; ///< number of bounded SVs
-        std::vector< unsigned int > m_freeAlphaIndices; ///< indices of free SVs
-        std::vector< unsigned int > m_boundedAlphaIndices; ///< indices of bounded SVs
+        std::size_t m_noofFreeSVs; ///< number of free SVs
+        std::size_t m_noofBoundedSVs; ///< number of bounded SVs
+        std::vector< std::size_t > m_freeAlphaIndices; ///< indices of free SVs
+        std::vector< std::size_t > m_boundedAlphaIndices; ///< indices of bounded SVs
         RealVector m_freeAlphas;        ///< free non-SV alpha values
         RealVector m_boundedAlphas; ///< bounded non-SV alpha values
         RealVector m_boundedLabels; ///< labels of bounded non-SVs
@@ -165,7 +165,7 @@ public:
                 // start calculating derivative
                 noalias(derivative) = row(m_d_alphab_d_theta,m_noofFreeSVs); //without much thinking, we add db/d(\theta) to all derivatives
                 // first: go through free SVs and add their contributions (the actual ones, which use the matrix d_alphab_d_theta)
-                for ( unsigned int i=0; i<m_noofFreeSVs; i++ ) {
+                for ( std::size_t i=0; i<m_noofFreeSVs; i++ ) {
                         get(bof_xi, 0) = m_basis.element(m_freeAlphaIndices[i]);
                         mep_k->eval( bof_input, bof_xi, bof_results, *state );
                         double ker = bof_results(0,0);
@@ -175,7 +175,7 @@ public:
                         noalias(subrange(derivative,0,m_nkp))+= cur_alpha*der;
                 }
                 // second: go through all bounded SVs and add their "trivial" derivative contributions
-                for ( unsigned int i=0; i<m_noofBoundedSVs; i++ ) {
+                for ( std::size_t i=0; i<m_noofBoundedSVs; i++ ) {
                         get(bof_xi, 0) = m_basis.element(m_boundedAlphaIndices[i]);
                         mep_k->eval( bof_input, bof_xi, bof_results, *state );
                         double ker = bof_results(0,0);
@@ -225,10 +225,10 @@ public:
         //!
         void prepareCSvmParameterDerivative() {
                 // init convenience size indicators
-                unsigned int numberOfAlphas = m_alpha.size1();
+                std::size_t numberOfAlphas = m_alpha.size1();
 
                 // first round through alphas: count free and bounded SVs
-                for ( unsigned int i=0; i<numberOfAlphas; i++ ) {
+                for ( std::size_t i=0; i<numberOfAlphas; i++ ) {
                         double cur_alpha = m_alpha(i,0); //we assume (and checked) that there is only one class
                         if ( cur_alpha != 0.0 ) {
                                 if ( cur_alpha == m_C || cur_alpha == -m_C ) { //the svm formulation using reparametrized alphas is assumed
@@ -249,10 +249,10 @@ public:
                 m_freeAlphas.resize( m_noofFreeSVs+1);
                 m_boundedAlphas.resize( m_noofBoundedSVs );
                 m_boundedLabels.resize( m_noofBoundedSVs );
-                for ( unsigned int i=0; i<m_noofFreeSVs; i++ )
+                for ( std::size_t i=0; i<m_noofFreeSVs; i++ )
                         m_freeAlphas(i) = m_alpha( m_freeAlphaIndices[i], 0 );
                 m_freeAlphas( m_noofFreeSVs ) = mep_ke->offset(0);
-                for ( unsigned int i=0; i<m_noofBoundedSVs; i++ ) {
+                for ( std::size_t i=0; i<m_noofBoundedSVs; i++ ) {
                         double cur_alpha = m_alpha( m_boundedAlphaIndices[i], 0 );
                         m_boundedAlphas(i) = cur_alpha;
                         m_boundedLabels(i) = ( (cur_alpha > 0.0) ? 1.0 : -1.0 );
@@ -289,15 +289,15 @@ public:
                 // initialize H and dH
                 RealMatrix H( m_noofFreeSVs+1, m_noofFreeSVs+1,0.0 );
                 std::vector< RealMatrix > dH( m_nkp , RealMatrix(m_noofFreeSVs+1, m_noofFreeSVs+1));
-                for ( unsigned int i=0; i<m_noofFreeSVs; i++ ) {
+                for ( std::size_t i=0; i<m_noofFreeSVs; i++ ) {
                         get(bof_xi, 0) = m_basis.element(m_freeAlphaIndices[i]); //fixed over outer loop
                         // fill the off-diagonal entries..
-                        for ( unsigned int j=0; j<i; j++ ) {
+                        for ( std::size_t j=0; j<i; j++ ) {
                                 get(bof_xj, 0) = m_basis.element(m_freeAlphaIndices[j]); //get second sample into a batch
                                 mep_k->eval( bof_xi, bof_xj, bof_results, *state );
                                 H( i,j ) = H( j,i ) = bof_results(0,0);
                                 mep_k->weightedParameterDerivative( bof_xi, bof_xj, unit_weights, *state, der );
-                                for ( unsigned int k=0; k<m_nkp; k++ ) {
+                                for ( std::size_t k=0; k<m_nkp; k++ ) {
                                         dH[k]( i,j ) = dH[k]( j,i ) = der(k);
                                 }
                         }
@@ -305,36 +305,36 @@ public:
                         mep_k->eval( bof_xi, bof_xi, bof_results, *state );
                         H( i,i ) = bof_results(0,0);
                         mep_k->weightedParameterDerivative( bof_xi, bof_xi, unit_weights, *state, der );
-                        for ( unsigned int k=0; k<m_nkp; k++ ) {
+                        for ( std::size_t k=0; k<m_nkp; k++ ) {
                                 dH[k]( i,i ) = der(k);
                         }
                         // ..and finally the last row/column (pertaining to the offset parameter b)..
                         H( m_noofFreeSVs, i ) = H( i, m_noofFreeSVs ) = 1.0;
-                        for (unsigned int k=0; k<m_nkp; k++)
+                        for (std::size_t k=0; k<m_nkp; k++)
                                 dH[k]( m_noofFreeSVs, i ) = dH[k]( i, m_noofFreeSVs ) = 0.0;
                 }
 
                 // ..the lower-right-most entry gets set separately:
                 H( m_noofFreeSVs, m_noofFreeSVs ) = 0.0;
-                for ( unsigned int k=0; k<m_nkp; k++ ) {
+                for ( std::size_t k=0; k<m_nkp; k++ ) {
                         dH[k]( m_noofFreeSVs, m_noofFreeSVs ) = 0.0;
                 }
                 
                 // initialize R and dR
                 RealMatrix R( m_noofFreeSVs+1, m_noofBoundedSVs );
                 std::vector< RealMatrix > dR( m_nkp, RealMatrix(m_noofFreeSVs+1, m_noofBoundedSVs));
-                for ( unsigned int i=0; i<m_noofBoundedSVs; i++ ) {
+                for ( std::size_t i=0; i<m_noofBoundedSVs; i++ ) {
                         get(bof_xi, 0) = m_basis.element(m_boundedAlphaIndices[i]); //fixed over outer loop
-                        for ( unsigned int j=0; j<m_noofFreeSVs; j++ ) { //this time, we (have to) do it row by row
+                        for ( std::size_t j=0; j<m_noofFreeSVs; j++ ) { //this time, we (have to) do it row by row
                                 get(bof_xj, 0) = m_basis.element(m_freeAlphaIndices[j]); //get second sample into a batch
                                 mep_k->eval( bof_xi, bof_xj, bof_results, *state );
                                 R( j,i ) = bof_results(0,0);
                                 mep_k->weightedParameterDerivative( bof_xi, bof_xj, unit_weights, *state, der );
-                                for ( unsigned int k=0; k<m_nkp; k++ )
+                                for ( std::size_t k=0; k<m_nkp; k++ )
                                         dR[k]( j,i ) = der(k);
                         }
                         R( m_noofFreeSVs, i ) = 1.0; //last row is for b
-                        for ( unsigned int k=0; k<m_nkp; k++ )
+                        for ( std::size_t k=0; k<m_nkp; k++ )
                                 dR[k]( m_noofFreeSVs, i ) = 0.0;
                 }
                 
@@ -349,14 +349,13 @@ public:
 
                 // compute the derivative of (\alpha, b) w.r.t. C
                 if ( m_noofBoundedSVs > 0 ) {
-                        axpy_prod( R, m_boundedLabels, column(m_d_alphab_d_theta,m_nkp));
+                        noalias(column(m_d_alphab_d_theta,m_nkp)) = prod( R, m_boundedLabels);
                 }
                 // compute the derivative of (\alpha, b) w.r.t. the kernel parameters
                 for ( std::size_t k=0; k<m_nkp; k++ ) {
-                        RealVector sum( m_noofFreeSVs+1);
-                        axpy_prod( dH[k], m_freeAlphas, sum ); //sum = dH * \alpha_f
+                        RealVector sum = prod( dH[k], m_freeAlphas ); //sum = dH * \alpha_f
                         if(m_noofBoundedSVs > 0)
-                                axpy_prod( dR[k], m_boundedAlphas, sum, false ); // sum += dR * \alpha_r , i.e., the C*y_g is expressed as alpha_g
+                                noalias(sum) += prod( dR[k], m_boundedAlphas ); // sum += dR * \alpha_r , i.e., the C*y_g is expressed as alpha_g
                         //fill the remaining columns of the derivative matrix (except the last, which is for C)
                         noalias(column(m_d_alphab_d_theta,k)) = sum;
                 }
@@ -375,3 +374,4 @@ public:
 
 }//namespace
 #endif
+

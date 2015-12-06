@@ -56,3 +56,4 @@ typedef SingleChainApproximator<GaussianBinaryPTChain> GaussianBinaryParallelTem
 }
 
 #endif
+

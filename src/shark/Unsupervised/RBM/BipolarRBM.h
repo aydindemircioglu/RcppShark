@@ -56,3 +56,4 @@ typedef SingleChainApproximator<BipolarPTChain> BipolarParallelTempering;
 }
 
 #endif
+

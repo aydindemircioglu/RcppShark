@@ -37,13 +37,13 @@
 
 #define SHARK_LAPACK_DSYEV FORTRAN_ID(dsyev)
 
-//extern "C"{
-//void SHARK_LAPACK_DSYEV( 
-//	const char* jobz, const char* uplo, const int *n,
-//	double* a, const int * lda, double* w,
-//	double* work, const int * lwork, int* info
-//);
-//}
+extern "C"{
+void SHARK_LAPACK_DSYEV( 
+	const char* jobz, const char* uplo, const int *n,
+	double* a, const int * lda, double* w,
+	double* work, const int * lwork, int* info
+);
+}
 
 
 
@@ -109,3 +109,4 @@ void syev(
 #undef SHARK_LAPACK_DSYEV
 
 #endif
+

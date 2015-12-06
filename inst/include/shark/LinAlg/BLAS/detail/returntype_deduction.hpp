@@ -203,3 +203,4 @@ struct error_cant_deduce_type {};
 }} } // namespace shark::blas ::type_deduction_detail
 
 #endif
+

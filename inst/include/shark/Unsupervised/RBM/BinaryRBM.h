@@ -55,3 +55,4 @@ typedef SingleChainApproximator<BinaryPTChain> BinaryParallelTempering;
 }
 
 #endif
+

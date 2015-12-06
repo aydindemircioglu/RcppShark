@@ -1,7 +1,6 @@
 
 SHARKOBJECTS=\
 utils.o \
-SharkDefs.o\
 Csv.o\
 SparseData.o\
 Centroids.o\
@@ -69,9 +68,6 @@ $(USERLIBST): 	$(OBJECTS)
 
 utils.o:
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c ./utils.cpp
-
-SharkDefs.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/SharkDefs.cpp
 
 Csv.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Data/Csv.cpp

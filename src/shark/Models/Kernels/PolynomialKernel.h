@@ -170,8 +170,8 @@ public:
                 result.resize(sizeX1,sizeX2);
                 
                 //calculate the inner product
-                axpy_prod(batchX1,trans(batchX2),result);
-                result += blas::repeat(m_offset,sizeX1,sizeX2);
+                noalias(result) = prod(batchX1,trans(batchX2));
+                result += m_offset;
                 //now do exponentiation
                 if(m_degree != 1)
                         noalias(result) = pow(result,m_degree);
@@ -188,8 +188,8 @@ public:
                 result.resize(sizeX1,sizeX2);
                 
                 //calculate the inner product
-                axpy_prod(batchX1,trans(batchX2),s.base);
-                s.base += blas::repeat(m_offset,sizeX1,sizeX2);
+                noalias(s.base) = prod(batchX1,trans(batchX2));
+                s.base += m_offset;
                 
                 //now do exponentiation
                 if(m_degree != 1)
@@ -265,7 +265,7 @@ public:
                 //again m_degree == 1 is easy, as it is for the i-th row
                 //just c_i X2;
                 if(m_degree == 1){
-                        axpy_prod(coefficientsX2,batchX2,gradient);
+                        noalias(gradient) = prod(coefficientsX2,batchX2);
                         return;
                 }
                 
@@ -275,8 +275,7 @@ public:
                 //and the derivative of input i of batch x1 is 
                 //g = sum_j m_n*weights(i,j)*x2_j
                 //we now sum over j which is a matrix-matrix product
-                axpy_prod(weights,batchX2,gradient);
-                gradient*= m_degree;
+                noalias(gradient) = m_degree * prod(weights,batchX2);
         }
         
         protected:
@@ -292,3 +291,4 @@ typedef PolynomialKernel<CompressedRealVector> CompressedPolynomialKernel;
 
 }
 #endif
+

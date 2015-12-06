@@ -291,7 +291,7 @@ struct LeastContributorApproximator {
 		typedef typename std::list< VectorType >::iterator sample_iterator;
 		typedef typename std::list< VectorType >::const_iterator const_sample_iterator;
 
-		Point( unsigned int noObjectives, const VectorType & point, const VectorType & refPoint ) : m_point( point ),
+		Point( std::size_t noObjectives, const VectorType & point, const VectorType & refPoint ) : m_point( point ),
 			m_sample( point.size() ),
 			m_boundingBox( refPoint ),
 			m_boundingBoxVolume( 0. ),
@@ -315,9 +315,9 @@ struct LeastContributorApproximator {
 		double m_approximatedContribution;
 		double m_overlappingVolume;
 
-		size_t m_noOperations;
-		size_t m_noSamples;
-		size_t m_noSuccessfulSamples;
+		std::size_t m_noOperations;
+		std::size_t m_noSamples;
+		std::size_t m_noSuccessfulSamples;
 
 		template<typename Stream>
 		void print( Stream & s ) const
@@ -594,9 +594,10 @@ struct LeastContributorApproximator {
 		for( unsigned int i = 0; i < set.size(); i++ )
 			noalias(m_reference) = max(m_reference, extractor(set[i]));
 		
-		noalias(m_reference)+=blas::repeat(1.0,noObjectives);
+		noalias(m_reference)+= 1.0;
 	}
 };
 }
 
 #endif
+

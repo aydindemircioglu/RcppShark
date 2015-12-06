@@ -51,3 +51,4 @@ public:
 }
 
 #endif // SHARK_CORE_INAMEABLE_H
+

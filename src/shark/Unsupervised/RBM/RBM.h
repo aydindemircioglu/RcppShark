@@ -240,7 +240,7 @@ public:
                 SIZE_CHECK(inputs.size2() == m_hiddenNeurons.size());
                 SIZE_CHECK( visibleStates.size2() == m_visibleNeurons.size());
                 
-                axpy_prod(m_visibleNeurons.phi(visibleStates),trans(m_weightMatrix),inputs);
+                noalias(inputs) = prod(m_visibleNeurons.phi(visibleStates),trans(m_weightMatrix));
         }
 
 
@@ -252,7 +252,7 @@ public:
                 SIZE_CHECK(hiddenStates.size1() == inputs.size1());
                 SIZE_CHECK(inputs.size2() == m_visibleNeurons.size());
                 
-                axpy_prod(m_hiddenNeurons.phi(hiddenStates),m_weightMatrix,inputs);
+                noalias(inputs) = prod(m_hiddenNeurons.phi(hiddenStates),m_weightMatrix);
         }
         
         using base_type::eval;
@@ -274,3 +274,4 @@ public:
 }
 
 #endif
+

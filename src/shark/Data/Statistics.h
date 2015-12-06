@@ -83,3 +83,4 @@ typename VectorMatrixTraits<VectorType>::DenseMatrixType covariance(const Data<V
 #include "Impl/Statistics.inl"
 
 #endif
+

@@ -178,7 +178,7 @@ void RFTrainer::train(RFClassifier& model, const ClassificationDataset& dataset)
 	model.setLabelDimension(numberOfClasses(dataset));
 
 	//Find the largest label, so we know how big the histogram should be
-	m_maxLabel = numberOfClasses(dataset)-1;
+	m_maxLabel = static_cast<unsigned int>(numberOfClasses(dataset))-1;
 
 	m_regressionLearner = false;
 	setDefaults();
@@ -276,41 +276,32 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 	splitInfo.g = 0.0;
 
 	//n = Total number of cases in the dataset
-	//n1 = Number of cases to the left child node
-	//n2 = number of cases to the right child node
-	unsigned int n, n1, n2;
-
-	n = tables[0].size();
+	std::size_t n = tables[0].size();
 
 	bool isLeaf = false;
 	if(gini(cAbove,tables[0].size())==0 || n <= m_nodeSize){
 		isLeaf = true;
 	}else{
 		//Count matrices
-		boost::unordered_map<std::size_t, std::size_t> cBelow, cBestBelow, cTmpAbove, cBestAbove;
+		boost::unordered_map<std::size_t, std::size_t> cBelow, cBestBelow, cBestAbove;
 
 		//Randomly select the attributes to test for split
 		set<std::size_t> tableIndicies;
 		generateRandomTableIndicies(tableIndicies);
 
-		//Iterate over the chosen attributes
-		set<std::size_t>::iterator it;
-
 		//Index of attributes
-		std::size_t attributeIndex, bestAttributeIndex, bestAttributeValIndex;
+		std::size_t bestAttributeIndex, bestAttributeValIndex;
 
 		//Attribute values
 		double bestAttributeVal;
-		double impurity, bestImpurity = n+1;
+		double bestImpurity = n+1.0;
 
-		std::size_t prev;
-
-		for ( it=tableIndicies.begin() ; it != tableIndicies.end(); it++ ){
-			attributeIndex = *it;
-			cTmpAbove = cAbove;
+		for (set<std::size_t>::iterator it=tableIndicies.begin() ; it != tableIndicies.end(); it++ ){
+			std::size_t attributeIndex = *it;
+			boost::unordered_map<std::size_t, std::size_t> cTmpAbove = cAbove;
 			cBelow.clear();
 			for(std::size_t i=1; i<n; i++){
-				prev = i-1;
+				std::size_t prev = i-1;
 
 				//Update the count of the label
 				cBelow[dataset.element(tables[attributeIndex][prev].id).label]++;
@@ -319,11 +310,11 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 				if(tables[attributeIndex][prev].value!=tables[attributeIndex][i].value){
 					//n1 = Number of cases to the left child node
 					//n2 = number of cases to the right child node
-					n1 = i;
-					n2 = n-n1;
+					std::size_t n1 = i;
+					std::size_t n2 = n-n1;
 
 					//Calculate the Gini impurity of the split
-					impurity = n1*gini(cBelow,n1)+n2*gini(cTmpAbove,n2);
+					double impurity = n1*gini(cBelow,n1)+n2*gini(cTmpAbove,n2);
 					if(impurity<bestImpurity){
 						//Found a more pure split, store the attribute index and value
 						bestImpurity = impurity;
@@ -375,22 +366,18 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 
 RealVector RFTrainer::hist(boost::unordered_map<std::size_t, std::size_t> countMatrix){
 
-	std::vector<unsigned int> histogram(m_maxLabel+1);
+	RealVector histogram(m_maxLabel+1,0.0);
 
-	unsigned int totalElements = 0;
+	std::size_t totalElements = 0;
 
 	boost::unordered_map<std::size_t, std::size_t>::iterator it;
 	for ( it=countMatrix.begin() ; it != countMatrix.end(); it++ ){
-		histogram[it->first] = it->second;
+		histogram(it->first) = (double)it->second;
 		totalElements += it->second;
 	}
+	histogram /= totalElements;
 
-	RealVector normHist(histogram.size());
-	for(std::size_t n = 0; n < histogram.size(); n++){
-		normHist[n] = double(histogram[n]) / double(totalElements);
-	}
-
-	return normHist;
+	return histogram;
 }
 
 CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables& tables, const RegressionDataset& dataset, const std::vector<RealVector>& labels, std::size_t nodeId ){
@@ -411,11 +398,7 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 	CARTClassifier<RealVector>::SplitMatrixType splitMatrix, lSplitMatrix, rSplitMatrix;
 
 	//n = Total number of cases in the dataset
-	//n1 = Number of cases to the left child node
-	//n2 = number of cases to the right child node
-	std::size_t n, n1, n2;
-
-	n = tables[0].size();
+	std::size_t n = tables[0].size();
 	bool isLeaf = false;
 	if(n <= m_nodeSize){
 		isLeaf = true;
@@ -429,19 +412,16 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 		set<std::size_t> tableIndicies;
 		generateRandomTableIndicies(tableIndicies);
 
-		//Iterate over the chosen attributes
-		set<std::size_t>::iterator it;
-
 		//Index of attributes
 		std::size_t attributeIndex, bestAttributeIndex, bestAttributeValIndex;
 
 		//Attribute values
 		double bestAttributeVal;
-		double impurity, bestImpurity = -1;
+		double bestImpurity = -1;
 
 		std::size_t prev;
 		bool doSplit = false;
-		for ( it=tableIndicies.begin() ; it != tableIndicies.end(); it++ ){
+		for (set<std::size_t>::iterator it=tableIndicies.begin() ; it != tableIndicies.end(); it++ ){
 			attributeIndex = *it;
 
 			labelSumBelow.clear();
@@ -459,10 +439,10 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 			for(std::size_t i=1; i<n; i++){
 				prev = i-1;
 				if(tables[attributeIndex][prev].value!=tables[attributeIndex][i].value){
-					n1=i;
-					n2 = n-n1;
+					std::size_t n1=i;
+					std::size_t n2 = n-n1;
 					//Calculate the squared error of the split
-					impurity = (n1*totalSumOfSquares(tmpLabels,0,n1,labelSumAbove)+n2*totalSumOfSquares(tmpLabels,n1,n2,labelSumBelow))/(double)(n);
+					double impurity = (n1*totalSumOfSquares(tmpLabels,0,n1,labelSumAbove)+n2*totalSumOfSquares(tmpLabels,n1,n2,labelSumBelow))/(double)(n);
 
 					if(impurity<bestImpurity || bestImpurity<0){
 						//Found a more pure split, store the attribute index and value
@@ -644,3 +624,4 @@ void RFTrainer::createCountMatrix(const ClassificationDataset& dataset, boost::u
 bool RFTrainer::tableSort(const RFAttribute& v1, const RFAttribute& v2) {
 	return v1.value < v2.value;
 }
+

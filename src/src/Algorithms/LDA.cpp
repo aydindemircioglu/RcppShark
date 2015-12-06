@@ -154,7 +154,7 @@ void LDA::train(LinearClassifier<>& model, WeightedLabeledData<RealVector,unsign
 	
 
 	//add regularization
-	noalias(shark::blas::diag (covariance)) += blas::repeat(m_regularization,dim);
+	shark::blas::diag (covariance) += m_regularization;
 	
 	//the formula for the linear classifier is
 	// arg max_i log(P(x|i) * P(i))
@@ -178,3 +178,4 @@ void LDA::train(LinearClassifier<>& model, WeightedLabeledData<RealVector,unsign
 	//fill the model
 	model.decisionFunction().setStructure(transformedMeans,bias);
 }
+

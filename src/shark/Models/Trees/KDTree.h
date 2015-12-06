@@ -244,7 +244,7 @@ protected:
 		typedef typename boost::range_iterator<Range const>::type iterator;
 
 		iterator begin = boost::begin(points);
-		iterator end = boost::end(points);
+		// iterator end = boost::end(points);
 
 		// calculate bounding box of the data
 		InputT L = **begin;
@@ -291,3 +291,4 @@ protected:
 
 }
 #endif
+

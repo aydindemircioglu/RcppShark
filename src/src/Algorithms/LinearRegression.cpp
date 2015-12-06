@@ -65,7 +65,7 @@ void LinearRegression::train(LinearModel<>& model, LabeledData<RealVector, RealV
 	row(Ablocks.lowerLeft(),0) = column(Ablocks.upperRight(),0);
 	matA(inputDim,inputDim) = numInputs;
 	//X^TX+=lambda* I
-	shark::blas::diag (Ablocks.upperLeft())+= blas::repeat(m_regularization,inputDim);
+	shark::blas::diag (Ablocks.upperLeft())+= m_regularization;
 	
 	
 	//we also need to compute X^T L= (P^TL, 1^T L) where L is the matrix of labels 
@@ -73,7 +73,7 @@ void LinearRegression::train(LinearModel<>& model, LabeledData<RealVector, RealV
 	for (std::size_t b=0; b != numBatches; b++){
 		BatchRef batch = dataset.batch(b);
 		RealSubMatrix PTL = subrange(XTL,0,inputDim,0,outputDim);
-		axpy_prod(trans(batch.input),batch.label,PTL,false);
+		noalias(PTL) += prod(trans(batch.input),batch.label);
 		noalias(row(XTL,inputDim))+=sum_rows(batch.label);
 	}	
 	
@@ -91,3 +91,4 @@ void LinearRegression::train(LinearModel<>& model, LabeledData<RealVector, RealV
 	// write parameters into the model
 	model.setStructure(matrix, offset);
 }
+

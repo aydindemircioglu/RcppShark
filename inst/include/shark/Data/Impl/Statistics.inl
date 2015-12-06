@@ -1,3 +1,30 @@
+/*!
+ * \brief       Implements the statistics module of shark datasets
+ * 
+ * \author      O. Krause
+ * \date        2015
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 namespace shark{ 
 	
 /*!
@@ -34,7 +61,7 @@ void meanvar
 		std::size_t batchSize = batch.size1();
 		noalias(varianceVec()) += sum_rows(sqr(batch-repeat(meanVec,batchSize)));
 	}
-	varianceVec()/=dataSize;
+	varianceVec() /= double(dataSize);
 }
 
 /*!
@@ -70,7 +97,7 @@ void meanvar
 		BatchType batch = data.batch(b)-repeat(meanVec,data.batch(b).size1());
 		symm_prod(trans(batch),covariance,false);
 	}
-	covariance()/=dataSize;
+	covariance() /= double(dataSize);
 }
 
 /*!
@@ -120,7 +147,7 @@ VectorType mean(Data<VectorType> const& data){
 	BOOST_FOREACH(BatchRef batch, data.batches()){
 		mean += sum_rows(batch);
 	}
-	mean /= data.numberOfElements();
+	mean /= double(data.numberOfElements());
 	return mean;
 }
 
@@ -175,3 +202,4 @@ typename VectorMatrixTraits<VectorType>::DenseMatrixType covariance(const Data<V
 }
 
 }
+

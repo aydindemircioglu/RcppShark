@@ -66,9 +66,7 @@ void FisherLDA::train(LinearModel<>& model, LabeledData<RealVector, unsigned int
 	//reduce the size of the covariance matrix the the needed
 	//subspace
 	RealMatrix subspaceDirections = trans(columns(eigenvectors,0,nComp));
-	RealVector offset(inputDim,0.0);
-	axpy_prod(subspaceDirections, mean,offset);
-	offset*=-1;
+	RealVector offset = -prod(subspaceDirections, mean);
 
 	// write the parameters into the model
 	model.setStructure(subspaceDirections, offset);
@@ -111,7 +109,7 @@ void FisherLDA::meanAndScatter(
 	}
 
 	// for every class ...
-	for( unsigned int c = 0; c != classes ; c++ ) {
+	for( std::size_t c = 0; c != classes ; c++ ) {
 		// normalize mean vector
 		means[c] /= counter[c];
 
@@ -140,3 +138,4 @@ void FisherLDA::meanAndScatter(
 	// invert Sw
 	blas::solveSymmPosDefSystem<blas::SolveAXB>(Sw,scatter,Sb);
 }
+

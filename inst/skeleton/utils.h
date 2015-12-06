@@ -22,7 +22,6 @@
 #ifndef utils_h
 #define utils_h
 
-using namespace std;
 
 #include <shark/Data/Dataset.h>
 #include <Rcpp.h>

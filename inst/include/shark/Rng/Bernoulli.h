@@ -137,3 +137,4 @@ namespace shark{
 	double entropy(const Bernoulli<RngType> & coin);
 }
 #endif
+

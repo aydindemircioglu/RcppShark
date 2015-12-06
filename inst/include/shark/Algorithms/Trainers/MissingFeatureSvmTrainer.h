@@ -252,3 +252,4 @@ private:
 } // namespace shark {
 
 #endif
+

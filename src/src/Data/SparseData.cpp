@@ -192,3 +192,4 @@ void shark::importSparseData(
 	if (! ifs.good()) throw SHARKEXCEPTION("[shark::importSparseData] failed to open file for input");
 	dataset =  libsvm_importer<CompressedRealVector>(ifs, highestIndex,batchSize);
 }
+

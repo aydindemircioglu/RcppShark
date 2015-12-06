@@ -121,3 +121,4 @@ public:
 } // namespace shark {
 
 #endif // SHARK_RNG_UNIFORM_H
+

@@ -184,3 +184,4 @@ vector_range<matrix_column<Matrix> > triangularColumn(
 /** @}*/
 }}
 #endif
+

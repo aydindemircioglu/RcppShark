@@ -216,7 +216,7 @@ protected:
 				if ((double) int( round (R::runif(0,RAND_MAX)) )  / (double)RAND_MAX < prob) m++;
 				for (std::size_t  j=0; j<m; j++)
 				{
-					index[pos] = i;
+					index[pos] = (unsigned int)i;
 					pos++;
 				}
 				psum -= p;
@@ -354,3 +354,4 @@ protected:
 
 }
 #endif
+

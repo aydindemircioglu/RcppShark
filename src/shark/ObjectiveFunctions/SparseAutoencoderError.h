@@ -127,3 +127,4 @@ private:
 }
 #include "Impl/SparseAutoencoderError.inl"
 #endif
+

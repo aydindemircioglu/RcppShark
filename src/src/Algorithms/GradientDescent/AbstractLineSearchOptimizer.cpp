@@ -76,3 +76,4 @@ void AbstractLineSearchOptimizer::step(ObjectiveFunctionType const& objectiveFun
 }
 
 //from ISerializable
+

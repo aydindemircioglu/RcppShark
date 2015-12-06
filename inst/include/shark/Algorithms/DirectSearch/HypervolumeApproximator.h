@@ -157,3 +157,4 @@ namespace shark {
 }
 
 #endif // HYPERVOLUME_APPROXIMATOR_H
+

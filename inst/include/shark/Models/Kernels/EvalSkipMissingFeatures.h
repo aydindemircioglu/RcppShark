@@ -150,3 +150,4 @@ double evalSkipMissingFeatures(
 } // namespace shark {
 
 #endif // SHARK_MODELS_KERNELS_EVAL_SKIP_MISSING_FEATURES_H
+

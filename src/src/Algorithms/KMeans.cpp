@@ -105,3 +105,4 @@ std::size_t shark::kMeans(Data<RealVector> const& data, RBFLayer& model, std::si
 	model.centers() = createBatch<RealVector>(centroids.centroids().elements());
 	return iter;
 }
+

@@ -102,13 +102,11 @@ void Softmax::weightedInputDerivative(
                 for(size_t i = 0; i != patterns.size1(); ++i){
                         double mass=inner_prod(row(coefficients,i),row(s.results,i));
                         //(c_k-m)*f_k
-                        noalias(row(gradient,i))=element_prod(
-                                row(coefficients,i)-blas::repeat(mass,inputSize()),
-                                row(s.results,i)
-                        );
+                        noalias(row(gradient,i)) = (row(coefficients,i) - mass) *row(s.results,i);
                 }
         }
 }
 
 /// From ISerializable, reads a model from an archive
 /// From ISerializable, writes a model to an archive
+

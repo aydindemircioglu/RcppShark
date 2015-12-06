@@ -130,3 +130,4 @@ namespace shark{
 	double entropy(const Cauchy<RngType> & distribution);
 }
 #endif
+

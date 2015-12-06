@@ -6,7 +6,7 @@ Date: 2015-08-17
 Author: Aydin Demircioglu
 Maintainer: Aydin Demircioglu <aydin.demircioglu@ini.rub.de>
 Description: An R interface to the C++/Boost Shark machine learning library.
-License: LGPL (>= 2)
+License: GPL (>= 2)
 Imports: Rcpp (>= 0.11.6),
     checkmate (>= 1.5.1)
 LinkingTo: Rcpp, BH

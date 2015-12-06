@@ -1,3 +1,30 @@
+/*!
+ * \brief       Implements the Bars & Stripes benchmark problem.
+ * 
+ * \author      O. Krause, A.Fischer, K.Bruegge
+ * \date        2012
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef UNSUPERVISED_RBM_PROBLEMS_BARSANDSTRIPES_H
 #define UNSUPERVISED_RBM_PROBLEMS_BARSANDSTRIPES_H
 
@@ -15,7 +42,7 @@ public:
 		RealVector line(4);
 		for(size_t x=0; x != 16; x++) {
 			for(size_t j=0; j != 4; j++) {
-				line(j) = (x & (1<<j)) > 0;
+				line(j) = (x & (std::size_t(1)<<j)) > 0;
 				if(bipolar && line(j)==0) line(j) = -1; 
 			}
 
@@ -43,3 +70,4 @@ public:
 
 }
 #endif
+

@@ -69,3 +69,4 @@
 #include <shark/ObjectiveFunctions/Benchmarks/Cigar.h>
 #include <shark/ObjectiveFunctions/Benchmarks/Ackley.h>
 
+

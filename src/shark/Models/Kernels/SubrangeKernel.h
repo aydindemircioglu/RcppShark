@@ -205,3 +205,4 @@ typedef SubrangeKernel<CompressedRealVector> CompressesSubrangeKernel;
 
 }
 #endif
+

@@ -62,7 +62,7 @@ public:
         /// \param [in] version Currently unused.
         /// \brief Resizes the distribution. Updates both eigenvectors and eigenvalues.
         /// \param [in] size The new size of the distribution
-        void resize( unsigned int size ) {
+        void resize( std::size_t size ) {
                 m_covarianceMatrix = blas::identity_matrix<double>( size );
                 m_eigenValues = blas::repeat(1.0,size);
                 m_eigenVectors = blas::identity_matrix<double>( size );
@@ -107,12 +107,12 @@ public:
                 RealVector result( m_eigenValues.size(), 0. );
                 RealVector z( m_eigenValues.size() );
                 
-                for( unsigned int i = 0; i < result.size(); i++ ) {
+                for( std::size_t i = 0; i < result.size(); i++ ) {
                         z( i ) = Rng::gauss( 0., 1. );
                 }
 
-                for( unsigned int i = 0; i < result.size(); i++ )
-                        for( unsigned int j = 0; j < result.size(); j++ )
+                for( std::size_t i = 0; i < result.size(); i++ )
+                        for( std::size_t j = 0; j < result.size(); j++ )
                                 result( i ) += m_eigenVectors( i, j ) * std::sqrt( std::abs( m_eigenValues(j) ) ) * z( j );
 
                 return( std::make_pair( result, z ) );
@@ -141,6 +141,7 @@ public:
 
         /// \brief Constructor
         /// \param [in] covariance covariance matrix
+        /// \param triangular Is the choleksy factor triangular?
         MultiVariateNormalDistributionCholesky( RealMatrix const& covariance, bool triangular=false ) 
         :m_triangular(false){
                 setCovarianceMatrix(covariance);
@@ -153,7 +154,7 @@ public:
         ///\param [in] version Currently unused.
         /// \brief Resizes the distribution. Updates both eigenvectors and eigenvalues.
         /// \param [in] size The new size of the distribution
-        void resize( unsigned int size ) {
+        void resize( std::size_t size ) {
                 m_lowerCholesky = blas::identity_matrix<double>( size );
         }
         
@@ -187,7 +188,7 @@ public:
                 z.resize(size());
                 y.resize(size());
                 
-                for( unsigned int i = 0; i != size(); i++ ) {
+                for( std::size_t i = 0; i != size(); i++ ) {
                         z( i ) = Rng::gauss( 0, 1 );
                 }
                 
@@ -195,8 +196,7 @@ public:
                         y=z;
                         blas::triangular_prod<blas::lower>(m_lowerCholesky,y);
                 }else{
-                        y.clear();
-                        axpy_prod(m_lowerCholesky,z,y,false);
+                        noalias(y) = prod(m_lowerCholesky,z);
                 }
         }
 
@@ -221,3 +221,4 @@ private:
 }
 
 #endif
+

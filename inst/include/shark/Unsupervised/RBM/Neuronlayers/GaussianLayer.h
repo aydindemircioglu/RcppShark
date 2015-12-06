@@ -37,7 +37,7 @@
 #include <shark/Core/IParameterizable.h>
 #include <shark/Core/Math.h>
 #include <shark/Data/BatchInterfaceAdaptStruct.h>
-
+#include <shark/Core/OpenMP.h>
 namespace shark{
 
 ///\brief A layer of Gaussian neurons.
@@ -112,10 +112,12 @@ public:
                 SIZE_CHECK(statistics.size1() == state.size1());
                 SIZE_CHECK(statistics.size2() == state.size2());
                 
-                for(std::size_t i = 0; i != state.size1();++i){
-                        for(std::size_t j = 0; j != state.size2();++j){
-                                Normal<Rng> normal(rng,statistics(i,j),1.0);
-                                state(i,j) = normal();
+                SHARK_CRITICAL_REGION{
+                        for(std::size_t i = 0; i != state.size1();++i){
+                                for(std::size_t j = 0; j != state.size2();++j){
+                                        Normal<Rng> normal(rng,statistics(i,j),1.0);
+                                        state(i,j) = normal();
+                                }
                         }
                 }
                 (void) alpha;
@@ -182,8 +184,7 @@ public:
                 //return beta * inner_prod(m_bias,state) - norm_sqr(state)/2.0;
                 
                 std::size_t batchSize = state.size1();
-                RealVector energies(batchSize);
-                axpy_prod(state,m_bias,energies);
+                RealVector energies = prod(state,m_bias);
                 noalias(energies) *= beta;
                 for(std::size_t i = 0; i != batchSize; ++i){
                         energies(i) -= norm_sqr(row(state,i))/2.0;
@@ -234,7 +235,7 @@ public:
         template<class Vector, class SampleBatch, class Vector2 >
         void expectedParameterDerivative(Vector& derivative, SampleBatch const& samples, Vector2 const& weights )const{
                 SIZE_CHECK(derivative.size() == size());
-                axpy_prod(samples.statistics,weights, derivative);
+                noalias(derivative) += prod(weights,samples.statistics);
         }
         
         ///\brief Calculates the derivatives of the energy term of this neuron layer with respect to it's parameters - the bias weights. 
@@ -257,7 +258,7 @@ public:
         template<class Vector, class SampleBatch, class WeightVector>
         void parameterDerivative(Vector& derivative, SampleBatch const& samples, WeightVector const& weights)const{
                 SIZE_CHECK(derivative.size() == size());
-                axpy_prod(trans(samples.state),weights,derivative,false);
+                noalias(derivative) += prod(weights,samples.state);
         }
         
         ///\brief Returns the vector with the parameters associated with the neurons in the layer.
@@ -281,3 +282,4 @@ public:
 
 }
 #endif
+

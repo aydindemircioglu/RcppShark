@@ -111,3 +111,4 @@ struct LinearRankingSelection {
 }
 
 #endif
+

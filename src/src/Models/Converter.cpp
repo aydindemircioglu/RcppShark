@@ -89,3 +89,4 @@ void ThresholdVectorConverter::eval(BatchInputType const& patterns, BatchOutputT
 		}
 	}
 }
+

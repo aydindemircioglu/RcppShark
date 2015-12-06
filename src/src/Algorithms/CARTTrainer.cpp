@@ -73,7 +73,7 @@ void CARTTrainer::train(ModelType& model, ClassificationDataset const& dataset){
 	model.setInputDimension(m_inputDimension);
 
 	//Find the largest label, so we know how big the histogram should be
-	m_maxLabel = numberOfClasses(dataset)-1;
+	m_maxLabel = static_cast<unsigned int>(numberOfClasses(dataset))-1;
 
 	// create cross-validation folds
 	ClassificationDataset set=dataset;
@@ -186,9 +186,9 @@ void CARTTrainer::pruneMatrix(SplitMatrixType& splitMatrix){
 }
 
 std::size_t CARTTrainer::findNode(SplitMatrixType& splitMatrix, std::size_t nodeId){
-	unsigned int i = 0;
+	std::size_t i = 0;
 	//while(i<splitMatrix.size() && splitMatrix[i].nodeId!=nodeId){
-	while(splitMatrix[i].nodeId!=nodeId){
+	while(splitMatrix[i].nodeId != nodeId){
 		i++;
 	}
 	return i;
@@ -198,7 +198,7 @@ std::size_t CARTTrainer::findNode(SplitMatrixType& splitMatrix, std::size_t node
 	Removes branch with root node id nodeId, incl. the node itself
 */
 void CARTTrainer::pruneNode(SplitMatrixType& splitMatrix, std::size_t nodeId){
-	unsigned int i = findNode(splitMatrix,nodeId);
+	std::size_t i = findNode(splitMatrix,nodeId);
 
 	if(splitMatrix[i].leftNodeId>0){
 		//Prune left branch
@@ -265,7 +265,7 @@ CARTTrainer::SplitMatrixType CARTTrainer::buildTree(AttributeTables const& table
 		
 
 		//search the split with the best impurity
-		double bestImpurity = n+1;
+		double bestImpurity = n+1.0;
 		std::size_t bestAttributeIndex, bestAttributeValIndex;//index of the best split
 		boost::unordered_map<std::size_t, std::size_t> cBestBelow, cBestAbove;//labels of best split
 
@@ -331,7 +331,7 @@ CARTTrainer::SplitMatrixType CARTTrainer::buildTree(AttributeTables const& table
 RealVector CARTTrainer::hist(boost::unordered_map<std::size_t, std::size_t> countMatrix){
 
 	//create a normed histogram
-	unsigned int totalElements = 0;
+	std::size_t totalElements = 0;
 	RealVector normedHistogram(m_maxLabel+1);
 	normedHistogram.clear();
 	boost::unordered_map<std::size_t, std::size_t>::iterator it;
@@ -567,6 +567,7 @@ boost::unordered_map<std::size_t, std::size_t> CARTTrainer::createCountMatrix(Cl
 	}
 	return cAbove;
 }
+
 
 
 

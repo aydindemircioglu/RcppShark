@@ -71,7 +71,7 @@ namespace{
 	///
 	/// Returns the improvement in function value and the solution as a pair.
 	///
-	/// Algorithm 7.1 in Wright, Nocedal: Numerical Optimization
+	/// Algorithm 7.2 in Wright, Nocedal: Numerical Optimization
 	std::pair<double,RealVector> trustRegionCG(
 		RealMatrix const& hessian,
 		RealVector gradient,
@@ -181,3 +181,4 @@ void TrustRegionNewton::step(const ObjectiveFunctionType& objectiveFunction) {
 		m_best.value = objectiveFunction.evalDerivative(m_best.point,m_derivatives);
 	}
 }
+

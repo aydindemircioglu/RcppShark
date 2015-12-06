@@ -55,3 +55,4 @@ typedef SingleChainApproximator<TruncExpBinaryPTChain> TruncExpBinaryParallelTem
 }
 
 #endif
+

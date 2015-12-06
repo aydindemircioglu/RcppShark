@@ -1,3 +1,30 @@
+/*!
+ * \brief       Implements a matrix with triangular storage layout
+ * 
+ * \author      O. Krause
+ * \date        2015
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_TRIANGULAR_MATRIX_HPP
 #define SHARK_LINALG_BLAS_TRIANGULAR_MATRIX_HPP
 
@@ -30,6 +57,7 @@ public:
         typedef const matrix_reference<const self_type> const_closure_type;
         typedef matrix_reference<self_type> closure_type;
         typedef packed_tag storage_category;
+        typedef elementwise_tag evaluation_category;
         typedef packed<Orientation,TriangularType> orientation;
 
         // Construction and destruction
@@ -44,6 +72,7 @@ public:
 
         /** Packed matrix constructor with defined size and an initial value for all triangular matrix elements
          * \param size number of rows and columns
+         * \param init initial value of the non-zero elements
          */
         triangular_matrix(size_type size, scalar_type init):m_size(size),m_data(size * (size+1)/2,init) {}
 
@@ -59,7 +88,7 @@ public:
         triangular_matrix(matrix_expression<E> const& e)
                 :m_size(e().size1()), m_data(m_size * (m_size+1)/2)
         {
-                assign(e);
+                assign(*this, e);
         }
 
         // ---------
@@ -80,6 +109,8 @@ public:
         /// Grants low-level access to the matrix internals. Element order depends on whether the matrix is
         ///  row_major or column_major and upper or lower triangular
         const_pointer storage()const{
+                if(m_data.empty())
+                        return 0;
                 return &m_data[0];
         }
         
@@ -88,6 +119,8 @@ public:
         /// Grants low-level access to the matrix internals. Element order depends on whether the matrix is row_major or column_major.
         /// to access element (i,j) use storage()[i*stride1()+j*stride2()].
         pointer storage(){
+                if(m_data.empty())
+                        return 0;
                 return &m_data[0];
         }
         
@@ -107,6 +140,12 @@ public:
         void resize(size_type size) {
                 m_data.resize(size*(size+1)/2);
                 m_size = size;
+        }
+        
+        void resize(size_type size1, size_type size2) {
+                SIZE_CHECK(size1 == size2);
+                resize(size1);
+                (void)size2;
         }
         
         void clear(){
@@ -130,42 +169,6 @@ public:
                 return orientation::non_zero(i,j);
         }
         
-        // Assignment
-        template<class E>
-        triangular_matrix& assign(matrix_expression<E> const& e) {
-                kernels::assign(*this,e);
-                return *this;
-        }
-        template<class E>
-        triangular_matrix& plus_assign(matrix_expression<E> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                kernels::assign<scalar_plus_assign> (*this, e);
-                return *this;
-        }
-        template<class E>
-        triangular_matrix& minus_assign(matrix_expression<E> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                kernels::assign<scalar_minus_assign> (*this, e);
-                return *this;
-        }
-        
-        template<class E>
-        triangular_matrix& multiply_assign(matrix_expression<E> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                kernels::assign<scalar_multiply_assign> (*this, e);
-                return *this;
-        }
-        template<class E>
-        triangular_matrix& divide_assign(matrix_expression<E> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                kernels::assign<scalar_divide_assign> (*this, e);
-                return *this;
-        }
-        
         /*! @note "pass by value" the key idea to enable move semantics */
         triangular_matrix& operator = (triangular_matrix m) {
                 swap(m);
@@ -175,81 +178,13 @@ public:
         triangular_matrix& operator = (const matrix_container<C>& m) {
                 SIZE_CHECK(m().size1()==m().size2());
                 resize(m().size1());
-                assign(m);
+                assign(*this, m);
                 return *this;
         }
         template<class E>
         triangular_matrix& operator = (matrix_expression<E> const& e) {
                 self_type temporary(e);
                 swap(temporary);
-                return *this;
-        }
-        template<class E>
-        triangular_matrix& operator += (matrix_expression<E> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                self_type temporary(*this + e);
-                swap(temporary);
-                return *this;
-        }
-        template<class C>          // Container assignment without temporary
-        triangular_matrix& operator += (const matrix_container<C>& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                return plus_assign(e);
-        }
-        
-        template<class E>
-        triangular_matrix& operator -= (matrix_expression<E> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                self_type temporary(*this - e);
-                swap(temporary);
-                return *this;
-        }
-        template<class C>          // Container assignment without temporary
-        triangular_matrix& operator -= (matrix_container<C> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                return minus_assign(e);
-        }
-        
-        template<class E>
-        triangular_matrix& operator *= (matrix_expression<E> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                self_type temporary(*this * e);
-                swap(temporary);
-                return *this;
-        }
-        template<class C>          // Container assignment without temporary
-        triangular_matrix& operator *= (const matrix_container<C>& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                return multiply_assign(e);
-        }
-        
-        template<class E>
-        triangular_matrix& operator /= (matrix_expression<E> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                self_type temporary(*this / e);
-                swap(temporary);
-                return *this;
-        }
-        template<class C>          // Container assignment without temporary
-        triangular_matrix& operator /= (matrix_container<C> const& e) {
-                SIZE_CHECK(size1() == e().size1());
-                SIZE_CHECK(size2() == e().size2());
-                return divide_assign(e);
-        }
-        
-        triangular_matrix& operator *= (scalar_type t) {
-                kernels::assign<scalar_multiply_assign> (*this, t);
-                return *this;
-        }
-        triangular_matrix& operator /= (scalar_type t) {
-                kernels::assign<scalar_divide_assign> (*this, t);
                 return *this;
         }
 
@@ -497,7 +432,7 @@ public:
         const_row_iterator row_begin(index_type i) const {
                 std::size_t index = TriangularType::is_upper?i:0;
                 return const_row_iterator(
-                        &m_data[orientation::element(i,index,size1())]
+                        storage()+orientation::element(i,index,size1())
                         ,index
                         ,orientation::stride2(size1(),size2())//1 if row_major, size2() otherwise
                 );
@@ -505,7 +440,7 @@ public:
         const_row_iterator row_end(index_type i) const {
                 std::size_t index = TriangularType::is_upper?size2():i+1;
                 return const_row_iterator(
-                        &m_data[orientation::element(i,index,size1())]
+                        storage() + orientation::element(i, index, size1())
                         ,index
                         ,orientation::stride2(size1(),size2())//1 if row_major, size2() otherwise
                 );
@@ -513,7 +448,7 @@ public:
         row_iterator row_begin(index_type i){
                 std::size_t index = TriangularType::is_upper?i:0;
                 return row_iterator(
-                        &m_data[orientation::element(i,index,size1())]
+                        storage() + orientation::element(i, index, size1())
                         ,index
                         ,orientation::stride2(size1(),size2())//1 if row_major, size2() otherwise
                 );
@@ -521,7 +456,7 @@ public:
         row_iterator row_end(index_type i){
                 std::size_t index = TriangularType::is_upper?size2():i+1;
                 return row_iterator(
-                        &m_data[orientation::element(i,index,size1())]
+                        storage() + orientation::element(i, index, size1())
                         ,index
                         ,orientation::stride2(size1(),size2())//1 if row_major, size2() otherwise
                 );
@@ -530,7 +465,7 @@ public:
         const_column_iterator column_begin(index_type i) const {
                 std::size_t index = TriangularType::is_upper?0:i;
                 return const_column_iterator(
-                        &m_data[orientation::element(index,i,size1())]
+                        storage() + orientation::element(index, i, size1())
                         ,index
                         ,orientation::stride1(size1(),size2())//size1() if row_major, 1 otherwise
                 );
@@ -538,7 +473,7 @@ public:
         const_column_iterator column_end(index_type i) const {
                 std::size_t index = TriangularType::is_upper?i+1:size2();
                 return const_column_iterator(
-                        &m_data[orientation::element(index,i,size1())]
+                        storage() + orientation::element(index, i, size1())
                         ,index
                         ,orientation::stride1(size1(),size2())//size1() if row_major, 1 otherwise
                 );
@@ -546,7 +481,7 @@ public:
         column_iterator column_begin(index_type i){
                 std::size_t index = TriangularType::is_upper?0:i;
                 return column_iterator(
-                        &m_data[orientation::element(index,i,size1())]
+                        storage() + orientation::element(index, i, size1())
                         ,index
                         ,orientation::stride1(size1(),size2())//size1() if row_major, 1 otherwise
                 );
@@ -554,7 +489,7 @@ public:
         column_iterator column_end(index_type i){
                 std::size_t index = TriangularType::is_upper?i+1:size2();
                 return column_iterator(
-                        &m_data[orientation::element(index,i,size1())]
+                        storage() + orientation::element(index, i, size1())
                         ,index
                         ,orientation::stride1(size1(),size2())//size1() if row_major, 1 otherwise
                 );
@@ -566,7 +501,17 @@ public:
         array_type m_data;
 };
 
+template<class T, class Orientation, class TriangularType>
+struct const_expression<triangular_matrix<T,Orientation, TriangularType> >{
+        typedef triangular_matrix<T,Orientation, TriangularType> const type;
+};
+template<class T, class Orientation, class TriangularType>
+struct const_expression<triangular_matrix<T,Orientation, TriangularType> const>{
+        typedef triangular_matrix<T,Orientation, TriangularType> const type;
+};
+
 }
 }
 
 #endif
+

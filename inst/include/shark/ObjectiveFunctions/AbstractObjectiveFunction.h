@@ -292,3 +292,4 @@ typedef AbstractObjectiveFunction< RealVector, RealVector > MultiObjectiveFuncti
 }
 
 #endif
+

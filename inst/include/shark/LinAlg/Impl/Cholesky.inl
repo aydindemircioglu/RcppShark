@@ -5,84 +5,31 @@
  *  \author  O. Krause
  *  \date    2012
  *
- *  \par Copyright (L) 1999-2001:
- *      Institut f&uuml;r Neuroinformatik<BR>
- *      Ruhr-Universit&auml;t Bochum<BR>
- *      D-44780 Bochum, Germany<BR>
- *      Phone: +49-234-32-25558<BR>
- *      Fax:   +49-234-32-14209<BR>
- *      eMail: Shark-admin@neuroinformatik.ruhr-uni-bochum.de<BR>
- *      www:   http://www.neuroinformatik.ruhr-uni-bochum.de<BR>
- *      <BR>
- *
- *
- *  This file is part of Shark. This library is free software;
- *  you can redistribute it and/or modify it under the terms of the
- *  GNU General Public License as published by the Free Software
- *  Foundation; either version 3, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this library; if not, see <http://www.gnu.org/licenses/>.
- *
- *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
 #ifndef SHARK_IMPL_LINALG_CHOLESKY_INL
 #define SHARK_IMPL_LINALG_CHOLESKY_INL
 
-#ifdef SHARK_USE_ATLAS_LAPACK
-#include <shark/LinAlg/BLAS/kernels/atlas/potrf.hpp>
-#endif
-
 #include <shark/Core/Math.h>
-
-template<class MatrixT,class MatrixL>
-void shark::blas::choleskyDecomposition(
-	matrix_expression<MatrixT> const& A, 
-	matrix_expression<MatrixL>& L
-)
-{
-	size_t m = A().size1();
-	ensure_size(L,m, m);
-#ifdef SHARK_USE_ATLAS_LAPACK
-	L().clear();
-	for(std::size_t i = 0; i != m; ++i){
-		for(std::size_t j = 0; j <= i; ++j){
-			L()(i,j) = A()(i,j);
-		}
-	}
-	if(bindings::potrf(CblasLower,L()) != 0){
-		throw SHARKEXCEPTION("[Cholesky Decomposition] The Matrix is not positive definite");
-	}
-#else
-	SIZE_CHECK(A().size1() == A().size2());
-
-	
-	for(size_t j = 0; j < m; j++) {
-		for(size_t i = j; i < m; i++) {
-			double s = A()(i, j);
-			for(size_t k = 0; k < j; k++) {
-				s -= L()(i, k) * L()(j, k);
-			}
-			if (i == j) {
-				if(s<=0)
-					throw SHARKEXCEPTION("[Cholesky Decomposition] The Matrix is not positive definite");
-				L()(i, j) = std::sqrt(s);
-			}
-			else {
-				L()(i, j) = s/L()(j , j);
-				L()(j, i) = 0;
-			}
-		}
-	}
-#endif
-}
 
 template<class MatrixL>
 std::size_t shark::blas::pivotingCholeskyDecompositionInPlace(
@@ -179,11 +126,9 @@ std::size_t shark::blas::pivotingCholeskyDecompositionInPlace(
 				//(L1L1T)^(j)+...+(Lj-1Lj-1)^(j)
 				//=L1*L1j+L2*L2j+L3*L3j...
 				//which is a matrix-vector product
-				axpy_prod(
+				unitTriangularColumn(Lk,j) -= prod(
 					LkBlocked.lowerLeft(),
-					subrange(row(Lk,j),0,j),
-					unitTriangularColumn(Lk,j),
-					false,-1.0
+					subrange(row(Lk,j),0,j)
 				);
 			}
 			unitTriangularColumn(Lk,j) /= Lk(j,j);
@@ -204,3 +149,4 @@ std::size_t shark::blas::pivotingCholeskyDecompositionInPlace(
 	
 }
 #endif
+
