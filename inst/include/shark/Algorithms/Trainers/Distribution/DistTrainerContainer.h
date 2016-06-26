@@ -57,3 +57,4 @@ private:
 } // namespace shark {
 
 #endif // SHARK_ALGORITHMS_TRAINERS_DISTRIBUTION_I_DIST_TRAINER_CONTAINER_H
+

@@ -167,3 +167,4 @@ protected:
 }
 
 #endif // SHARK_CORE_ABSTRACTOPTIMIZER_H
+

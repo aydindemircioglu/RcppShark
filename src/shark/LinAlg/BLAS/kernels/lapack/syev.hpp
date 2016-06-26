@@ -110,3 +110,4 @@ void syev(
 #undef SHARK_LAPACK_DSYEV
 
 #endif
+

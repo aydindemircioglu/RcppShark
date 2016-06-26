@@ -147,3 +147,4 @@ std::size_t shark::blas::pivotingCholeskyDecompositionInPlace(
 	
 }
 #endif
+

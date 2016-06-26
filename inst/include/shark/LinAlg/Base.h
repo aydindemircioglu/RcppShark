@@ -95,3 +95,4 @@ typedef blas::permutation_matrix PermutationMatrix;
 typedef std::deque<RealVector> Sequence;
 }
 #endif
+

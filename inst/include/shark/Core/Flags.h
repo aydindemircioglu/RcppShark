@@ -171,3 +171,4 @@ throw typename base_type::FeatureNotAvailableException("Class does not support F
 #define SHARK_FEATURE_CHECK(FEATURE)\
 if(!(this->features()&base_type::FEATURE)){SHARK_FEATURE_EXCEPTION_DERIVED(FEATURE);}
 #endif // SHARK_CORE_FLAGS_H
+

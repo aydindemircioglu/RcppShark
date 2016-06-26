@@ -195,3 +195,4 @@ struct  has_optimized_gemm
 }}}
 
 #endif
+

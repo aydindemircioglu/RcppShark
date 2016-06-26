@@ -206,3 +206,4 @@ std::size_t pivotingCholeskyDecomposition(
 #include "Impl/Cholesky.inl"
 
 #endif 
+

@@ -86,3 +86,4 @@ typedef TwoStateSpace<-1,1> SymmetricBinarySpace;
 	
 }
 #endif
+

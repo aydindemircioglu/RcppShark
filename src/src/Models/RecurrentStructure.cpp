@@ -141,3 +141,4 @@ double RecurrentStructure::neuronDerivative(double ga) {
         }
         return 0;
 }
+

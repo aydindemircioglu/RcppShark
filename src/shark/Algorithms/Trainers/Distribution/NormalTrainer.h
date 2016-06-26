@@ -104,3 +104,4 @@ private:
 } // namespace shark {
 
 #endif // SHARK_ALGORITHMS_TRAINERS_DISTRIBUTION_NORMAL_H
+

@@ -220,3 +220,4 @@ inline RealMatrix randomRotationMatrix(size_t size){
 /** @}*/
 }}
 #endif
+

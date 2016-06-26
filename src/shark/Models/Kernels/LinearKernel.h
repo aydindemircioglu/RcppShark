@@ -132,3 +132,4 @@ typedef LinearKernel<CompressedRealVector> CompressedLinearKernel;
 
 }
 #endif
+

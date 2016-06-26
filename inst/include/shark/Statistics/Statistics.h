@@ -370,3 +370,4 @@ void printCSV(Statistics<Parameter> const& statistics){
 
 }}
 #endif // SHARK_STATISTICS_H
+

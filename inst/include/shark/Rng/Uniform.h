@@ -129,3 +129,4 @@ double uni(RngType& rng, double lower, double upper){
 } // namespace shark {
 
 #endif // SHARK_RNG_UNIFORM_H
+

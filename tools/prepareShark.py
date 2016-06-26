@@ -369,6 +369,9 @@ for  includeDir in includeDirs:
 					pass
 				#print (dumpFile)
 
+				# add a newline to make clang  happy
+				data = data + "\n"
+
 				if modified == True:
 					with open(dumpFile, "w") as text_file:
 						text_file.write(data)

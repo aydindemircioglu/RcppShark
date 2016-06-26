@@ -104,3 +104,4 @@ void fastNonDominatedSort(PointRange const& points, RankRange& ranks) {
 
 }//namespace shark
 #endif
+

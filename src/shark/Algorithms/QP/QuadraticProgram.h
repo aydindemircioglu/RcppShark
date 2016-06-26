@@ -150,3 +150,4 @@ struct QpSolutionProperties
 
 }
 #endif
+

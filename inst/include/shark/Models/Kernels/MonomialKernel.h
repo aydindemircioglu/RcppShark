@@ -188,3 +188,4 @@ typedef MonomialKernel<CompressedRealVector> CompressedMonomialKernel;
 
 }
 #endif
+

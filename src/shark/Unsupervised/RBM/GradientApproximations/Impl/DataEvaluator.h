@@ -95,3 +95,4 @@ RealVector evaluateData(Data<VectorType> const& data, RBM& rbm, std::size_t batc
 }
 
 #endif
+

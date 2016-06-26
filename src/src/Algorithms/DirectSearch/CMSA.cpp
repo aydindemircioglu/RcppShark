@@ -161,3 +161,4 @@ void CMSA::updatePopulation(std::vector< IndividualType > const& offspring ) {
         m_best.value= selectedOffspring[ 0 ].unpenalizedFitness();
 }
 
+

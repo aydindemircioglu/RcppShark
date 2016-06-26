@@ -73,3 +73,4 @@ void nonDominatedSort(PointRange const& points, RankRange const& ranks) {
 
 } // namespace shark
 #endif
+

@@ -617,3 +617,4 @@ struct const_expression<vectorN<T,N> const>{
 }
 
 #endif
+

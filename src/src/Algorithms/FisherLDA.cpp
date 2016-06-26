@@ -133,3 +133,4 @@ void FisherLDA::meanAndScatter(
 	// invert Sw
 	blas::solveSymmPosDefSystem<blas::SolveAXB>(Sw,scatter,Sb);
 }
+

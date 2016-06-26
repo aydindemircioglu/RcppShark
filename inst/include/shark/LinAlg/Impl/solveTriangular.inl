@@ -133,3 +133,4 @@ void shark::blas::solveTriangularCholeskyInPlace(
 }
 
 #endif
+

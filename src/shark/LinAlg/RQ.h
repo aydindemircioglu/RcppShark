@@ -95,3 +95,4 @@ std::size_t pivotingRQHouseholder
 
 #include "Impl/pivotingRQ.inl"
 #endif
+

@@ -74,3 +74,4 @@ inline DominanceRelation dominance(VectorTypeA const& lhs, VectorTypeB const& rh
 
 };  // namespace shark
 #endif
+

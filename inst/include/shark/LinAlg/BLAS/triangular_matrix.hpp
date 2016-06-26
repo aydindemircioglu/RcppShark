@@ -518,3 +518,4 @@ struct const_expression<triangular_matrix<T,Orientation, TriangularType> const>{
 }
 
 #endif
+

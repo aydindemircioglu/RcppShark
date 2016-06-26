@@ -93,3 +93,4 @@ double ROC::equalErrorRate()const
 	return 0.5 *(e1 + e2);
 }
 
+

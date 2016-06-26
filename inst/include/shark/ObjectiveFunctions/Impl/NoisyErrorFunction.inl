@@ -205,3 +205,4 @@ inline std::size_t NoisyErrorFunction::batchSize() const{
 
 }
 #endif
+

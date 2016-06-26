@@ -103,3 +103,4 @@ private:
 }
 
 #endif // SHARK_EA_CIGAR_H
+

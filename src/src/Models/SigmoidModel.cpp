@@ -188,3 +188,4 @@ double TanhSigmoidModel::sigmoid(double x)const{
 double TanhSigmoidModel::sigmoidDerivative(double gx)const{
         return 0.5*(1 - gx * gx);
 }
+

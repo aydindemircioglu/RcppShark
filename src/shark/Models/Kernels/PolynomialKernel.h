@@ -292,3 +292,4 @@ typedef PolynomialKernel<CompressedRealVector> CompressedPolynomialKernel;
 
 }
 #endif
+

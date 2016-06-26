@@ -199,3 +199,4 @@ blas::matrix<typename VectorType::value_type> covariance(Data<VectorType> const&
 }
 
 }
+

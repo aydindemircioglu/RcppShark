@@ -180,3 +180,4 @@ void TrustRegionNewton::step(const ObjectiveFunctionType& objectiveFunction) {
 		m_best.value = objectiveFunction.evalDerivative(m_best.point,m_derivatives);
 	}
 }
+

@@ -488,3 +488,4 @@ range_end( shark::blas::dense_matrix_adaptor<T>& m )
 }}
 
 #endif
+

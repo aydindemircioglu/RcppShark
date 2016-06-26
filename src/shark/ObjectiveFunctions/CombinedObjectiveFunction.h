@@ -160,3 +160,4 @@ protected:
 
 }
 #endif // SHARK_CORE_COBINEDOBJECTIVEFUNCTION_H
+

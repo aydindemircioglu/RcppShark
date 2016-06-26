@@ -90,3 +90,4 @@ struct Himmelblau : public SingleObjectiveFunction {
 }
 
 #endif
+

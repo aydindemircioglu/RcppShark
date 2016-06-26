@@ -188,3 +188,4 @@ void CrossEntropyMethod::init(ObjectiveFunctionType& function ){
         CrossEntropyMethod::init(function,function.proposeStartingPoint());
 }
 
+

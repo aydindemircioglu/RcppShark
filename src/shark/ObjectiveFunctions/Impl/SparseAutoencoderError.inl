@@ -244,3 +244,4 @@ SparseAutoencoderError::SparseAutoencoderError(
 }
 }
 #endif
+

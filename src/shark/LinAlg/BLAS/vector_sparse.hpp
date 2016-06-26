@@ -376,3 +376,4 @@ struct const_expression<compressed_vector<T,I> const>{
 }}
 
 #endif
+

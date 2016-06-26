@@ -71,3 +71,4 @@ struct UniformRankingSelection {
 }
 
 #endif
+

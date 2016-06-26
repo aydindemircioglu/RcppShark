@@ -272,3 +272,4 @@ typedef GaussianRbfKernel<CompressedRealVector> CompressedRbfKernel;
 
 }
 #endif
+

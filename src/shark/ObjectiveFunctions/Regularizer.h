@@ -222,3 +222,4 @@ private:
 
 }
 #endif // SHARK_CORE_REGULARIZER_H
+

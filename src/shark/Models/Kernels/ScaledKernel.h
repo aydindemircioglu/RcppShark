@@ -153,3 +153,4 @@ typedef ScaledKernel<ConstRealVectorRange> DenseScaledMklKernel;
 
 }
 #endif
+

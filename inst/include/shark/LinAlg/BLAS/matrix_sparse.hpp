@@ -488,3 +488,4 @@ struct const_expression<compressed_matrix<T,I> const>{
 }
 
 #endif
+

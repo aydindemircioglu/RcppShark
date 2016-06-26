@@ -91,3 +91,4 @@ void LinearRegression::train(LinearModel<>& model, LabeledData<RealVector, RealV
 	// write parameters into the model
 	model.setStructure(matrix, offset);
 }
+

@@ -109,3 +109,4 @@ void Softmax::weightedInputDerivative(
 
 /// From ISerializable, reads a model from an archive
 /// From ISerializable, writes a model to an archive
+

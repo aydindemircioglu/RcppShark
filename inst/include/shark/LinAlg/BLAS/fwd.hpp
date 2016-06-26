@@ -71,3 +71,4 @@ class compressed_vector;
 }
 
 #endif
+

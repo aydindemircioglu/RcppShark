@@ -470,3 +470,4 @@ void dcNonDominatedSort(PointRange const& points, RankRange& ranks) {
 
 }  // namespace shark
 #endif
+

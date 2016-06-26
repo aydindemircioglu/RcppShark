@@ -313,3 +313,4 @@ struct KernelClassifier: public ArgMaxConverter<KernelExpansion<InputType> >{
 
 }
 #endif
+

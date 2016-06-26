@@ -385,3 +385,4 @@ namespace shark {
 
 /** \endcond */
 #endif 
+

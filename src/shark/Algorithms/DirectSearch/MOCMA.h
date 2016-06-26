@@ -249,3 +249,4 @@ typedef IndicatorBasedMOCMA< AdditiveEpsilonIndicator > EpsilonMOCMA;
 }
 
 #endif
+

@@ -105,3 +105,4 @@ private:
 } // namespace shark {
 
 #endif // SHARK_CORE_SCOPED_HANDLE_H
+

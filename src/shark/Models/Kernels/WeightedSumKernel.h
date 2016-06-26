@@ -377,3 +377,4 @@ typedef WeightedSumKernel<CompressedRealVector> CompressedWeightedSumKernel;
 
 }
 #endif
+

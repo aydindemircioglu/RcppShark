@@ -1084,3 +1084,4 @@ struct matrix_vector_prod_optimizer<outer_product<V1,V2>,V3>{
 
 }}
 #endif
+

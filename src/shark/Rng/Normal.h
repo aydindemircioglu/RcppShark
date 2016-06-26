@@ -119,3 +119,4 @@ double gauss(RngType& rng, double mean, double variance){
 } // namespace shark {
 
 #endif // SHARK_RNG_NORMAL_H
+

@@ -311,3 +311,4 @@ void IRpropMinus::step(ObjectiveFunctionType const& objectiveFunction) {
         }
         m_best.value = objectiveFunction.evalDerivative(m_best.point,m_derivative);
 }
+

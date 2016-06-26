@@ -67,3 +67,4 @@ public:
 } // namespace shark {
 
 #endif // SHARK_RNG_ABSTRACT_DISTRIBUTION_H
+

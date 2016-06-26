@@ -177,3 +177,4 @@ void RBFLayer::setTrainingParameters(bool centers, bool width){
         m_trainWidth=width;
 }
 
+

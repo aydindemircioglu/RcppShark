@@ -131,3 +131,4 @@ void swap_full_inverted(permutation_matrix const& P, matrix_expression<M>& A){
 
 }}
 #endif
+

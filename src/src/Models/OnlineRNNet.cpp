@@ -137,3 +137,4 @@ void OnlineRNNet::weightedParameterDerivative(RealMatrix const& pattern, const R
 	//sanity check
 	SIZE_CHECK(param == mpe_structure->parameters());
 }
+

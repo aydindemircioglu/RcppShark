@@ -428,3 +428,4 @@ typename VectorT::value_type diagonalMahalanobisDistance(
 }}
 
 #endif
+

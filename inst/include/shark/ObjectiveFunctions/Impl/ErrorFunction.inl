@@ -391,3 +391,4 @@ inline ErrorFunction::ResultType ErrorFunction::evalDerivative( const SearchPoin
 }
 }
 #endif
+

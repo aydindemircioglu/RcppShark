@@ -174,3 +174,4 @@ void LDA::train(LinearClassifier<>& model, WeightedLabeledData<RealVector,unsign
 	//fill the model
 	model.decisionFunction().setStructure(transformedMeans,bias);
 }
+

@@ -156,3 +156,4 @@ void PCA::decoder(LinearModel<>& model, std::size_t m) {
 
 	model.setStructure(A, m_mean);
 }
+

@@ -114,3 +114,4 @@ private:
 }
 #endif
 #include "Impl/NoisyErrorFunction.inl"
+

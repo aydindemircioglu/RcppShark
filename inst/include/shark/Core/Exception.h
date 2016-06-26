@@ -122,3 +122,4 @@ inline void THROW_IF(bool unexpectedCondition, const std::string& message)
 #endif
 
 #endif // SHARK_CORE_EXCEPTION_H
+

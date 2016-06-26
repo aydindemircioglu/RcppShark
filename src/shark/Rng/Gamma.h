@@ -178,3 +178,4 @@ class Gamma:public boost::variate_generator<RngType*,Gamma_distribution<> >
 	};
 }
 #endif
+

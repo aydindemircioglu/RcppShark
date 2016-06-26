@@ -261,3 +261,4 @@ typedef ModelKernel<CompressedRealVector> CompressedModelKernel;
 
 }
 #endif
+

@@ -160,3 +160,4 @@ std::size_t shark::blas::pivotingRQ
 }
 
 #endif
+

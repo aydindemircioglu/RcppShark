@@ -159,3 +159,4 @@ void SigmoidFitPlatt::train(SigmoidModel& model, LabeledData<RealVector, unsigne
 	params(1) = B;
 	model.setParameterVector(params);
 }
+

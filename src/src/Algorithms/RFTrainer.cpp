@@ -625,3 +625,4 @@ void RFTrainer::createCountMatrix(ClassificationDataset const& dataset, boost::u
 bool RFTrainer::tableSort(RFAttribute const& v1, RFAttribute const& v2) {
 	return v1.value < v2.value;
 }
+

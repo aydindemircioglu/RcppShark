@@ -315,3 +315,4 @@ void importPGMSet(const std::string &p, Data<T> &set, Data<ImageInformation> &se
 
 } // end namespace shark
 #endif
+

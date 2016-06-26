@@ -372,3 +372,4 @@ struct const_expression<matrix<T,Orientation> const>{
 }
 
 #endif
+

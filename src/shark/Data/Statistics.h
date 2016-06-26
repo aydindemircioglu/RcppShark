@@ -83,3 +83,4 @@ blas::matrix<typename VectorType::value_type> covariance(Data<VectorType> const&
 #include "Impl/Statistics.inl"
 
 #endif
+
