@@ -65,10 +65,7 @@ public:
 	double eval(BatchLabelType const& labels, BatchOutputType const& predictions) const{
 		SIZE_CHECK(predictions.size1() == labels.size1());
 		SIZE_CHECK(predictions.size2() == labels.size2());
-		std::size_t numInputs = predictions.size1();
-		std::size_t outputDim = predictions.size2();
-		
-		return sum(max(0.0,abs(labels-predictions)-blas::repeat(m_epsilon,numInputs,outputDim)));
+		return sum(max(0.0,abs(labels-predictions)- m_epsilon));
 	}
 
 	double evalDerivative(BatchLabelType const& labels, BatchOutputType const& predictions, BatchOutputType& gradient)const{

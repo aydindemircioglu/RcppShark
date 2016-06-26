@@ -1,21 +1,46 @@
+/*!
+ * \brief      Permutations of vectors and matrices
+ * 
+ * \author      O. Krause
+ * \date        2013
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_PERMUTATION_HPP
 #define SHARK_LINALG_BLAS_PERMUTATION_HPP
 
 #include "vector.hpp"
 
 namespace shark { namespace blas{
-struct permutation_matrix:public vector<std::size_t> {
+struct permutation_matrix:public vector<int> {
 	// Construction and destruction
-	explicit permutation_matrix(size_type size):vector<std::size_t> (size){
+	explicit permutation_matrix(size_type size):vector<int> (size){
 		for (size_type i = 0; i < size; ++ i)
 			(*this)(i) = i;
 	}
 
-	explicit permutation_matrix(vector<std::size_t> const& init): vector<std::size_t>(init){ }
-
 	// Assignment
 	permutation_matrix &operator = (permutation_matrix const& m) {
-		vector<std::size_t>::operator = (m);
+		vector<int>::operator = (m);
 		return *this;
 	}
 };
@@ -45,7 +70,7 @@ template<class V, class Permutation>
 void swap_rows_inverted(Permutation const& P, vector_expression<V>& v){
 	for(std::size_t i = P.size(); i != 0; --i){
 		std::size_t k = i-1;
-		if(k != P(k)){
+		if(k != std::size_t(P(k))){
 			using std::swap;
 			swap(v()(k),v()(P(k)));
 		}

@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
@@ -92,7 +93,7 @@ void RBFLayer::setGamma(RealVector const& gamma){
         m_gamma = gamma;
                 
         double logPi = std::log(boost::math::constants::pi<double>());
-        m_logNormalization=  inputSize()*0.5*(blas::repeat(logPi,outputSize()) - log(gamma));
+        m_logNormalization=  inputSize()*0.5*(logPi - log(gamma));
 }
 
 
@@ -142,8 +143,7 @@ void RBFLayer::weightedParameterDerivative(
                 //the second part is than just a matrix-diagonal multiplication
                 
                 blas::dense_matrix_adaptor<double> centerDerivative = blas::adapt_matrix(outputSize(),inputSize(),&gradient(currentParameter));
-                //compute first part
-                axpy_prod(trans(delta),patterns,centerDerivative);
+                noalias(centerDerivative) = prod(trans(delta),patterns);
                 //compute second part
                 for(std::size_t i = 0; i != outputSize(); ++i){
                         noalias(row(centerDerivative,i)) -= deltaSum(i)*row(m_centers,i);

@@ -24,6 +24,21 @@ The data has to be binary, with 0-1 labels (We do not check for that!). Notice t
 The results are now the predicted labels. You can go ahead and compute with your favorite R function statistics like test error etc.
 
 
+## Changes
+
+The source code of Shark is largly unchanged. Apart from removing asserts (via -DNDEBUG) and replacing std::cout and similar things, some files had to be renamed, as there sulting path is either too long or does conflict with crossplatform compability. Notably:
+
+- SimulatedBinaryCrossover.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination is renamed to BinaryCrossover.h
+- HypervolumeContributionApproximator.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/ is renamed to HVContrApproximator.h
+- HypervolumeContribution2D.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/  is renamed to  HVContribution2D.h
+- HypervolumeContribution3D.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/  is renamed to  HVContribution3D.h
+- HypervolumeContributionMD.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/  is renamed to  HVContributionMD.h
+- HypervolumeContribution2D.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/  is renamed to  HVContribution2D.h
+- PartiallyMappedCrossover.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/ is renamed to Recombination/PMXCrossover.h
+
+
+
+
 ## Notes
 
 - Shark is heavily templated. Therefore compiling is rather slow. Luckily, running times make up for this mess.
@@ -34,8 +49,6 @@ The results are now the predicted labels. You can go ahead and compute with your
 
 - This was forked from the very old RcppShark project (see https://github.com/eddelbuettel/RcppShark), which was a prototype of an RcppBridge for the old Shark 2.x version. But as the package is nearly independent of the old project, there is no link on github anymore.
 
-- To avoid crossplatform problems, the header SimulatedBinaryCrossover.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination is renamed to BinaryCrossover.h
-
 - The random number generator was replaced, as R packages must use the random generator from R and not the C/C++ internal one. Thereffore, a direct comparison of results of algorithms that depend on (pseudo) random numbers cannot be done.
 
 
@@ -44,8 +57,9 @@ The results are now the predicted labels. You can go ahead and compute with your
 
 - To transform the Shark code to RcppShark, simply call python ./prepareShark.sh. This will assume that the Shark sources can be found under ~/Shark. It will then extract the parts it needs and put them under ./src (previous sources in src/shark and src/src will be deleted, so be sure not to have individual changes to these files). Currently this process is 100% (as of 8th august 2015), there is no manual step involved. This might change, if later versions of Shark become available.
 
-- To create a proper Makevars, or to change things, edit the template found under ./tools/Makevars_template. Then call the python script generateMakevars.py. This script will find all *.cpp files below /src/src and will add them to the Makevars. 
+- To create a proper Makevars, or to change things, edit the template found under ./tools/Makevars_template. Then call the python script ./generateMakevars.py. This script will find all *.cpp files below /src/src and will add them to the Makevars. 
 
+- Finally make sure that the Shark you have checked out below ~/Shark was compiled without LAPACK support, as R packages with LAPACK are not really supported by CRAN. If you forget to do so, an error message like "clapack.h not found" will be thrown. 
 
 
 ### Authors
@@ -67,5 +81,5 @@ and obviously to all the R and Shark people for creating such nice packages.
 
 ### License
 
-GPL 3.0 for the R package, Shark 3.0 itself is licensed under LGPL.
+GPL 3.0 for the R package, Shark 3.x itself is licensed under LGPL.
 

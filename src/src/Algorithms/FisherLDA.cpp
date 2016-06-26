@@ -35,7 +35,6 @@
 #include <shark/Algorithms/Trainers/FisherLDA.h>
 #include <shark/LinAlg/eigenvalues.h>
 #include <shark/LinAlg/solveSystem.h>
-#include <boost/foreach.hpp>
 using namespace shark;
 
 
@@ -66,9 +65,7 @@ void FisherLDA::train(LinearModel<>& model, LabeledData<RealVector, unsigned int
 	//reduce the size of the covariance matrix the the needed
 	//subspace
 	RealMatrix subspaceDirections = trans(columns(eigenvectors,0,nComp));
-	RealVector offset(inputDim,0.0);
-	axpy_prod(subspaceDirections, mean,offset);
-	offset*=-1;
+	RealVector offset = -prod(subspaceDirections, mean);
 
 	// write the parameters into the model
 	model.setStructure(subspaceDirections, offset);
@@ -93,11 +90,7 @@ void FisherLDA::meanAndScatter(
 	// calculate mean and scatter for every class.
 
 	// for every example in set ...
-	
-	typedef LabeledData<RealVector,unsigned int>::const_element_range Elements;
-	typedef boost::range_reference<Elements>::type Reference;
-	Elements elements = dataset.elements();
-	BOOST_FOREACH(Reference point, elements){
+	for(auto point: dataset.elements()){
 		//find class
 		std::size_t c= point.label;
 
@@ -111,7 +104,7 @@ void FisherLDA::meanAndScatter(
 	}
 
 	// for every class ...
-	for( unsigned int c = 0; c != classes ; c++ ) {
+	for( std::size_t c = 0; c != classes ; c++ ) {
 		// normalize mean vector
 		means[c] /= counter[c];
 
@@ -133,8 +126,8 @@ void FisherLDA::meanAndScatter(
 	// calculate between- and within-class scatters
 	for (std::size_t c = 0; c != classes; c++) {
 		RealVector diff = means[c] - mean;
-		Sb += outer_prod(counter[c] * diff,diff);
-		Sw += covariances[c];
+		noalias(Sb) += outer_prod(counter[c] * diff,diff);
+		noalias(Sw) += covariances[c];
 	}
 
 	// invert Sw

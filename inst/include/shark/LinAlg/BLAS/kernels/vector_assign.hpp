@@ -1,3 +1,30 @@
+/*!
+ * \brief       Assignment kernels for vector expressions
+ * 
+ * \author      O. Krause
+ * \date        2015
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_KERNELS_VECTOR_ASSIGN_HPP
 #define SHARK_LINALG_BLAS_KERNELS_VECTOR_ASSIGN_HPP
 
@@ -31,7 +58,7 @@ void assign(
 ) {
 	SIZE_CHECK(v().size() == e().size());
 	for(std::size_t i = 0; i != v().size(); ++i){
-		v()(i)=e()(i);
+		v()(i) = static_cast<typename V::value_type>(e()(i));
 	}
 }
 // Dense-packed case
@@ -186,11 +213,12 @@ void assign(
 ) {
 	SIZE_CHECK(v().size() == e().size());
 	typedef typename E::const_iterator EIterator;
+	typedef typename V::const_iterator VIterator;
 	typedef typename V::scalar_type scalar_type;
-	EIterator eiter = e.begin();
-	EIterator eend = e.end();
-	EIterator viter = v.begin();
-	EIterator vend = v.end();
+	EIterator eiter = e().begin();
+	EIterator eend = e().end();
+	VIterator viter = v().begin();
+	VIterator vend = v().end();
 	//right hand side hasnonzero elements
 	if(eiter != eend){
 		//apply f to the first elements for which the right hand side is 0, unless f is the identity
@@ -218,11 +246,12 @@ void assign(
 ) {
 	SIZE_CHECK(v().size() == e().size());
 	typedef typename E::const_iterator EIterator;
+	typedef typename V::const_iterator VIterator;
 	typedef typename V::scalar_type scalar_type;
-	EIterator eiter = e.begin();
-	EIterator eend = e.end();
-	EIterator viter = v.begin();
-	EIterator vend = v.end();
+	EIterator eiter = e().begin();
+	EIterator eend = e().end();
+	VIterator viter = v().begin();
+	VIterator vend = v().end();
 	
 	//right hand side has nonzero elements
 	if(eiter != eend){
@@ -304,7 +333,6 @@ void assign_sparse(
 	typedef typename V::value_type value_type;
 	typedef typename V::size_type size_type;
 	value_type zero = value_type();
-	size_type size = v().size();
 
 	typename V::iterator it = v().begin();
 	typename E::const_iterator ite = e().begin();
@@ -377,7 +405,7 @@ void assign(
 	typename vector_temporary<V>::type temporary(v());
 	assign_sparse(temporary,e, f);
 	v().clear();
-	assign(v, temporary);
+	kernels::assign(v, temporary);
 }
 
 // Dispatcher

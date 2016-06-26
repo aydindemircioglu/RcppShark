@@ -39,14 +39,14 @@ void RNNet::eval(BatchInputType const& patterns, BatchOutputType& outputs, State
 	InternalState& s = state.toState<InternalState>();
 	std::size_t warmUpLength=m_warmUpSequence.size();
 	std::size_t numUnits = mpe_structure->numberOfUnits();
-	s.timeActivation.resize(size(patterns));
-	outputs.resize(size(patterns));
+	s.timeActivation.resize(patterns.size());
+	outputs.resize(patterns.size());
 
 	//calculation of the sequences
-	for(std::size_t b = 0; b != size(patterns);++b){
-		std::size_t sequenceLength=size(get(patterns,b))+warmUpLength+1;
+	for(std::size_t b = 0; b != patterns.size();++b){
+		std::size_t sequenceLength = patterns[b].size()+warmUpLength+1;
 		s.timeActivation[b].resize(sequenceLength,RealVector(numUnits));
-		outputs[b].resize(size(get(patterns,b)),RealVector(numUnits));
+		outputs[b].resize(patterns[b].size(),RealVector(numUnits));
 		Sequence& sequence = s.timeActivation[b];
 		sequence[0].clear();
 		for (std::size_t t = 1; t < sequenceLength;t++){
@@ -62,10 +62,9 @@ void RNNet::eval(BatchInputType const& patterns, BatchOutputType& outputs, State
 			sequence[t-1](mpe_structure->bias())=1;
 
 			//activation of the hidden neurons is now just a matrix vector multiplication
-			axpy_prod(
+			noalias(subrange(sequence[t],inputSize()+1,numUnits)) = prod(
 				mpe_structure->weights(),
-				sequence[t-1],
-				subrange(sequence[t],inputSize()+1,numUnits)
+				sequence[t-1]
 			);
 			//now apply the sigmoid function
 			for (std::size_t i = inputSize()+1;i != numUnits;i++)
@@ -91,9 +90,9 @@ void RNNet::weightedParameterDerivative(
 	std::size_t numUnits = mpe_structure->numberOfUnits();
 	std::size_t numNeurons = mpe_structure->numberOfNeurons();
 	std::size_t warmUpLength=m_warmUpSequence.size();
-	for(std::size_t b = 0; b != size(patterns); ++b){
+	for(std::size_t b = 0; b != patterns.size(); ++b){
 		Sequence const& sequence = s.timeActivation[b];
-		std::size_t sequenceLength = size(s.timeActivation[b]);
+		std::size_t sequenceLength = s.timeActivation[b].size();
 		RealMatrix errorDerivative(sequenceLength,numNeurons);
 		errorDerivative.clear();
 		//copy errors
@@ -107,11 +106,9 @@ void RNNet::weightedParameterDerivative(
 				double derivative = mpe_structure->neuronDerivative(sequence[t](j+mpe_structure->inputs()+1));
 				errorDerivative(t,j)*=derivative;
 			}
-			axpy_prod(
+			noalias(row(errorDerivative,t-1)) += prod(
 				trans(columns(mpe_structure->weights(), inputSize()+1,numUnits)),
-				row(errorDerivative,t),
-				row(errorDerivative,t-1),
-				false
+				row(errorDerivative,t)
 			);
 		}
 		

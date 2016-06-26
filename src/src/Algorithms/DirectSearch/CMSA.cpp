@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
@@ -6,7 +7,7 @@
  * The algorithm is described in
  * 
  * H. G. Beyer, B. Sendhoff (2008). 
- * Covariance Matrix Adaptation Revisited – The CMSA Evolution Strategy –
+ * Covariance Matrix Adaptation Revisited: The CMSA Evolution Strategy
  * In Proceedings of the Tenth International Conference on Parallel Problem Solving from Nature
  * (PPSN X), pp. 123-132, LNCS, Springer-Verlag
  * 
@@ -38,78 +39,111 @@
  #define SHARK_COMPILE_DLL
 #include <shark/Algorithms/DirectSearch/CMSA.h>
 #include <shark/Algorithms/DirectSearch/Operators/Evaluation/PenalizingEvaluator.h>
-
+#include <shark/Algorithms/DirectSearch/Operators/Selection/ElitistSelection.h>
 using namespace shark;
 
-
-namespace{
-        struct FitnessComparator {
-                template<typename IndividualType>
-                bool operator()( const IndividualType & a, const IndividualType & b ) const {
-                        return a.penalizedFitness() < b.penalizedFitness();
-                }
-        };
-
-        struct PointExtractor {
-                template<typename T>
-                const RealVector & operator()( const T & t ) const {
-                        return t.searchPoint();
-                }
-        };
-
+void CMSA::init( ObjectiveFunctionType & function, SearchPointType const& p) {
+        SIZE_CHECK(p.size() == function.numberOfVariables());
+        checkFeatures(function);
+        std::vector<RealVector> points(1,p);
+        std::vector<double> functionValues(1,function.eval(p));
+        
+        std::size_t lambda = m_userSetLambda? m_lambda:4 * p.size();
+        std::size_t mu  = m_userSetMu? m_mu:lambda / 4;
+        RANGE_CHECK(mu < lambda);
+        double sigma = (m_initSigma > 0)? m_initSigma : 1.0/std::sqrt(double(p.size()));
+        doInit(
+                points,
+                functionValues,
+                lambda,
+                mu,
+                sigma
+        );
+}
+void CMSA::init( 
+        ObjectiveFunctionType& function, 
+        SearchPointType const& p,
+        std::size_t lambda,
+        std::size_t mu,
+        double initialSigma,                                   
+        const boost::optional< RealMatrix > & initialCovarianceMatrix
+) {
+        SIZE_CHECK(p.size() == function.numberOfVariables());
+        checkFeatures(function);
+        std::vector<RealVector> points(1,p);
+        std::vector<double> functionValues(1,function.eval(p));
+        doInit(
+                points,
+                functionValues,
+                lambda,
+                mu,
+                initialSigma
+        );
+        if(initialCovarianceMatrix){
+                m_mutationDistribution.covarianceMatrix() = *initialCovarianceMatrix;
+                m_mutationDistribution.update();
+        }
 }
 
-void CMSA::init( ObjectiveFunctionType & function, SearchPointType const& p) {
-        checkFeatures(function);
-        function.init();
-        
-        m_numberOfVariables = p.size();
+void CMSA::doInit( 
+        std::vector<SearchPointType> const& initialSearchPoints,
+        std::vector<ResultType> const& initialValues,
+        std::size_t lambda,
+        std::size_t mu,
+        double sima
+) {
+        SIZE_CHECK(initialSearchPoints.size() > 0);
+        m_numberOfVariables = initialSearchPoints[0].size();
 
-        m_lambda = 4 * m_numberOfVariables;
-        m_mu = m_lambda / 4;
+        m_lambda = lambda;
+        m_mu = mu;
 
-        m_mean = p;
         m_mutationDistribution.resize( m_numberOfVariables );
-
-        m_sigma = 1.0;
+        m_sigma =  (m_initSigma == 0)? 1.0/std::sqrt(double(m_numberOfVariables)): m_initSigma;
         m_cSigma = 1./::sqrt( 2. * m_numberOfVariables );
         m_cC = 1. + (m_numberOfVariables*(m_numberOfVariables + 1.))/(2.*m_mu);
+        
+        std::size_t pos = std::min_element(initialValues.begin(),initialValues.end())-initialValues.begin();
+        m_mean = initialSearchPoints[pos];
+        m_best.point = initialSearchPoints[pos];
+        m_best.value = initialValues[pos];
 }
 
 
 void CMSA::step(ObjectiveFunctionType const& function){
-        std::vector< IndividualType > offspring( m_lambda );
-
+        std::vector<IndividualType> offspring = generateOffspring();
         PenalizingEvaluator penalizingEvaluator;
-        for( unsigned int i = 0; i < offspring.size(); i++ ) {              
-                MultiVariateNormalDistribution::result_type sample = m_mutationDistribution();
-                offspring[i].chromosome().sigma = m_sigma * ::exp( m_cSigma * Rng::gauss( 0, 1 ) );
+        penalizingEvaluator( function, offspring.begin(), offspring.end() );
+        updatePopulation(offspring);
+}
+
+std::vector<CMSA::IndividualType> CMSA::generateOffspring( ) const{
+        std::vector< IndividualType > offspring( m_lambda );
+        for( std::size_t i = 0; i < offspring.size(); i++ ) {               
+                MultiVariateNormalDistribution::result_type sample = m_mutationDistribution(*mpe_rng);
+                offspring[i].chromosome().sigma = m_sigma * ::exp( m_cSigma * gauss(*mpe_rng, 0, 1 ) );
                 offspring[i].chromosome().step = sample.first;
                 offspring[i].searchPoint() = m_mean + offspring[i].chromosome().sigma * sample.first;
         }
-        penalizingEvaluator( function, offspring.begin(), offspring.end() );
-
-        // Selection
-        std::sort( offspring.begin(), offspring.end(), FitnessComparator() );
-        std::vector< IndividualType > parentsNew( offspring.begin(), offspring.begin() + m_mu );
-
-        // Strategy parameter update
-        updateStrategyParameters( parentsNew );
-
-        m_best.point = parentsNew.front().searchPoint();
-        m_best.value = parentsNew.front().unpenalizedFitness();
+        return offspring;
 }
-
-void CMSA::updateStrategyParameters( const std::vector< CMSA::IndividualType > & offspringNew ) {
-        RealVector xPrimeNew = cog( offspringNew, PointExtractor() );
+void CMSA::updatePopulation(std::vector< IndividualType > const& offspring ) {
+        std::vector< IndividualType > selectedOffspring( m_mu );
+        ElitistSelection< IndividualType::FitnessOrdering > selection;
+        selection(offspring.begin(),offspring.end(),selectedOffspring.begin(), selectedOffspring.end());
+        
+        RealVector xPrimeNew ( m_numberOfVariables, 0. );
+        for( auto const& ind : selectedOffspring )
+                noalias(xPrimeNew) += ind.searchPoint() / m_mu;
+        
         // Covariance Matrix Update
         RealMatrix Znew( m_numberOfVariables, m_numberOfVariables,0.0 );
         RealMatrix& C = m_mutationDistribution.covarianceMatrix();
         // Rank-mu-Update
-        for( unsigned int i = 0; i < m_mu; i++ ) {
+        for( std::size_t i = 0; i < m_mu; i++ ) {
                 noalias(Znew) += 1./m_mu * blas::outer_prod( 
-                        offspringNew[i].chromosome().step,
-                        offspringNew[i].chromosome().step
+                        selectedOffspring[i].chromosome().step,
+                        selectedOffspring[i].chromosome().step
                 );
         }
         noalias(C) = (1. - 1./m_cC) * C + 1./m_cC * Znew;
@@ -118,10 +152,12 @@ void CMSA::updateStrategyParameters( const std::vector< CMSA::IndividualType > &
         // Step size update
         double sigmaNew = 0.;
         //double sigma = 0.;
-        for( unsigned int i = 0; i < m_mu; i++ ) {
-                sigmaNew += 1./m_mu * offspringNew[i].chromosome().sigma;
+        for( std::size_t i = 0; i < m_mu; i++ ) {
+                sigmaNew += 1./m_mu * selectedOffspring[i].chromosome().sigma;
         }
         m_sigma = sigmaNew;
         m_mean = xPrimeNew;
+        m_best.point= selectedOffspring[ 0 ].searchPoint();
+        m_best.value= selectedOffspring[ 0 ].unpenalizedFitness();
 }
 

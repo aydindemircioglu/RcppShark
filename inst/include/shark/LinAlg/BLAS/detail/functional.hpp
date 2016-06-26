@@ -1,9 +1,36 @@
+// [[Rcpp::depends(BH)]]
+/*!
+ * \brief       Functors used inside the library
+ * 
+ * \author      O. Krause
+ * \date        2013
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_DETAIL_FUNCTIONAL_HPP
 #define SHARK_LINALG_BLAS_DETAIL_FUNCTIONAL_HPP
 
 #include <boost/math/constants/constants.hpp>
 #include <boost/math/special_functions/atanh.hpp>
-#include <boost/type_traits/remove_reference.hpp> 
 #include "traits.hpp"
 #include <shark/Core/Exception.h>
 #include <shark/Core/Math.h>
@@ -49,7 +76,7 @@ struct scalar_negate {
 template<class T, class ScalarType>
 struct scalar_divide {
 	typedef T argument_type;
-	typedef typename promote_traits<T, ScalarType>::promote_type result_type;
+	typedef decltype(T()/ScalarType()) result_type;
 	static const bool zero_identity = true;
 
 	scalar_divide(ScalarType divisor):m_divisor(divisor) {}
@@ -63,7 +90,7 @@ private:
 template<class T>
 struct scalar_inverse {
 	typedef T argument_type;
-	typedef argument_type result_type;
+	typedef T result_type;
 	static const bool zero_identity = false;
 
 	result_type operator()(argument_type x)const {
@@ -74,7 +101,7 @@ struct scalar_inverse {
 template<class T, class ScalarType>
 struct scalar_multiply1 {
 	typedef T argument_type;
-	typedef typename promote_traits<T, ScalarType>::promote_type result_type;
+	typedef decltype(ScalarType() * T()) result_type;
 	static const bool zero_identity = true;
 
 	scalar_multiply1(ScalarType factor):m_factor(factor) {}
@@ -88,7 +115,7 @@ private:
 template<class T, class ScalarType>
 struct scalar_multiply2 {
 	typedef T argument_type;
-	typedef typename promote_traits<T, ScalarType>::promote_type result_type;
+	typedef decltype(T() * ScalarType()) result_type;
 	static const bool zero_identity = true;
 
 	scalar_multiply2(ScalarType factor):m_factor(factor) {}
@@ -102,7 +129,7 @@ private:
 template<class T, class ScalarType>
 struct scalar_add{
 	typedef T argument_type;
-	typedef typename promote_traits<T, ScalarType>::promote_type result_type;
+	typedef decltype(T() + ScalarType()) result_type;
 	static const bool zero_identity = false;
 
 	scalar_add(ScalarType summand):m_summand(summand) {}
@@ -118,7 +145,7 @@ private:
 template<class T, class ScalarType>
 struct scalar_subtract1{
 	typedef T argument_type;
-	typedef typename promote_traits<T, ScalarType>::promote_type result_type;
+	typedef decltype(ScalarType() - T()) result_type;
 	static const bool zero_identity = false;
 
 	scalar_subtract1(ScalarType value):m_value(value) {}
@@ -133,7 +160,7 @@ private:
 template<class T, class ScalarType>
 struct scalar_subtract2{
 	typedef T argument_type;
-	typedef typename promote_traits<T, ScalarType>::promote_type result_type;
+	typedef decltype(T() - ScalarType()) result_type;
 	static const bool zero_identity = false;
 
 	scalar_subtract2(ScalarType value):m_value(value) {}
@@ -465,7 +492,7 @@ private:
 template<class T, class ScalarType>
 struct scalar_min {
 	typedef T argument_type;
-	typedef typename promote_traits<T, ScalarType>::promote_type result_type;
+	typedef T result_type;
 	static const bool zero_identity = true;
 
 	scalar_min(result_type argument):m_argument(argument) {}
@@ -478,7 +505,7 @@ private:
 template<class T, class ScalarType>
 struct scalar_max {
 	typedef T argument_type;
-	typedef typename promote_traits<T, ScalarType>::promote_type result_type;
+	typedef T result_type;
 	static const bool zero_identity = true;
 
 	scalar_max(ScalarType argument):m_argument(argument) {}
@@ -494,7 +521,7 @@ template<class T1,class T2>
 struct scalar_binary_plus {
 	typedef T1 argument1_type;
 	typedef T2 argument2_type;
-	typedef typename promote_traits<T1, T2>::promote_type result_type;
+	typedef decltype(T1() + T2()) result_type;
 	static const bool left_zero_remains =  false;
 	static const bool right_zero_remains =  false;
 	result_type operator()(argument1_type x, argument2_type y)const {
@@ -505,7 +532,7 @@ template<class T1,class T2>
 struct scalar_binary_minus {
 	typedef T1 argument1_type;
 	typedef T2 argument2_type;
-	typedef typename promote_traits<T1, T2>::promote_type result_type;
+	typedef decltype(T1() - T2()) result_type;
 	static const bool left_zero_remains =  false;
 	static const bool right_zero_remains =  false;
 	result_type operator()(argument1_type x, argument2_type y)const {
@@ -517,7 +544,7 @@ template<class T1,class T2>
 struct scalar_binary_multiply {
 	typedef T1 argument1_type;
 	typedef T2 argument2_type;
-	typedef typename promote_traits<T1, T2>::promote_type result_type;
+	typedef decltype(T1() * T2()) result_type;
 	static const bool left_zero_remains =  true;
 	static const bool right_zero_remains =  true;
 	result_type operator()(argument1_type x, argument2_type y)const {
@@ -529,7 +556,7 @@ template<class T1,class T2>
 struct scalar_binary_divide {
 	typedef T1 argument1_type;
 	typedef T2 argument2_type;
-	typedef typename promote_traits<T1, T2>::promote_type result_type;
+	typedef decltype(T1() / T2()) result_type;
 	static const bool left_zero_remains =  true;
 	static const bool right_zero_remains =  false;
 	result_type operator()(argument1_type x, argument2_type y)const {
@@ -540,7 +567,7 @@ template<class T1,class T2>
 struct scalar_binary_safe_divide {
 	typedef T1 argument1_type;
 	typedef T2 argument2_type;
-	typedef typename promote_traits<T1, T2>::promote_type result_type;
+	typedef decltype(T1() / T2()) result_type;
 	static const bool left_zero_remains =  true;
 	static const bool right_zero_remains =  false;
 	scalar_binary_safe_divide(result_type defaultValue):m_defaultValue(defaultValue) {}
@@ -555,7 +582,7 @@ template<class T1,class T2>
 struct scalar_binary_pow {
 	typedef T1 argument1_type;
 	typedef T2 argument2_type;
-	typedef typename promote_traits<T1, T2>::promote_type result_type;
+	typedef decltype(T1() * T2()) result_type;
 	static const bool left_zero_remains =  false;
 	static const bool right_zero_remains =  false;
 	result_type operator()(argument1_type x, argument2_type y)const {
@@ -568,7 +595,7 @@ template<class T1,class T2>
 struct scalar_binary_min{
 	typedef T1 argument1_type;
 	typedef T2 argument2_type;
-	typedef typename promote_traits<T1, T2>::promote_type result_type;
+	typedef decltype(T1() + T2()) result_type;
 	static const bool left_zero_remains =  false;
 	static const bool right_zero_remains =  false;
 	result_type operator()(argument1_type x, argument2_type y)const {
@@ -582,7 +609,7 @@ template<class T1,class T2>
 struct scalar_binary_max{
 	typedef T1 argument1_type;
 	typedef T2 argument2_type;
-	typedef typename promote_traits<T1, T2>::promote_type result_type;
+	typedef decltype(T1() + T2()) result_type;
 	static const bool left_zero_remains =  false;
 	static const bool right_zero_remains =  false;
 	result_type operator()(argument1_type x, argument2_type y)const {
@@ -602,7 +629,7 @@ struct scalar_plus_assign{
 	static const bool right_zero_identity = true;
 	static const bool left_zero_identity = false;
 	void operator()(argument1_type t1, argument2_type t2) {
-		t1 += static_cast<typename boost::remove_reference<T1>::type const>(t2);
+		t1 += static_cast<typename std::decay<T1>::type const>(t2);
 	}
 };
 

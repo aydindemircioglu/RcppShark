@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
@@ -81,7 +82,6 @@
 #ifndef SHARK_RNG_GLOBALRNG_H
 #define SHARK_RNG_GLOBALRNG_H
 
-#include <shark/Rng/Runif.h>
 #include <shark/Rng/Rng.h>
 
 #include <shark/Rng/Bernoulli.h>
@@ -131,7 +131,7 @@ namespace shark {
 		}
 
 		//! creates a discrete uniform distributed number in the range from "min" to "max"
-		static int discrete(int min=0,int max=1) {
+		static std::size_t discrete(std::size_t min=0,std::size_t max=1) {
 			if(min == max) return min;
 			DiscreteUniform< rng_type > disc(globalRng,min,max);
 			return disc( min, max );
@@ -211,11 +211,6 @@ namespace shark {
 
 	ANNOUNCE_SHARK_RNG( shark::FastRngType,		FastRng );
 	ANNOUNCE_SHARK_RNG( shark::DefaultRngType,	Rng		);
-	/*
-	typedef BaseRng< boost::rand48 > FastRng; FastRng::rng_type FastRng::globalRng = FastRng::rng_type();
-		typedef BaseRng< boost::rand47 > Rng; Rng::rng_type Rng::globalRng = Rng::rng_type();*/
-
-
 }
 
 #endif

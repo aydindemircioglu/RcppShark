@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -562,7 +563,7 @@ RealVector solutionGradient(variables);
 		double objective = 0.0;
 		for (v=0; v<variables; v++)
 		{
-			unsigned int w = cardP * example[variable[v].i].index + variable[v].p;
+			std::size_t w = cardP * example[variable[v].i].index + variable[v].p;
 			solutionAlpha(w) = alpha(v);
 solutionGradient(w) = gradient(v);
 			objective += (gradient(v) + linear(v)) * alpha(v);
@@ -855,7 +856,7 @@ solutionGradient(w) = gradient(v);
 		double objective = 0.0;
 		for (v=0; v<variables; v++)
 		{
-			unsigned int w = cardP * example[variable[v].i].index + variable[v].p;
+			std::size_t w = cardP * example[variable[v].i].index + variable[v].p;
 			solutionAlpha(w) = alpha(v);
 			objective += (gradient(v) + linear(v)) * alpha(v);
 		}
@@ -1010,8 +1011,7 @@ protected:
 			if (sumToZero)
 			{
 				// project the gradient
-				double mean = sum(grad) / (double)classes;
-				grad -= blas::repeat(mean,classes);
+				grad -= sum(grad) / classes;
 			}
 
 			// Rprop
@@ -1030,8 +1030,7 @@ protected:
 			if (sumToZero)
 			{
 				// project the step
-				double mean = sum(step) / (double)classes;
-				step -= blas::repeat(mean,classes);
+				step -= sum(step) / classes;
 			}
 
 			// update the solution and the dual gradient

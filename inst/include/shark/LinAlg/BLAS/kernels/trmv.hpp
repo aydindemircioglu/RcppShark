@@ -1,7 +1,8 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
- * \brief       -
+ * \brief       Triangular matrix-vector multiplication kernel
  *
  * \author      O. Krause
  * \date        2012
@@ -32,12 +33,12 @@
 #define SHARK_LINALG_BLAS_KERNELS_TRMV_HPP
 
 #ifdef SHARK_USE_CBLAS
-#include "atlas/trmv.hpp"
+#include "cblas/trmv.hpp"
 #else
 // if no bindings are included, we have to provide the default has_optimized_gemv 
 // otherwise the binding will take care of this
 namespace shark { namespace blas { namespace bindings{
-template<class M1, class M2>
+template<class M, class V>
 struct  has_optimized_trmv
 : public boost::mpl::false_{};
 }}}

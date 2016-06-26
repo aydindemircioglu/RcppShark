@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -65,7 +66,7 @@ public:
         typedef typename base_type::BatchInputType BatchInputType;
         typedef typename base_type::BatchOutputType BatchOutputType;
 //      Information about a single split. misclassProp, r and g are variables used in the cost complexity step
-        struct SplitInfo{
+        struct NodeInfo {
                 std::size_t nodeId;
                 std::size_t attributeIndex;
                 double attributeValue;
@@ -81,22 +82,31 @@ public:
         /// Vector of structs that contains the splitting information and the labels.
         /// The class label is a normalized histogram in the classification case.
         /// In the regression case, the label is the regression value.
-        typedef std::vector<SplitInfo> SplitMatrixType;
+        typedef std::vector<NodeInfo> TreeType;
 
         /// Constructor
         CARTClassifier()
         {}
 
-        /// Constructor taking the splitMatrix as argument
-        CARTClassifier(SplitMatrixType const& splitMatrix)
+        /// Constructor taking the tree as argument
+        CARTClassifier(TreeType const& tree)
         {
-                setSplitMatrix(splitMatrix);
+                m_tree=tree;
         }
 
-        /// Constructor taking the splitMatrix as argument as well as maximum number of attributes
-        CARTClassifier(SplitMatrixType const& splitMatrix, std::size_t d)
+        /// Constructor taking the tree as argument and optimize it if requested
+        CARTClassifier(TreeType const& tree, bool optimize)
         {
-                setSplitMatrix(splitMatrix);
+                if (optimize)
+                        setTree(tree);
+                else
+                        m_tree=tree;
+        }
+
+        /// Constructor taking the tree as argument as well as maximum number of attributes
+        CARTClassifier(TreeType const& tree, std::size_t d)
+        {
+                setTree(tree);
                 m_inputDimension = d;
         }
 
@@ -104,13 +114,13 @@ public:
         std::string name() const
         { return "CARTClassifier"; }
 
-        boost::shared_ptr<State> createState()const{
+        boost::shared_ptr<State> createState() const{
                 return boost::shared_ptr<State>(new EmptyState());
         }
 
         using base_type::eval;
         /// \brief Evaluate the Tree on a batch of patterns
-        void eval(const BatchInputType& patterns, BatchOutputType& outputs)const{
+        void eval(BatchInputType const& patterns, BatchOutputType & outputs) const{
                 std::size_t numPatterns = shark::size(patterns);
                 //evaluate the first pattern alone and create the batch output from that
                 LabelType const& firstResult = evalPattern(row(patterns,0));
@@ -123,22 +133,27 @@ public:
                 }
         }
         
-        void eval(const BatchInputType& patterns, BatchOutputType& outputs, State& state)const{
+        void eval(BatchInputType const& patterns, BatchOutputType & outputs, State& state) const{
                 eval(patterns,outputs);
         }
         /// \brief Evaluate the Tree on a single pattern
-        void eval(RealVector const & pattern, LabelType& output){
+        void eval(RealVector const& pattern, LabelType& output){
                 output = evalPattern(pattern);          
         }
 
-        /// Set the model split matrix.
-        void setSplitMatrix(SplitMatrixType const& splitMatrix){
-                m_splitMatrix = splitMatrix;
-                optimizeSplitMatrix(m_splitMatrix);
+        /// Set the model tree.
+        void setTree(TreeType const& tree){
+                m_tree = tree;
+                optimizeTree(m_tree);
         }
         
+        /// Get the model split matrix.
+        TreeType getTree() const {
+                return m_tree;
+        }
+
         /// \brief The model does not have any parameters.
-        std::size_t numberOfParameters()const{
+        std::size_t numberOfParameters() const{
                 return 0;
         }
 
@@ -148,7 +163,7 @@ public:
         }
 
         /// \brief The model does not have any parameters.
-        void setParameterVector(const RealVector& param) {
+        void setParameterVector(RealVector const& param) {
                 SHARK_ASSERT(param.size() == 0);
         }
 
@@ -158,8 +173,8 @@ public:
         UIntVector countAttributes() const {
                 SHARK_ASSERT(m_inputDimension > 0);
                 UIntVector r(m_inputDimension, 0);
-                typename SplitMatrixType::const_iterator it;
-                for(it = m_splitMatrix.begin(); it != m_splitMatrix.end(); ++it) {
+                typename TreeType::const_iterator it;
+                for(it = m_tree.begin(); it != m_tree.end(); ++it) {
                         //Rcpp::Rcout << "NodeId: " <<it->leftNodeId << std::endl;
                         if(it->leftNodeId != 0) { // not a label 
                                 r(it->attributeIndex)++;
@@ -191,7 +206,7 @@ public:
         }
 
         /// Compute oob error, given an oob dataset (Regression)
-        void computeOOBerror(const RegressionDataset& dataOOB){
+        void computeOOBerror(RegressionDataset const& dataOOB){
                 // define loss
                 SquaredLoss<RealVector, RealVector> lossOOB;
 
@@ -213,7 +228,7 @@ public:
         }
 
         /// Compute feature importances, given an oob dataset (Classification)
-        void computeFeatureImportances(const ClassificationDataset& dataOOB){
+        void computeFeatureImportances(ClassificationDataset const& dataOOB){
                 m_featureImportances.resize(m_inputDimension);
 
                 // define loss
@@ -248,7 +263,7 @@ public:
         }
 
         /// Compute feature importances, given an oob dataset (Regression)
-        void computeFeatureImportances(const RegressionDataset& dataOOB){
+        void computeFeatureImportances(RegressionDataset const& dataOOB){
                 m_featureImportances.resize(m_inputDimension);
 
                 // define loss
@@ -283,44 +298,44 @@ public:
         }
 
 protected:
-        /// split matrix of the model
-        SplitMatrixType m_splitMatrix;
+        /// tree of the model
+        TreeType m_tree;
         
-        /// \brief Finds the index of the node with a certain nodeID in an unoptimized split matrix.
-        std::size_t findNode(std::size_t nodeId)const{
+        /// \brief Finds the index of the node with a certain nodeID in an unoptimized tree.
+        std::size_t findNode(std::size_t nodeId) const{
                 std::size_t index = 0;
-                for(; nodeId != m_splitMatrix[index].nodeId; ++index);
+                for(; nodeId != m_tree[index].nodeId; ++index);
                 return index;
         }
 
-        /// Optimize a split matrix, so constant lookup can be used.
+        /// Optimize a tree, so constant lookup can be used.
         /// The optimization is done by changing the index of the children
         /// to use indices instead of node ID.
         /// Furthermore, the node IDs are converted to index numbers.
-        void optimizeSplitMatrix(SplitMatrixType& splitMatrix)const{
-                for(std::size_t i = 0; i < splitMatrix.size(); i++){
-                        splitMatrix[i].leftNodeId = findNode(splitMatrix[i].leftNodeId);
-                        splitMatrix[i].rightNodeId = findNode(splitMatrix[i].rightNodeId);
+        void optimizeTree(TreeType & tree) const{
+                for(std::size_t i = 0; i < tree.size(); i++){
+                        tree[i].leftNodeId = findNode(tree[i].leftNodeId);
+                        tree[i].rightNodeId = findNode(tree[i].rightNodeId);
                 }
-                for(std::size_t i = 0; i < splitMatrix.size(); i++){
-                        splitMatrix[i].nodeId = i;
+                for(std::size_t i = 0; i < tree.size(); i++){
+                        tree[i].nodeId = i;
                 }
         }
         
         /// Evaluate the CART tree on a single sample
         template<class Vector>
-        LabelType const& evalPattern(Vector const& pattern)const{
+        LabelType const& evalPattern(Vector const& pattern) const{
                 std::size_t nodeId = 0;
-                while(m_splitMatrix[nodeId].leftNodeId != 0){
-                        if(pattern[m_splitMatrix[nodeId].attributeIndex]<=m_splitMatrix[nodeId].attributeValue){
+                while(m_tree[nodeId].leftNodeId != 0){
+                        if(pattern[m_tree[nodeId].attributeIndex]<= m_tree[nodeId].attributeValue){
                                 //Branch on left node
-                                nodeId = m_splitMatrix[nodeId].leftNodeId;
+                                nodeId = m_tree[nodeId].leftNodeId;
                         }else{
                                 //Branch on right node
-                                nodeId = m_splitMatrix[nodeId].rightNodeId;
+                                nodeId = m_tree[nodeId].rightNodeId;
                         }
                 }
-                return m_splitMatrix[nodeId].label;
+                return m_tree[nodeId].label;
         }
 
 

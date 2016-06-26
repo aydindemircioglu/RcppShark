@@ -33,7 +33,6 @@
 #include <shark/Algorithms/DirectSearch/Individual.h>
 
 #include <shark/Algorithms/DirectSearch/Operators/Evaluation/PenalizingEvaluator.h>
-#include <shark/Algorithms/DirectSearch/FitnessExtractor.h>
 #include <shark/Algorithms/DirectSearch/Operators/Selection/ElitistSelection.h>
 
 
@@ -52,13 +51,13 @@ namespace shark {
 class VDCMA : public AbstractSingleObjectiveOptimizer<RealVector >
 {
 private:
-	double chi( unsigned int n ) {
+	double chi( std::size_t n ) {
 		return( std::sqrt( static_cast<double>( n ) )*(1. - 1./(4.*n) + 1./(21.*n*n)) );
 	}
 public:
 
 	/// \brief Default c'tor.
-	VDCMA():m_initialSigma(0.0){
+	VDCMA(DefaultRngType& rng = Rng::globalRng):m_initialSigma(0.0), mpe_rng(&rng){
 		m_features |= REQUIRES_VALUE;
 	}
 	
@@ -67,25 +66,25 @@ public:
 	{ return "VDCMA-ES"; }
 
 	/// \brief Calculates lambda for the supplied dimensionality n.
-	unsigned suggestLambda( unsigned int dimension ) {
+	std::size_t suggestLambda( std::size_t dimension ) {
 		return unsigned( 4. + ::floor( 3. * ::log( static_cast<double>( dimension ) ) ) ); // eq. (44)
 	}
 
 	/// \brief Calculates mu for the supplied lambda and the recombination strategy.
-	double suggestMu( unsigned int lambda) {
-		return lambda / 2.; // eq. (44)
+	std::size_t suggestMu( std::size_t lambda) {
+		return lambda / 2; // eq. (44)
 	}
 
 	using AbstractSingleObjectiveOptimizer<RealVector >::init;
 	
 	void init( ObjectiveFunctionType& function, SearchPointType const& p) {
 		checkFeatures(function);
-		function.init();
 		
-		unsigned int lambda = suggestLambda( p.size() );
-		unsigned int mu = suggestMu(  lambda );
+		std::size_t lambda = suggestLambda( p.size() );
+		std::size_t mu = suggestMu(  lambda );
 		double sigma = m_initialSigma;
-		if(m_initialSigma == 0) sigma = 1.0/std::sqrt(double(p.size()));
+		if(m_initialSigma == 0) 
+			sigma = 1.0/std::sqrt(double(p.size()));
 		
 		init( function,
 			p,
@@ -99,20 +98,20 @@ public:
 	void init( 
 		ObjectiveFunctionType const& function, 
 		SearchPointType const& initialSearchPoint,
-		unsigned int lambda, 
-		double mu,
+		std::size_t lambda, 
+		std::size_t mu,
 		double initialSigma
 	) {
 
 		m_numberOfVariables = function.numberOfVariables();
 		m_lambda = lambda;
-		m_mu = static_cast<unsigned int>(::floor(mu));
+		m_mu = mu;
 		m_sigma = initialSigma;
 
 		m_mean = blas::repeat(0.0,m_numberOfVariables);
 		m_vn.resize(m_numberOfVariables);
 		for(std::size_t i = 0; i != m_numberOfVariables;++i){
-			m_vn(i) = Rng::uni(0,1.0/m_numberOfVariables);
+			m_vn(i) = uni(*mpe_rng,0,1.0/m_numberOfVariables);
 		}
 		m_normv = norm_2(m_vn);
 		m_vn /= m_normv;
@@ -130,7 +129,7 @@ public:
 			
 		//weighting of the mu-best individuals
 		m_weights.resize(m_mu);
-		for (unsigned int i = 0; i < m_mu; i++){
+		for (std::size_t i = 0; i < m_mu; i++){
 			m_weights(i) = ::log(mu + 0.5) - ::log(1. + i);
 		}
 		m_weights /= sum(m_weights);
@@ -148,18 +147,18 @@ public:
 
 	/// \brief Executes one iteration of the algorithm.
 	void step(ObjectiveFunctionType const& function){
-
-		std::vector< Individual<RealVector, double, RealVector> > offspring( m_lambda );
+		typedef Individual<RealVector, double, RealVector> IndividualType;
+		std::vector< IndividualType > offspring( m_lambda );
 
 		PenalizingEvaluator penalizingEvaluator;
-		for( unsigned int i = 0; i < offspring.size(); i++ ) {
+		for( std::size_t i = 0; i < offspring.size(); i++ ) {
 			createSample(offspring[i].searchPoint(),offspring[i].chromosome());
 		}
 		penalizingEvaluator( function, offspring.begin(), offspring.end() );
 
 		// Selection
-		std::vector< Individual<RealVector, double, RealVector> > parents( m_mu );
-		ElitistSelection<FitnessExtractor> selection;
+		std::vector< IndividualType > parents( m_mu );
+		ElitistSelection<IndividualType::FitnessOrdering> selection;
 		selection(offspring.begin(),offspring.end(),parents.begin(), parents.end());
 		// Strategy parameter update
 		m_counter++; // increase generation counter
@@ -212,22 +211,22 @@ public:
 	}
 	
 	///\brief Returns the size of the parent population \f$\mu\f$.
-	unsigned int mu() const {
+	std::size_t mu() const {
 		return m_mu;
 	}
 	
 	///\brief Returns a mutabl reference to the size of the parent population \f$\mu\f$.
-	unsigned int& mu(){
+	std::size_t& mu(){
 		return m_mu;
 	}
 	
 	///\brief Returns a immutable reference to the size of the offspring population \f$\mu\f$.
-	unsigned int lambda()const{
+	std::size_t lambda()const{
 		return m_lambda;
 	}
 
 	///\brief Returns a mutable reference to the size of the offspring population \f$\mu\f$.
-	unsigned int & lambda(){
+	std::size_t & lambda(){
 		return m_lambda;
 	}
 
@@ -239,7 +238,7 @@ private:
 		RealVector m( m_numberOfVariables, 0. );
 		RealVector z( m_numberOfVariables, 0. );
 		
-		for( unsigned int j = 0; j < offspring.size(); j++ ){
+		for( std::size_t j = 0; j < offspring.size(); j++ ){
 			noalias(m) += m_weights( j ) * offspring[j].searchPoint();
 			noalias(z) += m_weights( j ) * offspring[j].chromosome();
 		}
@@ -294,7 +293,7 @@ private:
 		x.resize(m_numberOfVariables);
 		y.resize(m_numberOfVariables);
 		for(std::size_t i = 0; i != m_numberOfVariables; ++i){
-			y(i) = Rng::gauss(0,1);
+			y(i) = gauss(*mpe_rng,0,1);
 		}
 		double a = std::sqrt(1+sqr(m_normv))-1;
 		a *= inner_prod(y,m_vn);
@@ -311,7 +310,7 @@ private:
 		double normv2 = sqr(m_normv);
 		double gammav = 1+normv2;
 		//step 1
-		noalias(s) += weight*(sqr(y) - (normv2/gammav*yvn)*(y*m_vn)-blas::repeat(1.0,m_numberOfVariables));
+		noalias(s) += weight*(sqr(y) - (normv2/gammav*yvn)*(y*m_vn)- 1.0);
 		//step 2
 		noalias(t) += weight*(yvn*y - 0.5*(sqr(yvn)+gammav)*m_vn);
 	}
@@ -328,7 +327,7 @@ private:
 		alpha = std::min(alpha,1.0);
 		//constants (b,A) of 3.4
 		double b=-(1-sqr(alpha))*sqr(normv2)/gammav+2*sqr(alpha);
-		RealVector A= blas::repeat(2.0,m_numberOfVariables)-(b+2*sqr(alpha))*vn2;
+		RealVector A= 2.0 - (b+2*sqr(alpha))*vn2;
 		RealVector invAvn2= vn2/A;
 		
 		//step 3
@@ -339,9 +338,9 @@ private:
 		noalias(t) -= alpha*((2+normv2)*(m_vn*s)-inner_prod(s,vn2)*m_vn);
 	}
 	
-	unsigned int m_numberOfVariables; ///< Stores the dimensionality of the search space.
-	unsigned int m_mu; ///< The size of the parent population.
-	unsigned int m_lambda; ///< The size of the offspring population, needs to be larger than mu.
+	std::size_t m_numberOfVariables; ///< Stores the dimensionality of the search space.
+	std::size_t m_mu; ///< The size of the parent population.
+	std::size_t m_lambda; ///< The size of the offspring population, needs to be larger than mu.
 
 	double m_initialSigma;///0 by default which indicates initial sigma = 1/sqrt(N)
 	double m_sigma;
@@ -367,7 +366,7 @@ private:
 
 	unsigned m_counter; ///< counter for generations
 	
-	
+	DefaultRngType* mpe_rng;
 	
 	
 };

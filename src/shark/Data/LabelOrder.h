@@ -104,15 +104,16 @@ public:
 		m_labelOrder.clear();
 
 		// and one array that tracks what we already encountered
-		std::vector<int> foundLabels(maxLabel - minLabel + 1, -1);
+		unsigned int maxval = std::numeric_limits<unsigned int>::max();
+		std::vector<unsigned int> foundLabels(maxLabel - minLabel + 1, maxval);
 
 		// and insert all labels we encounter
-		size_t currentPosition = 0;
+		unsigned int currentPosition = 0;
 		for(std::size_t i = 0; i < dataset.numberOfElements(); i++)
 		{
 			// is it a new label?
-			int label = dataset.labels().element(i);
-			if(foundLabels[label - minLabel] == -1)
+			unsigned int label = dataset.labels().element(i);
+			if(foundLabels[label - minLabel] == maxval)
 			{
 				foundLabels[label - minLabel] = currentPosition;
 				m_labelOrder.push_back(label);
@@ -124,7 +125,7 @@ public:
 		for(std::size_t i = 0; i < dataset.numberOfElements(); i++)
 		{
 			int label = dataset.labels().element(i);
-                        dataset.labels().element(i) = foundLabels[label - minLabel];
+			dataset.labels().element(i) = foundLabels[label - minLabel];
 		}
 	}
 

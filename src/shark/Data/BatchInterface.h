@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
@@ -35,13 +36,9 @@
 #include <shark/LinAlg/Base.h>
 #include <shark/Core/utility/Iterators.h>
 
-#include <boost/preprocessor.hpp>
-
-#include <boost/type_traits/is_arithmetic.hpp>
-#include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/range/algorithm_ext/iota.hpp>
 #include <boost/mpl/if.hpp>
+#include <type_traits>
 
 namespace shark{
 
@@ -160,7 +157,7 @@ template<class T>
 //whether T is arithmetic or not
 struct Batch
 :public boost::mpl::if_<
-	boost::is_arithmetic<T>,
+	std::is_arithmetic<T>,
 	detail::ArithmeticBatch<T>,
 	detail::DefaultBatch<T>
 >::type{};
@@ -264,43 +261,6 @@ struct Batch<shark::blas::compressed_vector<T> >{
 		ensure_size(batch,batchSize,elements);
 	}
 };
-/// \brief specialization for blas::matrix which become blas::matrix_set in batch mode!
-template<class T>
-struct Batch<blas::matrix<T> >{
-	/// \brief Type of a batch of elements.
-	typedef shark::blas::matrix_set<blas::matrix<T> > type;
-	/// \brief The type of the elements stored in the batch 
-	typedef blas::matrix<T> value_type;
-	
-	
-	/// \brief Reference to a single element.
-	typedef typename type::reference reference;
-	/// \brief Reference to a single immutable element.
-	typedef typename type::const_reference const_reference;
-	
-	
-	/// \brief the iterator type of the object
-	typedef typename type::iterator iterator;
-	/// \brief the const_iterator type of the object
-	typedef typename type::const_iterator const_iterator;
-	
-	///\brief creates a batch with input as size blueprint
-	template<class Element>
-	static type createBatch(Element const& input, std::size_t size = 1){
-		return type(size,input);
-	}
-	///\brief creates a batch storing the elements referenced by the provided range
-	template<class Range>
-	static type createBatchFromRange(Range const& range){
-		type batch(range.size());
-		std::copy(range.begin(),range.end(),batch.begin());
-		return batch;
-	}
-	
-	//~ static void resize(type& batch, std::size_t batchSize, std::size_t elements){
-		//~ ensure_size(batch,batchSize,elements);
-	//~ }
-};
 
 
 }
@@ -361,14 +321,14 @@ struct range_const_iterator< shark::blas::matrix_expression<M> >{
 //matrix proxy
 template< class T >
 struct range_mutable_iterator< shark::blas::dense_matrix_adaptor<T> >{
-	typedef shark::blas::vector<typename boost::remove_const<T>::type> Vector;
+	typedef shark::blas::vector<typename std::decay<T>::type> Vector;
 	typedef shark::detail::MatrixRowReference<shark::blas::dense_matrix_adaptor<T>,Vector> reference;
 	typedef shark::ProxyIterator<shark::blas::dense_matrix_adaptor<T>, Vector, reference > type;
 };
 
 template< class T >
 struct range_const_iterator< shark::blas::dense_matrix_adaptor<T> >{
-	typedef shark::blas::vector<typename boost::remove_const<T>::type> Vector;
+	typedef shark::blas::vector<typename std::decay<T>::type> Vector;
 	typedef shark::detail::MatrixRowReference<shark::blas::dense_matrix_adaptor<T> const,Vector> reference;
 	typedef shark::ProxyIterator<shark::blas::dense_matrix_adaptor<T> const, Vector, reference > type;
 };

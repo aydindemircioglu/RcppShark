@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
@@ -50,7 +51,7 @@ struct FFNetStructures{
 //! A feed forward network consists of several layers. every layer consists of a linear 
 //! function with optional bias whose response is modified by a (nonlinear) activation function.
 //! starting from the input layer, the output of every layer is the input of the next.
-//! The two template arguments goveern the activation functions of the network. 
+//! The two template arguments govern the activation functions of the network. 
 //! The activation functions are typically sigmoidal.
 //! All hidden layers share one activation function, while the output layer can be chosen to use
 //! a different one, for example to allow the last output to be unbounded, in which case a 
@@ -59,9 +60,9 @@ struct FFNetStructures{
 //! in Models/Neurons.h Especially it holds that the derivative of the activation function
 //! must have the form f'(x) = g(f(x)).
 //!
-//! This network class allows for several different topologies of structure. The layerwise structure
-//! outlined above is the ddefault one, but the network also allows for shortcuts. most typically 
-//! an input-output shotcut is used, that is a shortcut that connects the input neurons directly 
+//! This network class allows for several different topologies of structure. The layer-wise structure
+//! outlined above is the default one, but the network also allows for shortcuts. most typically 
+//! an input-output shortcut is used, that is a shortcut that connects the input neurons directly 
 //! with the output using linear weights. But also a fully connected structure is possible, where
 //! every layer is fed as input to every successive layer instead of only the next one.
 template<class HiddenNeuron,class OutputNeuron>
@@ -210,7 +211,7 @@ public:
                 init(parameters) << matrixSet(m_layerMatrix),m_bias,toVector(m_inputOutputShortcut);
                 return parameters;
         }
-        //! uses the values inside the parametervector to set the used values inside the weight matrix
+        //! uses the values inside the parameter vector to set the used values inside the weight matrix
         void setParameterVector(RealVector const& newParameters){
                 //set the normal forward propagation weights
                 init(newParameters) >> matrixSet(m_layerMatrix),m_bias,toVector(m_inputOutputShortcut);
@@ -223,7 +224,7 @@ public:
                 // they are connected, in this case we transpose the part of the matrix which is connecting
                 // layer j with layer i and copying it into the backprop matrix.
                 // we assume here, that either all neurons in layer j are connected to all neurons in layer i
-                // or that there are no connections at all beetween the layers.
+                // or that there are no connections at all between the layers.
                 std::size_t layeriStart = 0;
                 for(std::size_t layeri = 0; layeri != m_layerMatrix.size(); ++layeri){
                         std::size_t columni = 0;
@@ -265,7 +266,7 @@ public:
 
         ///\brief Returns the response of the i-th layer given the input of that layer.
         ///
-        /// this is usfull if only a portion of the network needs to be evaluated
+        /// this is useful if only a portion of the network needs to be evaluated
         /// be aware that this only works without shortcuts in the network
         void evalLayer(std::size_t layer,RealMatrix const& patterns,RealMatrix& outputs)const{
                 std::size_t numPatterns = patterns.size1();
@@ -275,7 +276,7 @@ public:
 
                 //calculate activation. first compute the linear part and the optional bias and then apply
                 // the non-linearity
-                axpy_prod(patterns,trans(layerMatrix(layer)),outputs);
+                noalias(outputs) = prod(patterns,trans(layerMatrix(layer)));
                 if(!bias().empty()){
                         noalias(outputs) += repeat(bias(layer),numPatterns);
                 }
@@ -290,7 +291,7 @@ public:
         
         ///\brief Returns the response of the i-th layer given the input of that layer.
         ///
-        /// this is usfull if only a portion of the network needs to be evaluated
+        /// this is useful if only a portion of the network needs to be evaluated
         /// be aware that this only works without shortcuts in the network
         Data<RealVector> evalLayer(std::size_t layer, Data<RealVector> const& patterns)const{
                 int batches = (int) patterns.numberOfBatches();
@@ -322,7 +323,7 @@ public:
 
                         //calculate activation. first compute the linear part and the optional bias and then apply
                         // the non-linearity
-                        axpy_prod(weights,input,responses);
+                        noalias(responses) = prod(weights,input);
                         if(!bias().empty()){
                                 //the bias of the layer is shifted as input units can not have bias.
                                 ConstRealVectorRange bias = subrange(m_bias,beginNeuron-inputSize(),endNeuron-inputSize());
@@ -336,7 +337,7 @@ public:
                                 else {
                                         //add shortcuts if necessary
                                         if(m_inputOutputShortcut.size1() != 0){
-                                                axpy_prod(m_inputOutputShortcut,trans(patterns),responses,false);
+                                                noalias(responses) += prod(m_inputOutputShortcut,trans(patterns));
                                         }
                                         noalias(responses) = m_outputNeuron(responses);
                                 }
@@ -361,7 +362,7 @@ public:
                 std::size_t numPatterns=patterns.size1();
                 
                 //initialize delta using coefficients and clear the rest. also don't compute the delta for
-                // the input nurons as they are not needed.
+                // the input neurons as they are not needed.
                 RealMatrix delta(numberOfNeurons(),numPatterns,0.0);
                 RealSubMatrix outputDelta = rows(delta,delta.size1()-outputSize(),delta.size1());
                 noalias(outputDelta) = trans(coefficients);
@@ -416,7 +417,7 @@ public:
         
         //! \brief Calculates the derivative for the special case, when error terms for all neurons of the network exist.
         //!
-        //! This is usefull when the hidden neurons need to meet additional requirements.
+        //! This is useful when the hidden neurons need to meet additional requirements.
         //! The value of delta is changed during computation and holds the results of the backpropagation steps.
         //! The format is such that the rows of delta are the neurons and the columns the patterns.
         void weightedParameterDerivativeFullDelta(
@@ -465,7 +466,7 @@ public:
                 m_layerMatrix.resize(layers.size()-1);//we don't model the input layer
                 m_backpropMatrix.resize(layers.size()-1);//we don't model the output layer
                 
-                //small optimization for ntworks with only 3 layers
+                //small optimization for networks with only 3 layers
                 //in this case, we don't need an explicit shortcut as we can integrate it into
                 //the big matrices
                 if(connectivity == FFNetStructures::InputOutputShortcut && layers.size() ==3)
@@ -578,8 +579,8 @@ public:
                 InternalState const& s = state.toState<InternalState>();
 
                 //initialize output neurons using coefficients
-                RealSubMatrix outputDelta = rows(delta,delta.size1()-outputSize(),delta.size1());
-                ConstRealSubMatrix outputResponse = rows(s.responses,delta.size1()-outputSize(),delta.size1());
+                auto outputDelta = rows(delta,delta.size1()-outputSize(),delta.size1());
+                auto outputResponse = rows(s.responses,delta.size1()-outputSize(),delta.size1());
                 noalias(outputDelta) *= m_outputNeuron.derivative(outputResponse);
 
                 //iterate backwards using the backprop matrix and propagate the errors to get the needed delta values
@@ -595,11 +596,11 @@ public:
                         RealMatrix const& weights = m_backpropMatrix[layer];
                         std::size_t beginNeuron = endNeuron - weights.size1();//first neuron of the current layer
                         //get the delta and response values of this layer
-                        RealSubMatrix layerDelta = rows(delta,beginNeuron,endNeuron);
-                        RealSubMatrix layerDeltaInput = rows(delta,endNeuron,endNeuron+weights.size2());
-                        ConstRealSubMatrix layerResponse = rows(s.responses,beginNeuron,endNeuron);
+                        auto layerDelta = rows(delta,beginNeuron,endNeuron);
+                        auto layerDeltaInput = rows(delta,endNeuron,endNeuron+weights.size2());
+                        auto layerResponse = rows(s.responses,beginNeuron,endNeuron);
 
-                        axpy_prod(weights,layerDeltaInput,layerDelta,false);//add the values to the maybe non-empty delta part
+                        noalias(layerDelta) += prod(weights,layerDeltaInput);//add the values to the maybe non-empty delta part
                         if(layer != 0){
                                 noalias(layerDelta) *= m_hiddenNeuron.derivative(layerResponse);
                         }
@@ -610,7 +611,7 @@ public:
                 
                 //add the shortcut deltas if necessary
                 if(inputOutputShortcut().size1() != 0)
-                        axpy_prod(trans(inputOutputShortcut()),outputDelta,rows(delta,0,inputSize()),false);
+                        noalias(rows(delta,0,inputSize())) += prod(trans(inputOutputShortcut()),outputDelta);
         }
         
         void computeParameterDerivative(RealMatrix const& delta, State const& state, RealVector& gradient)const{
@@ -622,15 +623,15 @@ public:
                 std::size_t pos = 0;
                 std::size_t layerStart = inputSize();
                 for(std::size_t layer = 0; layer != layerMatrices().size(); ++layer){
+                        //obtain input, delta and gradients for the current layer
                         std::size_t layerRows =  layerMatrices()[layer].size1();
                         std::size_t layerColumns =  layerMatrices()[layer].size2();
                         std::size_t params = layerRows*layerColumns;
-                        axpy_prod(
-                                rows(delta,layerStart,layerStart+layerRows),
-                                trans(rows(s.responses,layerStart-layerColumns,layerStart)),
-                                //interpret part of the gradient as the weights of the layer
-                                to_matrix(subrange(gradient,pos,pos+params),layerRows,layerColumns)
-                        );
+                        auto gradMatrix  = to_matrix(subrange(gradient,pos,pos+params),layerRows,layerColumns);
+                        auto deltaLayer = rows(delta,layerStart,layerStart+layerRows);
+                        auto inputLayer = rows(s.responses,layerStart-layerColumns,layerStart);
+                        noalias(gradMatrix) = prod(deltaLayer, trans(inputLayer));
+                        
                         pos += params;
                         layerStart += layerRows;
                 }
@@ -645,11 +646,10 @@ public:
                 //compute shortcut derivative
                 if(inputOutputShortcut().size1() != 0){
                         std::size_t params = inputSize()*outputSize();
-                        axpy_prod(
-                                rows(delta,delta.size1()-outputSize(),delta.size1()),
-                                trans(rows(s.responses,0,inputSize())),
-                                to_matrix(subrange(gradient,pos,pos+params),outputSize(),inputSize())
-                        );
+                        auto gradMatrix  = to_matrix(subrange(gradient,pos,pos+params),outputSize(),inputSize());
+                        auto deltaLayer = rows(delta,delta.size1()-outputSize(),delta.size1());
+                        auto inputLayer = rows(s.responses,0,inputSize());
+                        noalias(gradMatrix) = prod(deltaLayer, trans(inputLayer));
                 }
                 
         }
@@ -665,7 +665,7 @@ public:
 
         //! \brief represents the connection matrix using a layered structure for forward propagation
         //!
-        //! a layer is made of neurons with consecutive indizes which are not
+        //! a layer is made of neurons with consecutive indices which are not
         //! connected with each other. In other words, if there exists a k i<k<j such
         //! that C(i,k) = 1 or C(k,j) = 1 or C(j,i) = 1 than the neurons i,j are not in the same layer.
         //! This is the forward view, meaning that the layers holds the weights which are used to calculate
@@ -674,13 +674,13 @@ public:
         
         //! \brief optional matrix directly connecting input to output
         //!
-        //! This is only filled when the ntworkhas an input-output shortcut but not a full layer connection.
+        //! This is only filled when the network has an input-output shortcut but not a full layer connection.
         RealMatrix m_inputOutputShortcut;
         
         //!\brief represents the backwards view of the network as layered structure.
         //!
         //! This is the backward view of the Network which is used for the backpropagation step. So every
-        //! Matrix contains the weights of the neurons which are activatived by the layer.
+        //! Matrix contains the weights of the neurons which are activated by the layer.
         std::vector<RealMatrix> m_backpropMatrix;
 
         //! bias weights of the neurons

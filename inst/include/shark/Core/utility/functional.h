@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
@@ -141,5 +142,6 @@ typename boost::range_iterator<Range>::type partitionEqually(Range const& rangeA
 	Range adaptorCopy(rangeAdaptor);
 	return partitionEqually(adaptorCopy);
 }
+
 }
 #endif

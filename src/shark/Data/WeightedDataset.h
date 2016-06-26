@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -395,9 +396,7 @@ public:
 ///brief  Outstream of elements for weighted data.
 template<class T>
 std::ostream &operator << (std::ostream &stream, const WeightedUnlabeledData<T>& d) {
-        typedef typename WeightedUnlabeledData<T>::const_element_reference reference;
-        typename WeightedUnlabeledData<T>::const_element_range elements = d.elements();
-        BOOST_FOREACH(reference elem,elements)
+        for(auto elem: d.elements())
                 stream << elem.weight << " [" << elem.data<<"]"<< "\n";
         return stream;
 }
@@ -534,9 +533,7 @@ public:
 ///brief  Outstream of elements for weighted labeled data.
 template<class T, class U>
 std::ostream &operator << (std::ostream &stream, const WeightedLabeledData<T, U>& d) {
-        typedef typename WeightedLabeledData<T, U>::const_element_reference reference;
-        typename WeightedLabeledData<T, U>::const_element_range elements = d.elements();
-        BOOST_FOREACH(reference elem,elements)
+        for(auto elem: d.elements())
                 stream << elem.weight <<" ("<< elem.data.label << " [" << elem.data.input<<"] )"<< "\n";
         return stream;
 }
@@ -560,7 +557,7 @@ double sumOfWeights(WeightedLabeledData<InputType,LabelType> const& dataset){
         return weightSum;
 }
 
-inline unsigned int numberOfClasses(WeightedUnlabeledData<unsigned int> const& labels){
+inline std::size_t numberOfClasses(WeightedUnlabeledData<unsigned int> const& labels){
         return numberOfClasses(labels.data());
 }
 
@@ -571,24 +568,24 @@ inline std::vector<std::size_t> classSizes(WeightedUnlabeledData<unsigned int> c
 
 ///\brief  Return the dimnsionality of points of a weighted dataset
 template <class InputType>
-unsigned int dataDimension(WeightedUnlabeledData<InputType> const& dataset){
+std::size_t dataDimension(WeightedUnlabeledData<InputType> const& dataset){
         return dataDimension(dataset.data());
 }
 
 ///\brief  Return the input dimensionality of a weighted labeled dataset.
 template <class InputType, class LabelType>
-unsigned int inputDimension(WeightedLabeledData<InputType, LabelType> const& dataset){
+std::size_t inputDimension(WeightedLabeledData<InputType, LabelType> const& dataset){
         return dataDimension(dataset.inputs());
 }
 
 ///\brief  Return the label/output dimensionality of a labeled dataset.
 template <class InputType, class LabelType>
-unsigned int labelDimension(WeightedLabeledData<InputType, LabelType> const& dataset){
+std::size_t labelDimension(WeightedLabeledData<InputType, LabelType> const& dataset){
         return dataDimension(dataset.labels());
 }
 ///\brief Return the number of classes (highest label value +1) of a classification dataset with unsigned int label encoding
 template <class InputType>
-unsigned int numberOfClasses(WeightedLabeledData<InputType, unsigned int> const& dataset){
+std::size_t numberOfClasses(WeightedLabeledData<InputType, unsigned int> const& dataset){
         return numberOfClasses(dataset.labels());
 }
 

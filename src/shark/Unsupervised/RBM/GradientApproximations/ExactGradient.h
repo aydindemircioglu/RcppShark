@@ -33,7 +33,6 @@
 #include <shark/ObjectiveFunctions/AbstractObjectiveFunction.h>
 #include <shark/Unsupervised/RBM/Sampling/GibbsOperator.h>
 #include <shark/Unsupervised/RBM/analytics.h>
-#include <boost/type_traits/is_same.hpp>
 
 namespace shark{
 
@@ -93,7 +92,7 @@ public:
 		
 		//calculate the expectation of the energy gradient with respect to the data
 		double negLogLikelihood = 0;
-		BOOST_FOREACH(RealMatrix const& batch,m_data.batches()) {
+		for(RealMatrix const& batch: m_data.batches()) {
 			std::size_t currentBatchSize = batch.size1();
 			typename Gibbs::HiddenSampleBatch hiddenSamples(currentBatchSize,mpe_rbm->numberOfHN());
 			typename Gibbs::VisibleSampleBatch visibleSamples(currentBatchSize,mpe_rbm->numberOfVN());

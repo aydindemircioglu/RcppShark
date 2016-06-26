@@ -41,11 +41,11 @@
 namespace shark{
 
 /*!
- *  \brief Error measure for classication tasks that can be used
+ *  \brief Error measure for classification tasks that can be used
  *         as the objective function for training.
  *
  *  If your model should return a vector whose components reflect the
- *  logarithmic conditonal probabilities of class membership given any input vector
+ *  logarithmic conditional probabilities of class membership given any input vector
  *  'CrossEntropy' is the adequate error measure for model-training.
  *  For \em C>1 classes the loss function is defined as
  *  \f[
@@ -96,38 +96,30 @@ public:
 	using base_type::eval;
 
 	double eval(UIntVector const& target, RealMatrix const& prediction) const {
-		if ( prediction.size2() == 1 )
-		{
-			double error = 0;
-			for(std::size_t i = 0; i != prediction.size1(); ++i){
-				RANGE_CHECK ( target(i) < 2 );
-				double label = 2 * static_cast<double>(target(i)) - 1;   //converts labels from 0/1 to -1/1
-				double exponential =  std::exp ( -label * prediction ( i,0 ) );
-				error+= evalError(label,exponential,prediction (i, 0 ));
-			}
-			return error;
+		double error = 0;
+		for(std::size_t i = 0; i != prediction.size1(); ++i){
+			error += eval(target(i), row(prediction,i));
 		}
-		else
+		return error;
+	}
+	
+	double eval( ConstLabelReference target, ConstOutputReference prediction)const{
+		if ( prediction.size() == 1 )
 		{
-			double error = 0;
-			for(std::size_t i = 0; i != prediction.size1(); ++i){
-				RANGE_CHECK ( target(i) < prediction.size2() );
-				
-				//calculate the log norm in a numerically stable way
-				//we subtract the maximum prior to exponentiation to 
-				//ensure that the exponntiation result will still fit in double
-				double maximum = max(row(prediction,i));
-				double logNorm = 0;
-				for( std::size_t j = 0; j != prediction.size2(); ++j)
-				{
-					double term = std::exp(prediction(i,j)-maximum);
-					logNorm += term;
-				}
-				logNorm = std::log(logNorm)+maximum;
-				
-				error+= logNorm - prediction(i,target(i));
-			}
-			return error;
+			RANGE_CHECK ( target < 2 );
+			double label = 2.0 * target - 1;   //converts labels from 0/1 to -1/1
+			double exponential =  std::exp( -label * prediction(0) );
+			return evalError(label,exponential,prediction(0 ));
+		}else{
+			RANGE_CHECK ( target < prediction.size() );
+			
+			//calculate the log norm in a numerically stable way
+			//we subtract the maximum prior to exponentiation to 
+			//ensure that the exponentiation result will still fit in double
+			double maximum = max(prediction);
+			double logNorm = sum(exp(prediction-maximum));
+			logNorm = std::log(logNorm) + maximum;
+			return logNorm - prediction(target);
 		}
 	}
 
@@ -145,9 +137,7 @@ public:
 				error+=evalError(label,exponential,prediction (i, 0 ));
 			}
 			return error;
-		}
-		else
-		{
+		}else{
 			double error = 0;
 			for(std::size_t i = 0; i != prediction.size1(); ++i){
 				RANGE_CHECK ( target(i) < prediction.size2() );
@@ -155,17 +145,43 @@ public:
 				
 				//calculate the log norm in a numerically stable way
 				//we subtract the maximum prior to exponentiation to 
-				//ensure that the exponntiation result will still fit in double
+				//ensure that the exponentiation result will still fit in double
 				//this does not change the result as the values get normalized by
 				//their sum and thus the correction term cancels out.
 				double maximum = max(row(prediction,i));
-				noalias(gradRow) = exp(row(prediction,i)-blas::repeat(maximum,prediction.size2()));
+				noalias(gradRow) = exp(row(prediction,i) - maximum);
 				double norm = sum(gradRow);
 				gradRow/=norm;
 				gradient(i,target(i)) -= 1;
 				error+=std::log(norm) - prediction(i,target(i))+maximum;
 			}
 			return error;
+		}
+	}
+	double evalDerivative(ConstLabelReference target, ConstOutputReference prediction, OutputType& gradient) const {
+		gradient.resize(prediction.size());
+		if ( prediction.size() == 1 )
+		{
+			RANGE_CHECK ( target < 2 );
+			double label = 2.0 * target - 1;   //converts labels from 0/1 to -1/1
+			double exponential =  std::exp ( - label * prediction(0));
+			double sigmoid = 1.0/(1.0+exponential);
+			gradient(0) = -label * (1.0 - sigmoid);
+			return evalError(label,exponential,prediction(0));
+		}else{
+			RANGE_CHECK ( target < prediction.size() );
+			
+			//calculate the log norm in a numerically stable way
+			//we subtract the maximum prior to exponentiation to 
+			//ensure that the exponentiation result will still fit in double
+			//this does not change the result as the values get normalized by
+			//their sum and thus the correction term cancels out.
+			double maximum = max(prediction);
+			noalias(gradient) = exp(prediction - maximum);
+			double norm = sum(gradient);
+			gradient /= norm;
+			gradient(target) -= 1;
+			return std::log(norm) - prediction(target) + maximum;
 		}
 	}
 
@@ -192,11 +208,11 @@ public:
 			RANGE_CHECK ( target < prediction.size() );
 			//calculate the log norm in a numerically stable way
 			//we subtract the maximum prior to exponentiation to 
-			//ensure that the exponntiation result will still fit in double
+			//ensure that the exponentiation result will still fit in double
 			//this does not change the result as the values get normalized by
 			//their sum and thus the correction term cancels out.
 			double maximum = max(prediction);
-			noalias(gradient) = exp(prediction-blas::repeat(maximum,prediction.size()));
+			noalias(gradient) = exp(prediction-maximum);
 			double norm = sum(gradient);
 			gradient/=norm;
 

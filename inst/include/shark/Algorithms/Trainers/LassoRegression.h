@@ -59,8 +59,7 @@ namespace shark {
  *  the trainer solves the problem
  *  \f$ \min_w \quad \frac{1}{2} \sum_i (w^T x_i - y_i)^2 + \lambda \|w\|_1 \f$.
  *  The target accuracy of the solution is measured in terms of the
- *  smallest component (L1 norm) of the gradient of the objective
- *  function.
+ *  smallest component of the gradient of the objective function.
  *
  *  The trainer has one template parameter, namely the type of
  *  the input vectors \f$ x_i \f$. These need to be vector valued,
@@ -78,11 +77,11 @@ public:
 
 	/// \brief Constructor.
 	///
-	/// \param  _lambda    value of the regularization parameter (see class description)
-	/// \param  _accuracy  stopping criterion for the iterative solver, maximal gradient component of the objective function (see class description)
-	LassoRegression(double _lambda, double _accuracy = 0.01)
-	: m_lambda(_lambda)
-	, m_accuracy(_accuracy)
+	/// \param  lambda    value of the regularization parameter (see class description)
+	/// \param  accuracy  stopping criterion for the iterative solver, maximal gradient component of the objective function (see class description)
+	LassoRegression(double lambda, double accuracy = 0.01)
+	: m_lambda(lambda)
+	, m_accuracy(accuracy)
 	{
 		RANGE_CHECK(m_lambda >= 0.0);
 		RANGE_CHECK(m_accuracy > 0.0);
@@ -113,10 +112,10 @@ public:
 	}
 
 	/// \brief Set the accuracy (maximal gradient component of the optimization problem).
-	void setAccuracy(double _accuracy)
+	void setAccuracy(double accuracy)
 	{
-		RANGE_CHECK(_accuracy > 0.0);
-		m_accuracy = _accuracy;
+		RANGE_CHECK(accuracy > 0.0);
+		m_accuracy = accuracy;
 	}
 
 	/// \brief Get the regularization parameter lambda through the IParameterizable interface.
@@ -144,20 +143,6 @@ public:
 	{
 		SIZE_CHECK(model.outputSize() == 1);
 
-		dim = inputDimension(dataset);
-		RealVector alpha(dim, 0.0);
-		trainInternal(alpha, dataset);
-		
-		RealMatrix mat(1, dim);
-		row(mat, 0) = alpha;
-		model.setStructure(mat);
-	}
-
-protected:
-
-	/// \brief Actual training procedure.
-	void trainInternal(RealVector& alpha, DataType const& dataset)
-	{
 		// strategy constants
 		const double CHANGE_RATE = 0.2;
 		const double PREF_MIN = 0.05;
@@ -166,12 +151,15 @@ protected:
 		// console output
 		const bool verbose = false;
 
-		//transpose the dataset and push it inside a single matrix
-		data = trans(createBatch(dataset.inputs().elements()));
-		label = column(createBatch(dataset.labels().elements()),0);
-		
+		std::size_t dim = inputDimension(dataset);
+		RealVector w(dim, 0.0);
+
+		// transpose the dataset and push it inside a single matrix
+		typename Batch<InputVectorType>::type data = trans(createBatch(dataset.inputs().elements()));
+		RealVector label = column(createBatch(dataset.labels().elements()),0);
+
 		RealVector shark::blas::diag (dim);
-		RealVector w = label;
+		RealVector difference = -label;
 		UIntVector index(dim);
 
 		// pre-calculate diagonal matrix entries (feature-wise squared norms)
@@ -180,14 +168,13 @@ protected:
 		}
 
 		// prepare preferences for scheduling
-		RealVector pref(dim,1.0);
+		RealVector pref(dim, 1.0);
 		double prefsum = (double)dim;
-		
 
 		// prepare performance monitoring for self-adaptation
 		const double gain_learning_rate = 1.0 / dim;
 		double average_gain = 0.0;
-		int canstop = 1;
+		bool canstop = true;
 		const double lambda = m_lambda;
 
 		// main optimization loop
@@ -210,13 +197,13 @@ protected:
 					n = (dim - pos) * p / psum;
 				else 
 					n = (dim - pos);                // for numerical stability
-				
+
 				unsigned int m = (unsigned int)floor(n);
 				double prob = n - m;
 				if ((double) int( round (R::runif(0,RAND_MAX)) )  / (double)RAND_MAX < prob) m++;
 				for (std::size_t  j=0; j<m; j++)
 				{
-					index[pos] = i;
+					index[pos] = (unsigned int)i;
 					pos++;
 				}
 				psum -= p;
@@ -232,11 +219,11 @@ protected:
 			for (size_t s=0; s<dim; s++)
 			{
 				std::size_t i = index[s];
-				double a = alpha[i];
+				double a = w[i];
 				double d = diag[i];
 
-				// compute "gradient component" <w, X_i>
-				double grad = inner_prod(w,row(data,i));
+				// compute gradient
+				double grad = inner_prod(difference, row(data,i));
 
 				// compute optimal coordinate descent step and corresponding gain
 				double vio = 0.0;
@@ -297,12 +284,11 @@ protected:
 				}
 
 				// update state
-				if (vio > maxvio)
-					maxvio = vio;
+				if (vio > maxvio) maxvio = vio;
 				if (delta != 0.0)
 				{
-					alpha[i] += delta;
-					noalias(w) += delta*row(data,i);
+					w[i] += delta;
+					noalias(difference) += delta*row(data,i);
 				}
 
 				// update gain-based preferences
@@ -313,7 +299,7 @@ protected:
 					{
 						double change = CHANGE_RATE * (gain / average_gain - 1.0);
 						double newpref = pref[i] * std::exp(change);
-						newpref = std::min(std::max(newpref,PREF_MIN),PREF_MAX);
+						newpref = std::min(std::max(newpref, PREF_MIN), PREF_MAX);
 						prefsum += newpref - pref[i];
 						pref[i] = newpref;
 						average_gain = (1.0 - gain_learning_rate) * average_gain + gain_learning_rate * gain;
@@ -329,26 +315,28 @@ protected:
 				else
 				{
 					// prepare full sweep for a reliable check of the stopping criterion
-					canstop = 1;
-					noalias(pref) = blas::repeat(10,dim);
+					canstop = true;
+					noalias(pref) = blas::repeat(1.0, dim);
 					prefsum = (double)dim;
 					if (verbose) Rcpp::Rcout << "*" << std::flush;
 				}
 			}
 			else
 			{
-				canstop = 0;
+				canstop = false;
 				if (verbose) Rcpp::Rcout << "." << std::flush;
 			}
 		}
+
+		// write the weight vector into the model
+		RealMatrix mat(1, w.size());
+		row(mat, 0) = w;
+		model.setStructure(mat);
 	}
 
+protected:
 	double m_lambda;             ///< regularization parameter
 	double m_accuracy;           ///< gradient accuracy
-	std::size_t dim;             ///< dimension; number of features
-	std::size_t ell;             ///< number of points
-	RealVector label;            ///< dense label vector, one entry per point
-	typename Batch<InputVectorType>::type data; ///< matrix of sparse vectors, one row per feature
 };
 
 

@@ -1,3 +1,30 @@
+/*!
+ * \brief       Implements the statistics module of shark datasets
+ * 
+ * \author      O. Krause
+ * \date        2015
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 namespace shark{ 
 	
 /*!
@@ -20,7 +47,6 @@ void meanvar
 )
 {
 	SIZE_CHECK(!data.empty());
-	typedef typename Data<Vec1T>::const_batch_reference BatchRef;
 	std::size_t const dataSize = data.numberOfElements();
 	std::size_t elementSize=dataDimension(data);
 
@@ -30,11 +56,11 @@ void meanvar
 	meanVec()= mean(data);
 	
 	//sum of variances of each column
-	BOOST_FOREACH(BatchRef batch,data.batches()){
+	for(auto& batch: data.batches()){
 		std::size_t batchSize = batch.size1();
 		noalias(varianceVec()) += sum_rows(sqr(batch-repeat(meanVec,batchSize)));
 	}
-	varianceVec()/=dataSize;
+	varianceVec() /= double(dataSize);
 }
 
 /*!
@@ -51,7 +77,7 @@ void meanvar
 template<class Vec1T,class Vec2T,class MatT>
 void meanvar
 (
-	const Data<Vec1T>& data,
+	Data<Vec1T> const& data,
 	blas::vector_container<Vec2T>& meanVec,
 	blas::matrix_container<MatT>& covariance
 ){
@@ -68,9 +94,9 @@ void meanvar
 	for(std::size_t b = 0; b != data.numberOfBatches(); ++b){
 		//make the batch mean-free
 		BatchType batch = data.batch(b)-repeat(meanVec,data.batch(b).size1());
-		symm_prod(trans(batch),covariance,false);
+		noalias(covariance) += prod(trans(batch),batch);
 	}
-	covariance()/=dataSize;
+	covariance() /= double(dataSize);
 }
 
 /*!
@@ -114,13 +140,11 @@ VectorType mean(Data<VectorType> const& data){
 	SIZE_CHECK(!data.empty());
 
 	VectorType mean(dataDimension(data),0.0);
-	
-	typedef typename Data<VectorType>::const_batch_reference BatchRef; 
 	 
-	BOOST_FOREACH(BatchRef batch, data.batches()){
+	for(auto& batch: data.batches()){
 		mean += sum_rows(batch);
 	}
-	mean /= data.numberOfElements();
+	mean /= double(data.numberOfElements());
 	return mean;
 }
 
@@ -138,7 +162,7 @@ VectorType mean(Data<VectorType> const& data){
  *      \return the variance vector of \em x
  */
 template<class VectorType>
-VectorType variance(const Data<VectorType>& data)
+VectorType variance(Data<VectorType> const& data)
 {
 	RealVector m;   // vector of mean values.
 	RealVector v;   // vector of variance values
@@ -167,7 +191,7 @@ VectorType variance(const Data<VectorType>& data)
  *  \return \f$N \times N\f$ matrix of covariance values.
  */
 template<class VectorType>
-typename VectorMatrixTraits<VectorType>::DenseMatrixType covariance(const Data<VectorType>& data) {
+blas::matrix<typename VectorType::value_type> covariance(Data<VectorType> const& data) {
 	RealVector mean;
 	RealMatrix covariance;
 	meanvar(data,mean,covariance);

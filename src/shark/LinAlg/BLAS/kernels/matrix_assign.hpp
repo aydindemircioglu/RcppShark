@@ -1,3 +1,30 @@
+/*!
+ * \brief       Kernels for matrix-expression assignments
+ * 
+ * \author      O. Krause
+ * \date        2013
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_KERNELS_MATRIX_ASSIGN_HPP
 #define SHARK_LINALG_BLAS_KERNELS_MATRIX_ASSIGN_HPP
 
@@ -32,6 +59,7 @@ public:
 	typedef internal_transpose_proxy<M> closure_type;
 	typedef typename M::orientation::transposed_orientation orientation;
 	typedef typename M::storage_category storage_category;
+	typedef typename M::evaluation_category evaluation_category;
 
 	// Construction and destruction
 	explicit internal_transpose_proxy(matrix_closure_type m):
@@ -56,11 +84,6 @@ public:
 	// Element access
 	reference operator()(size_type i, size_type j)const{
 		return m_expression(j, i);
-	}
-
-	// Closure comparison
-	bool same_closure(internal_transpose_proxy const& mu2) const {
-		return m_expression.same_closure(mu2.m_expression);
 	}
 
 	typedef typename matrix_closure_type::const_column_iterator const_row_iterator;
@@ -160,14 +183,14 @@ void assign(
 }
 
 
-// Spcial case packed - just calls the first two implementations.
+// Spcial case triangular packed - just calls the first two implementations.
 template<template <class T1, class T2> class F, class M, class Orientation, class Triangular>
 void assign(
 	matrix_expression<M> &m, 
 	typename M::value_type t, 
-	packed<Orientation,Triangular>
+	triangular<Orientation,Triangular>
 ){
-	assign(m,t,Orientation());
+	assign<F>(m,t,Orientation());
 }
 
 // Dispatcher
@@ -194,7 +217,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		matrix_row<M> rowM(m(),i);
-		assign(rowM,row(e,i));
+		kernels::assign(rowM,row(e,i));
 	}
 }
 
@@ -245,7 +268,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size2(); ++i){
 		matrix_column<M> columnM(m(),i);
-		assign(columnM,column(e,i));
+		kernels::assign(columnM,column(e,i));
 	}
 }
 
@@ -259,7 +282,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		matrix_column<M> rowM(m(),i);
-		assign(rowM,row(e,i));
+		kernels::assign(rowM,row(e,i));
 	}
 }
 
@@ -318,7 +341,7 @@ template<class M, class E,class Triangular>
 void assign(
 	matrix_expression<M> &m, 
 	matrix_expression<E> const& e,
-	packed<row_major,Triangular>, packed<row_major,Triangular>,
+	triangular<row_major,Triangular>, triangular<row_major,Triangular>,
 	packed_random_access_iterator_tag, packed_random_access_iterator_tag
 ) {
 	typedef typename M::row_iterator MIter;
@@ -341,7 +364,7 @@ template<class M, class E,class Triangular>
 void assign(
 	matrix_expression<M> &m, 
 	matrix_expression<E> const& e,
-	packed<row_major,Triangular>, packed<column_major,Triangular>,
+	triangular<row_major,Triangular>, triangular<column_major,Triangular>,
 	packed_random_access_iterator_tag, packed_random_access_iterator_tag
 ) {
 	typedef typename M::row_iterator MIter;
@@ -385,7 +408,7 @@ template<class M, class E,class EOrientation, class Triangular, class TagM, clas
 void assign(
 	matrix_expression<M> &m, 
 	matrix_expression<E> const& e,
-	packed<column_major,Triangular>, packed<EOrientation,Triangular>,
+	triangular<column_major,Triangular>, triangular<EOrientation,Triangular>,
 	TagM tagM, TagE tagE
 ) {
 	typedef typename M::orientation::transposed_orientation TMPacked;
@@ -424,7 +447,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		matrix_row<M> rowM(m(),i);
-		assign<F>(rowM,row(e,i));
+		kernels::assign<F>(rowM,row(e,i));
 	}
 }
 
@@ -476,7 +499,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size2(); ++i){
 		matrix_column<M> columnM(m(),i);
-		assign<F>(columnM,column(e,i));
+		kernels::assign<F>(columnM,column(e,i));
 	}
 }
 
@@ -489,7 +512,7 @@ void assign(
 ) {
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		matrix_column<M> rowM(m(),i);
-		assign<F>(rowM,row(e,i));
+		kernels::assign<F>(rowM,row(e,i));
 	}
 }
 
@@ -571,15 +594,15 @@ template<template <class, class> class F, class M, class E, class Triangular>
 void assign(
 	matrix_expression<M> &m, 
 	matrix_expression<E> const& e,
-	packed<row_major,Triangular>, packed<row_major,Triangular>
+	triangular<row_major,Triangular>, triangular<row_major,Triangular>
 ) {
 	typedef typename M::row_iterator MIter;
 	typedef typename E::const_row_iterator EIter;
 	typedef F<typename MIter::reference,typename  EIter::value_type> Function;
-	//there is nothing we can do, if F does not leave the non-stored elements 0
-	//this is the case for all current aissgnment functors, but you never know :)
-	BOOST_STATIC_ASSERT( Function::left_zero_identity || Function::right_zero_identity);
-	
+	//there is nothing we can do if F does not leave the non-stored elements 0
+	//this is the case for all current assignment functors, but you never know :)
+	static_assert(Function::left_zero_identity || Function::right_zero_identity, "cannot handle the given packed matrix assignment function");
+
 	Function f;
 	for(std::size_t i = 0; i != m().size1(); ++i){
 		MIter mpos = m().row_begin(i);
@@ -597,13 +620,13 @@ template<template <class, class> class F, class M, class E, class Triangular>
 void assign(
 	matrix_expression<M> &m, 
 	matrix_expression<E> const& e,
-	packed<row_major,Triangular>, packed<column_major,Triangular>
+	triangular<row_major,Triangular>, triangular<column_major,Triangular>
 ) {
 	typedef typename M::row_iterator MIter;
 	typedef typename E::const_row_iterator EIter;
 	typedef F<typename MIter::reference,typename EIter::value_type> Function;
 	//there is nothing we can do, if F does not leave the non-stored elements 0
-	BOOST_STATIC_ASSERT( Function::left_zero_identity);
+	static_assert(Function::left_zero_identity, "cannot handle the given packed matrix assignment function");
 	
 	Function f;
 	for(std::size_t i = 0; i != m().size1(); ++i){
@@ -678,7 +701,7 @@ template<template <class, class> class F, class M, class E,class EOrientation, c
 void assign(
 	matrix_expression<M> &m, 
 	matrix_expression<E> const& e,
-	packed<column_major,Triangular>, packed<EOrientation,Triangular>
+	triangular<column_major,Triangular>, triangular<EOrientation,Triangular>
 ) {
 	typedef typename M::orientation::transposed_orientation TMPacked;
 	typedef typename E::orientation::transposed_orientation TEPacked;

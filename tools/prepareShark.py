@@ -290,12 +290,19 @@ for  includeDir in includeDirs:
 
 					data = re.sub(r'(?i).include.*?serialization.*?[\n]', r'', data)
 
+
+
 					
 					# 1. remove  #include <shark/Core/ISerializable.h>
 					data = re.sub(r'(?i).include..shark.Core.ISerializable.h.', r'', data)
 					
 					# 2. case: class LineSearch:public ISerializable {
 					data = re.sub(r'(?i).include..shark.Core.ISerializable.h.', r'', data)
+
+					# more asserts
+					data = re.sub(r'(?i).include..boost.assert.hpp.', r'', data)
+					data = re.sub(r'(?i).include..boost.static_assert.hpp.', r'', data)
+
 
 					# 3. case public Ithing. hard way again
 					data = re.sub(r'(?i):.?public ISerializable[\s\n]*\{', r'{', data)
@@ -308,6 +315,11 @@ for  includeDir in includeDirs:
 					if len(re.findall("std::cout", data)) > 0:
 						data = re.sub(r'(?is)std::cout', r'Rcpp::Rcout', data)
 						data = re.sub(r'(?ism)^#include', r'#include <Rcpp.h>\n#include', data, 1)
+
+					# add BH headers if any boost exists
+					if len(re.findall("boost", data)) > 0:
+						data = re.sub(r'(?i)(.*?)\n', r'// [[Rcpp::depends(BH)]]\n\1\n', data, 1)
+
 
 					if len(re.findall("rand[\s]*\(", data)) > 0:
 						data = re.sub(r'(?is)rand[\s]*\([\s]*\)', r' int( round (R::runif(0,RAND_MAX)) ) ', data)
@@ -331,6 +343,20 @@ for  includeDir in includeDirs:
 					
 					# long long cat
 					data = re.sub(r'(?i)unsigned long long', r'size_t', data)
+
+					#  remove  static_asserts
+#					data = re.sub(r'(?i)BOOST_ASSERT.*', r'// BOOST_ASSERT', data)
+#					data = re.sub(r'(?i)static_assert', r'// static_assert', data)
+#					data = re.sub(r'(?i) assert', r'// assert', data)
+
+					# remove all the asserts
+#					data = re.sub(r'(?i)#define RANGE_CHECK.*', r'#define RANGE_CHECK ', data)
+#					data = re.sub(r'(?i)#define SIZE_CHECK.*', r'#define SIZE_CHECK', data)
+#					data = re.sub(r'(?i)#define SHARK_ASSERT.*', r'#define SHARK_ASSERT', data)
+#					data = re.sub(r'(?i)#define SHARK_CHECK.*', r'#define SHARK_CHECK', data)
+#					data = re.sub(r'(?i)#define TYPE_CHECK.*', r'#define TYPE_CHECK', data)
+#					data = re.sub(r'(?i)#define IO_CHECK.*', r'#define IO_CHECK', data)
+					
 
 
 					#print (data)
@@ -366,6 +392,9 @@ shutil.copy ("./Runif.h", os.path.join(storagePath, "shark", "Rng"))
 os.remove("../src/shark/Core/ISerializable.h")
 shutil.rmtree("../src/include")
 
-		
+# moreover we need some renamings
+shutil.move(os.path.abspath("../src/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeContributionApproximator.h"),
+			os.path.abspath("../src/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVContrApproximator.h") )
+
 print "\nProcessed", count, "files.\n\n"
 

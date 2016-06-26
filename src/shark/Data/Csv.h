@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -45,18 +46,7 @@
 #include <shark/Core/DLLSupport.h>
 #include <shark/Data/Dataset.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/format.hpp>
-#include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/newline.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/type_traits.hpp>
-
-#include <exception>
 #include <fstream>
-#include <map>
 #include <string>
 
 namespace shark {
@@ -124,14 +114,13 @@ namespace detail {
             bool scientific = true, //scientific notation?
             unsigned int fieldwidth = 0, //column-align using this field width
         typename boost::enable_if<
-            boost::is_arithmetic<typename boost::range_value<U>::type>
+            std::is_arithmetic<typename boost::range_value<U>::type>
         >::type* dummy = 0//enable this only for arithmetic types
     ) {
 
         if (!out) {
             throw(std::invalid_argument("[exportCSV (2)] Stream cannot be opened for writing."));
         }
-
 
         if (scientific)
             out.setf(std::ios_base::scientific);
@@ -169,7 +158,7 @@ namespace detail {
         bool scientific = true, //scientific notation?
         unsigned int fieldwidth = 0, //column-align using this field width
         typename boost::disable_if<
-            boost::is_arithmetic<typename boost::range_value<U>::type>
+            std::is_arithmetic<typename boost::range_value<U>::type>
         >::type* dummy = 0//enable this only for complex types
     ) {
 
@@ -209,6 +198,21 @@ namespace detail {
 
 
 // ACTUAL READ IN ROUTINES BELOW
+
+/// \brief Import unlabeled vectors from a read-in character-separated value file.
+///
+/// \param  data       Container storing the loaded data
+/// \param  contents    The read in csv-file
+/// \param  separator  Optional separator between entries, typically a comma, spaces ar automatically ignored
+/// \param  comment    Trailing character indicating comment line. By dfault it is '#'
+/// \param  maximumBatchSize   Size of batches in the dataset
+SHARK_EXPORT_SYMBOL void csvStringToData(
+    Data<FloatVector> &data,
+    std::string const& contents,
+    char separator = ',',
+    char comment = '#',
+    std::size_t maximumBatchSize = Data<RealVector>::DefaultBatchSize
+);
 
 /// \brief Import unlabeled vectors from a read-in character-separated value file.
 ///
@@ -263,6 +267,21 @@ SHARK_EXPORT_SYMBOL void csvStringToData(
 /// \param  comment            Trailing characters indicating comment line. By default it is "#"
 /// \param  maximumBatchSize   Size of batches in the dataset
 SHARK_EXPORT_SYMBOL void csvStringToData(
+    Data<float> &data,
+    std::string const& contents,
+    char separator = ',',
+    char comment = '#',
+    std::size_t maximumBatchSize = Data<double>::DefaultBatchSize
+);
+
+/// \brief Import "csv" from string consisting only of a single double per row
+///
+/// \param  data               Container storing the loaded data
+/// \param  contents    The read in csv-file
+/// \param  separator          Optional separator between entries, typically a comma, spaces ar automatically ignored
+/// \param  comment            Trailing characters indicating comment line. By default it is "#"
+/// \param  maximumBatchSize   Size of batches in the dataset
+SHARK_EXPORT_SYMBOL void csvStringToData(
     Data<double> &data,
     std::string const& contents,
     char separator = ',',
@@ -280,6 +299,23 @@ SHARK_EXPORT_SYMBOL void csvStringToData(
 /// \param  maximumBatchSize  maximum size of a batch in the dataset after import
 SHARK_EXPORT_SYMBOL void csvStringToData(
     LabeledData<RealVector, unsigned int> &dataset,
+    std::string const& contents,
+    LabelPosition lp,
+    char separator = ',',
+    char comment = '#',
+    std::size_t maximumBatchSize = LabeledData<RealVector, unsigned int>::DefaultBatchSize
+);
+
+/// \brief Import labeled data from a character-separated value file.
+///
+/// \param  dataset    Container storing the loaded data
+/// \param  contents the read-in file contents.
+/// \param  lp         Position of the label in the record, either first or last column
+/// \param  separator  Optional separator between entries, typically a comma, spaces ar automatically ignored
+/// \param  comment    Character for indicating a comment, by default '#'
+/// \param  maximumBatchSize  maximum size of a batch in the dataset after import
+SHARK_EXPORT_SYMBOL void csvStringToData(
+    LabeledData<FloatVector, unsigned int> &dataset,
     std::string const& contents,
     LabelPosition lp,
     char separator = ',',
@@ -307,6 +343,26 @@ SHARK_EXPORT_SYMBOL void csvStringToData(
 	std::size_t maximumBatchSize = LabeledData<RealVector, RealVector>::DefaultBatchSize
 );
 
+/// \brief Import regression data from a read-in character-separated value file.
+///
+/// \param  dataset             Container storing the loaded data
+/// \param  contents             The read in csv-file
+/// \param  lp                  Position of the label in the record, either first or last column
+/// \param  separator           Separator between entries, typically a comma or a space
+/// \param  comment             Character for indicating a comment, by default empty
+/// \param  numberOfOutputs     Dimensionality of label/output
+/// \param  maximumBatchSize  maximum size of a batch in the dataset after import
+SHARK_EXPORT_SYMBOL void csvStringToData(
+	LabeledData<FloatVector, FloatVector> &dataset,
+	std::string const& contents,
+	LabelPosition lp,
+	std::size_t numberOfOutputs = 1,
+	char separator = ',',
+	char comment = '#',
+	std::size_t maximumBatchSize = LabeledData<RealVector, RealVector>::DefaultBatchSize
+);
+
+
 
 /// \brief Import a Dataset from a csv file
 ///
@@ -326,6 +382,8 @@ void importCSV(
 	std::size_t titleLines = 0
 ){
 	std::ifstream stream(fn.c_str());
+	if(!stream) throw(std::invalid_argument("[importCSV] Stream cannot be opened for reading."));
+	
 	stream.unsetf(std::ios::skipws);
 	
 	for(std::size_t i=0; i < titleLines; ++i) // ignoring the first lines
@@ -348,14 +406,27 @@ void importCSV(
 /// \param  separator  Optional separator between entries, typically a comma, spaces ar automatically ignored
 /// \param  comment    Trailing character indicating comment line. By dfault it is '#'
 /// \param  maximumBatchSize   Size of batches in the dataset
-SHARK_EXPORT_SYMBOL void importCSV(
-	LabeledData<RealVector, unsigned int>& data,
+template<class T>
+void importCSV(
+	LabeledData<blas::vector<T>, unsigned int>& data,
 	std::string fn,
 	LabelPosition lp,
 	char separator = ',',
 	char comment = '#',
 	std::size_t maximumBatchSize = LabeledData<RealVector, unsigned int>::DefaultBatchSize
-);
+){
+	std::ifstream stream(fn.c_str());
+	if(!stream) throw(std::invalid_argument("[importCSV] Stream cannot be opened for reading."));
+
+	stream.unsetf(std::ios::skipws);
+	std::istream_iterator<char> streamBegin(stream);
+	std::string contents(//read contents of file in string
+		streamBegin,
+		std::istream_iterator<char>()
+	);
+	//call the actual parser
+	csvStringToData(data,contents,lp,separator,comment,maximumBatchSize);
+}
 
 /// \brief Import a labeled Dataset from a csv file
 ///
@@ -366,15 +437,28 @@ SHARK_EXPORT_SYMBOL void importCSV(
 /// \param  separator  Optional separator between entries, typically a comma, spaces ar automatically ignored
 /// \param  comment    Trailing character indicating comment line. By dfault it is '#'
 /// \param  maximumBatchSize   Size of batches in the dataset
-SHARK_EXPORT_SYMBOL void importCSV(
-	LabeledData<RealVector, RealVector>& data,
+template<class T>
+void importCSV(
+	LabeledData<blas::vector<T>, blas::vector<T> >& data,
 	std::string fn,
 	LabelPosition lp,
 	std::size_t numberOfOutputs = 1,
 	char separator = ',',
 	char comment = '#',
 	std::size_t maximumBatchSize = LabeledData<RealVector, RealVector>::DefaultBatchSize
-);
+){
+	std::ifstream stream(fn.c_str());
+	if(!stream) throw(std::invalid_argument("[importCSV] Stream cannot be opened for reading."));
+
+	stream.unsetf(std::ios::skipws);
+	std::istream_iterator<char> streamBegin(stream);
+	std::string contents(//read contents of file in string
+		streamBegin,
+		std::istream_iterator<char>()
+	);
+	//call the actual parser
+	csvStringToData(data,contents,lp, numberOfOutputs, separator,comment,maximumBatchSize);
+}
 
 /// \brief Format unlabeled data into a character-separated value file.
 ///

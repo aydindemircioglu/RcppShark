@@ -1,3 +1,30 @@
+/*!
+ * \brief       Implements the gradient of the energy function with respect to its parameters for the RBM
+ * 
+ * \author      O. Krause
+ * \date        2015
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_UNSUPERVISED_RBM_IMPL_AVERAGEENERGYGRADIENT_H
 #define SHARK_UNSUPERVISED_RBM_IMPL_AVERAGEENERGYGRADIENT_H
 
@@ -50,7 +77,7 @@ public:
 		for(std::size_t i = 0; i != batchSize; ++i){
 			row(weightedFeatures,i)*= weights(i);
 		}
-		axpy_prod(trans(mpe_rbm->hiddenNeurons().expectedPhiValue(hiddens.statistics)),weightedFeatures,m_deltaWeights,false);
+		noalias(m_deltaWeights) += prod(trans(mpe_rbm->hiddenNeurons().expectedPhiValue(hiddens.statistics)),weightedFeatures);
 		mpe_rbm->visibleNeurons().parameterDerivative(m_deltaBiasVisible,visibles,weights);
 		mpe_rbm->hiddenNeurons().expectedParameterDerivative(m_deltaBiasHidden,hiddens,weights);
 	}
@@ -80,7 +107,7 @@ public:
 			row(weightedFeatures,i)*= weights(i);
 		}
 		
-		axpy_prod(trans(weightedFeatures),mpe_rbm->visibleNeurons().expectedPhiValue(visibles.statistics),m_deltaWeights,false);
+		noalias(m_deltaWeights) += prod(trans(weightedFeatures),mpe_rbm->visibleNeurons().expectedPhiValue(visibles.statistics));
 		mpe_rbm->hiddenNeurons().parameterDerivative(m_deltaBiasHidden,hiddens,weights);
 		mpe_rbm->visibleNeurons().expectedParameterDerivative(m_deltaBiasVisible,visibles,weights);
 	}

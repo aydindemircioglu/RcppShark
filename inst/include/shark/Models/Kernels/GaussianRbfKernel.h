@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -104,12 +105,12 @@ public:
         }
 
         /// Get the bandwidth parameter value.
-        inline double gamma() const {
+        double gamma() const {
                 return m_gamma;
         }
 
         /// Return ``standard deviation'' of Gaussian.
-        inline double sigma() const{ 
+        double sigma() const{ 
                 return 1. / std::sqrt(2 * m_gamma); 
         }
 
@@ -121,8 +122,8 @@ public:
         }
 
         /// Set ``standard deviation'' of Gaussian.
-        inline double setSigma(double sigma) const{ 
-                return m_gamma = 1. / (2 * sigma * sigma); 
+        void setSigma(double sigma){ 
+                m_gamma = 1. / (2 * sigma * sigma); 
         }
 
         /// From ISerializable.
@@ -212,7 +213,7 @@ public:
                 
                 gradient.resize(sizeX1,batchX1.size2());
                 RealMatrix W = coefficientsX2*s.expNorm;
-                axpy_prod(W,batchX2,gradient);
+                noalias(gradient) = prod(W,batchX2);
                 RealVector columnSum = sum_columns(coefficientsX2*s.expNorm);
                 
                 for(std::size_t i = 0; i != sizeX1; ++i){

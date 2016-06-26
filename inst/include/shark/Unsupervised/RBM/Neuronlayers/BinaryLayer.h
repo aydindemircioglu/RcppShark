@@ -36,7 +36,7 @@
 #include <shark/Data/BatchInterfaceAdaptStruct.h>
 #include <shark/Rng/Bernoulli.h>
 #include <shark/Unsupervised/RBM/StateSpaces/TwoStateSpace.h>
-
+#include <shark/Core/OpenMP.h>
 namespace shark{
 
 ///\brief Layer of binary units taking values in {0,1}. 
@@ -47,7 +47,8 @@ namespace shark{
 class BinaryLayer :  public IParameterizable{
 private:
         ///\brief The bias terms associated with the neurons.
-        RealVector m_bias; 
+        RealVector m_bias;
+        RealVector m_baseRate;
 public:
         ///\brief The state space of this neuron is binary.
         typedef BinarySpace StateSpace;
@@ -66,12 +67,31 @@ public:
         RealVector& bias(){
                 return m_bias;
         }
+        
+        
+        /// \brief Returns the base rate of the units
+        ///
+        ///The base-rate is the tempered disttribution for beta=0
+        ///beta then does a fading between the RBM and the base-rate
+        RealVector const& baseRate()const{
+                return m_baseRate;
+        }
+        
+        /// \brief Returns the base rate of the units
+        ///
+        ///The base-rate is the tempered disttribution for beta=0
+        ///beta then does a fading between the RBM and the base-rate
+        RealVector& baseRate(){
+                return m_baseRate;
+        }
                 
         ///\brief Resizes this neuron layer.
         ///
         ///@param newSize number of neurons in the layer
         void resize(std::size_t newSize){
                 m_bias.resize(newSize);
+                m_baseRate.resize(newSize);
+                m_baseRate.clear();
         }
         
         ///\brief Returns the number of neurons of this layer.
@@ -92,7 +112,8 @@ public:
                 SIZE_CHECK(input.size1() == statistics.size1());
                 
                 for(std::size_t i = 0; i != input.size1(); ++i){
-                        noalias(row(statistics,i)) = sigmoid((row(input,i)+m_bias)*beta(i));
+                        noalias(row(statistics,i)) = sigmoid((row(input,i)+m_bias)*beta(i)+(1.0-beta(i))*m_baseRate);
+                        //~ noalias(row(statistics,i)) = sigmoid((row(input,i)+m_bias)*beta(i));
                 }
         }
         
@@ -113,33 +134,34 @@ public:
                 SIZE_CHECK(statistics.size1() == state.size1());
                 SIZE_CHECK(statistics.size2() == state.size2());
                 
-                Bernoulli<Rng> coinToss(rng,0.5);
-                if(alpha == 0.0){//special case: normal gibbs sampling
-                        for(std::size_t s = 0; s != state.size1();++s){
-                                for(std::size_t i = 0; i != state.size2();++i){
-                                        state(s,i) = coinToss(statistics(s,i));
+                SHARK_CRITICAL_REGION{
+                        Bernoulli<Rng> coinToss(rng,0.5);
+                        if(alpha == 0.0){//special case: normal gibbs sampling
+                                for(std::size_t s = 0; s != state.size1();++s){
+                                        for(std::size_t i = 0; i != state.size2();++i){
+                                                state(s,i) = coinToss(statistics(s,i));
+                                        }
                                 }
                         }
-                        return;
-                }
-                else{//flip-the state sampling
-                        for(size_t s = 0; s != state.size1(); ++s){
-                                for (size_t i = 0; i != state.size2(); i++) {
-                                        double prob = statistics(s,i);
-                                        if (state(s,i) == 0) {
-                                                if (prob <= 0.5) {
-                                                        prob = (1. - alpha) * prob + alpha * prob / (1. - prob);
+                        else{//flip-the state sampling
+                                for(size_t s = 0; s != state.size1(); ++s){
+                                        for (size_t i = 0; i != state.size2(); i++) {
+                                                double prob = statistics(s,i);
+                                                if (state(s,i) == 0) {
+                                                        if (prob <= 0.5) {
+                                                                prob = (1. - alpha) * prob + alpha * prob / (1. - prob);
+                                                        } else {
+                                                                prob = (1. - alpha) * prob  + alpha;
+                                                        }
                                                 } else {
-                                                        prob = (1. - alpha) * prob  + alpha;
+                                                        if (prob >= 0.5) {
+                                                                prob = (1. - alpha) * prob + alpha * (1. - (1. - prob) / prob);
+                                                        } else {
+                                                                prob = (1. - alpha) * prob;
+                                                        }
                                                 }
-                                        } else {
-                                                if (prob >= 0.5) {
-                                                        prob = (1. - alpha) * prob + alpha * (1. - (1. - prob) / prob);
-                                                } else {
-                                                        prob = (1. - alpha) * prob;
-                                                }
+                                                state(s,i) = coinToss(prob);
                                         }
-                                        state(s,i) = coinToss(prob);
                                 }
                         }
                 }
@@ -206,10 +228,10 @@ public:
                 SIZE_CHECK(state.size1() == beta.size());
                 //the following code does for batches the equivalent thing to:
                 //return inner_prod(m_bias,state)
+                RealVector energies = prod(state,m_bias);
+                RealVector baseRateEnergies = prod(state,m_baseRate);
+                noalias(energies) = beta*energies +(1-beta)*baseRateEnergies;
                 
-                RealVector energies(state.size1());
-                axpy_prod(state,m_bias,energies);
-                noalias(energies) *= beta;
                 return energies;
         }
         
@@ -231,7 +253,8 @@ public:
                 SIZE_CHECK(inputs.size() == size());
                 long double logFactorization = 0;
                 for(std::size_t i = 0; i != inputs.size(); ++i){
-                        double arg = (inputs(i)+m_bias(i))*beta;
+                        double arg = (inputs(i)+m_bias(i))*beta+(1-beta)*m_baseRate(i);
+                        //~ double arg = (inputs(i)+m_bias(i))*beta;
                         logFactorization += softPlus(arg);
                 }
                 return logFactorization;
@@ -260,7 +283,7 @@ public:
         template<class Vector, class SampleBatch, class WeightVector>
         void expectedParameterDerivative(Vector& derivative, SampleBatch const& samples, WeightVector const& weights )const{
                 SIZE_CHECK(derivative.size() == size());
-                axpy_prod(trans(samples.statistics),weights,derivative,false);
+                noalias(derivative) += prod(weights,samples.statistics);
         }
 
 
@@ -284,7 +307,7 @@ public:
         template<class Vector, class SampleBatch, class WeightVector>
         void parameterDerivative(Vector& derivative, SampleBatch const& samples, WeightVector const& weights)const{
                 SIZE_CHECK(derivative.size() == size());
-                axpy_prod(trans(samples.state),weights,derivative,false);
+                noalias(derivative) += prod(weights,samples.state);
         }
         
         /// \brief Returns the vector with the parameters associated with the neurons in the layer, i.e. the bias vector.
@@ -309,6 +332,5 @@ public:
         ///
         /// @param archive the archive
         };
-
 }
 #endif

@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -49,11 +50,11 @@
 #include <hdf5_hl.h>
 
 #include <boost/array.hpp>
-#include <boost/foreach.hpp>
+#include <boost/format.hpp>
 #include <boost/range/algorithm/fill.hpp>
 #include <boost/range/algorithm/max_element.hpp>
 #include <boost/smart_ptr/scoped_array.hpp>
-#include <boost/type_traits.hpp>
+#include <type_traits>
 
 namespace shark {
 
@@ -92,19 +93,19 @@ herr_t readHDF5Dataset( hid_t loc_id, const char *dset_name, double *buffer )
 template<typename RawValueType>
 bool isSupported(H5T_class_t typeClass, size_t typeSize)
 {
-	if (H5T_FLOAT == typeClass && 8 == typeSize && boost::is_floating_point < RawValueType > ::value
+	if (H5T_FLOAT == typeClass && 8 == typeSize && std::is_floating_point < RawValueType > ::value
 	    && sizeof(RawValueType) == 8) {
 		// double
 		return true;
-	} else if (H5T_FLOAT == typeClass && 4 == typeSize && boost::is_floating_point < RawValueType > ::value
+	} else if (H5T_FLOAT == typeClass && 4 == typeSize && std::is_floating_point < RawValueType > ::value
 	    && sizeof(RawValueType) == 4) {
 		// float
 		return true;
-	} else if (H5T_INTEGER == typeClass && 4 == typeSize && boost::is_integral < RawValueType > ::value
+	} else if (H5T_INTEGER == typeClass && 4 == typeSize && std::is_integral < RawValueType > ::value
 	    && sizeof(RawValueType) == 4) {
 		// int
 		return true;
-	} else if (H5T_INTEGER == typeClass && 8 == typeSize && boost::is_integral < RawValueType > ::value
+	} else if (H5T_INTEGER == typeClass && 8 == typeSize && std::is_integral < RawValueType > ::value
 	    && sizeof(RawValueType) == 8) {
 		// long
 		return true;
@@ -137,10 +138,14 @@ void loadIntoMatrix(MatrixType& data, const std::string& fileName, const std::st
 	const size_t MAX_DIMENSIONS = 64u;
 
 	// Open the file, and then get dimension
+	hid_t open = H5Fopen(fileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+	if(open < 0)
+		throw SHARKEXCEPTION((boost::format("[loadIntoMatrix] open file name: %1% (FAILED)") % fileName).str());
+	
 	const ScopedHandle<hid_t> fileId(
-		H5Fopen(fileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT),
-		H5Fclose,
-		(boost::format("[loadIntoMatrix] open file name: %1%") % fileName).str());
+		open,
+		H5Fclose
+	);
 
 	boost::array<hsize_t, MAX_DIMENSIONS> dims;
 	dims.assign(0);

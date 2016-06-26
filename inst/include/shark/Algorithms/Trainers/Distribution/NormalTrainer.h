@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -43,6 +44,7 @@
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/variance.hpp>
 #include <boost/bind/bind.hpp>
+#include <boost/bind/placeholders.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 
 namespace shark {
@@ -71,9 +73,12 @@ public:
 	{
 		SIZE_CHECK(input.size() > 1u);
 		namespace bae = boost::accumulators::extract;
-
 		InternalAccumulatorType accu;
+#if (BOOST_VERSION < 106000)
 		boost::range::for_each(input, boost::bind(boost::ref(accu), _1));
+#else
+		boost::range::for_each(input, boost::bind(boost::ref(accu), boost::placeholders::_1));
+#endif
 		SIZE_CHECK(bae::count(accu) > 1u);
 
 		normal.mean(bae::mean(accu));

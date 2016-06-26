@@ -14,6 +14,15 @@ cp -R ./src/shark ./inst/include/shark
 # this one hurts
 mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/SimulatedBinaryCrossover.h  ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/BinaryCrossover.h
 
+# as do those for too long a path name
+mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeContribution2D.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVContribution2D.h
+mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeContribution3D.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVContribution3D.h
+#mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeContributionApproximator.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVContributionApproximator.h
+mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeContributionMD.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVContributionMD.h
+mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeSubsetSelection2D.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVSubsetSelection2D.h
+mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/PartiallyMappedCrossover.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/PMXCrossover.h
+
+
 # copy over utils
 cp ./src/utils.h ./inst/skeleton
 cp ./src/utils.cpp ./inst/skeleton

@@ -50,16 +50,6 @@
 namespace shark {
 
 
-
-// strategy constants
-#define CHANGE_RATE 0.2
-#define PREF_MIN 0.05
-#define PREF_MAX 20.0
-
-// inner iteration limit
-#define MAXITER_MULTIPLIER 10
-
-
 /// \brief Generic solver skeleton for linear multi-class SVM problems.
 template <class InputT>
 class QpMcLinear
@@ -210,8 +200,7 @@ public:
 				RealMatrixRow a = row(alpha, i);
 
 				// compute gradient and KKT violation
-				RealVector wx(m_classes,0.0);
-				axpy_prod(w,x_i,wx,false);
+				RealVector wx = prod(w,x_i);
 				RealVector g(m_classes);
 				double kkt = calcGradient(g, wx, a, C, y_i);
 
@@ -241,6 +230,11 @@ public:
 					if (epoch == 0) average_gain += gain / (double)ell;
 					else
 					{
+						// strategy constants
+						constexpr double CHANGE_RATE = 0.2;
+						constexpr double PREF_MIN = 0.05;
+						constexpr double PREF_MAX = 20.0;
+
 						double change = CHANGE_RATE * (gain / average_gain - 1.0);
 						double newpref = std::min(PREF_MAX, std::max(PREF_MIN, pref(i) * std::exp(change)));
 						prefsum += newpref - pref(i);
@@ -760,7 +754,7 @@ protected:
 		double gain = 0.0;
 
 		// SMO loop
-		size_t iter, maxiter = MAXITER_MULTIPLIER * m_classes;
+		size_t iter, maxiter = 10 * m_classes;
 		for (iter=0; iter<maxiter; iter++)
 		{
 			// select working set
@@ -871,7 +865,7 @@ protected:
 		double gain = 0.0;
 
 		// SMO loop
-		size_t iter, maxiter = MAXITER_MULTIPLIER * m_classes;
+		size_t iter, maxiter = 10 * m_classes;
 		for (iter=0; iter<maxiter; iter++)
 		{
 			// select working set
@@ -977,7 +971,7 @@ protected:
 		double gain = 0.0;
 
 		// SMO loop
-		size_t iter, maxiter = MAXITER_MULTIPLIER * m_classes;
+		size_t iter, maxiter = 10 * m_classes;
 		for (iter=0; iter<maxiter; iter++)
 		{
 			// select working set
@@ -1206,7 +1200,7 @@ protected:
 		double gain = 0.0;
 
 		// SMO loop
-		size_t iter, maxiter = MAXITER_MULTIPLIER * m_classes;
+		size_t iter, maxiter = 10 * m_classes;
 		for (iter=0; iter<maxiter; iter++)
 		{
 			// select working set
@@ -1403,7 +1397,7 @@ protected:
 		double gain = 0.0;
 
 		// SMO loop
-		size_t iter, maxiter = MAXITER_MULTIPLIER * m_classes;
+		size_t iter, maxiter = 10 * m_classes;
 		for (iter=0; iter<maxiter; iter++)
 		{
 			// select working set
@@ -1589,7 +1583,7 @@ protected:
 		double gain = 0.0;
 
 		// SMO loop
-		size_t iter, maxiter = MAXITER_MULTIPLIER * m_classes;
+		size_t iter, maxiter = 10 * m_classes;
 		for (iter=0; iter<maxiter; iter++)
 		{
 			// select working set
@@ -1778,7 +1772,7 @@ protected:
 		double gain = 0.0;
 
 		// SMO loop
-		size_t iter, maxiter = MAXITER_MULTIPLIER * m_classes;
+		size_t iter, maxiter = 10 * m_classes;
 		for (iter=0; iter<maxiter; iter++)
 		{
 			// select working set

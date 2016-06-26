@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * \brief   Implements the autoencoder
  * 
@@ -169,8 +170,7 @@ public:
                         std::size_t numOutputs = encoderMatrix().size1();
                         outputs.resize(numPatterns,numOutputs);
                         outputs.clear();
-                        axpy_prod(patterns,trans(encoderMatrix()),outputs);
-                        noalias(outputs) += repeat(hiddenBias(),numPatterns);
+                        noalias(outputs) = prod(patterns,trans(encoderMatrix())) + repeat(hiddenBias(),numPatterns);
                         noalias(outputs) = m_hiddenNeuron(outputs);
                 }
                 else{//hidden->output
@@ -178,8 +178,7 @@ public:
                         std::size_t numOutputs = decoderMatrix().size1();
                         outputs.resize(numPatterns,numOutputs);
                         outputs.clear();
-                        axpy_prod(patterns,trans(decoderMatrix()),outputs);
-                        noalias(outputs) += repeat(outputBias(),numPatterns);
+                        noalias(outputs) = prod(patterns,trans(decoderMatrix())) + repeat(outputBias(),numPatterns);
                         noalias(outputs) = m_outputNeuron(outputs);
                 }
         }
@@ -288,7 +287,7 @@ public:
 
                 noalias(outputDelta) *= m_outputNeuron.derivative(s.outputResponses);
                 hiddenDelta.resize(outputDelta.size1(),numberOfHiddenNeurons());
-                axpy_prod(outputDelta,decoderMatrix(),hiddenDelta,true);
+                noalias(hiddenDelta) = prod(outputDelta,decoderMatrix());
                 noalias(hiddenDelta) *= m_hiddenNeuron.derivative(s.hiddenResponses);
         }
         
@@ -297,7 +296,7 @@ public:
         )const{
                 computeDelta(state,outputDelta,hiddenDelta);
                 inputDelta.resize(outputDelta.size1(),inputSize());
-                axpy_prod(hiddenDelta,encoderMatrix(),inputDelta,true);
+                noalias(inputDelta) = prod(hiddenDelta,encoderMatrix());
         }
         
         void computeParameterDerivative(
@@ -308,17 +307,10 @@ public:
                 std::size_t hiddenParams = inputSize()*numberOfHiddenNeurons();
                 std::size_t numHidden = numberOfHiddenNeurons();
                 gradient.resize(numberOfParameters());
-                gradient.clear();
-                axpy_prod(
-                        trans(outputDelta),
-                        s.hiddenResponses,
-                        to_matrix(subrange(gradient,hiddenParams,2*hiddenParams),outputSize(),numHidden),false
-                );
-                axpy_prod(
-                        trans(hiddenDelta),
-                        patterns,
-                        to_matrix(subrange(gradient,0,hiddenParams),numHidden,inputSize()),false
-                );
+                auto  gradEncoder  = to_matrix(subrange(gradient,0,hiddenParams),numHidden,inputSize());
+                auto  gradDecoder  = to_matrix(subrange(gradient,hiddenParams,2*hiddenParams),outputSize(),numHidden);
+                noalias(gradDecoder) = prod(trans(outputDelta),s.hiddenResponses);
+                noalias(gradEncoder) = prod(trans(hiddenDelta),patterns);
                 
                 std::size_t hiddenBiasPos = 2*hiddenParams;
                 std::size_t outputBiasPos = hiddenBiasPos+numHidden;

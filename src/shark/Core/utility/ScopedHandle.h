@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -42,7 +43,7 @@
 
 #include "shark/Core/Exception.h"
 
-#include <boost/assert.hpp>
+
 #include <boost/bind/arg.hpp>
 #include <boost/format.hpp>
 #include <boost/function.hpp>

@@ -36,11 +36,12 @@
 #define SHARK_MODELS_TREES_RFCLASSIFIER_H
 
 #include <shark/Models/Trees/CARTClassifier.h>
-#include <shark/Statistics/Statistics.h>
 #include <shark/Models/MeanModel.h>
 
 namespace shark {
 
+typedef CARTClassifier<RealVector>::TreeType TreeType;
+typedef std::vector<TreeType> ForestInfo;
 
 ///
 /// \brief Random Forest Classifier.
@@ -51,7 +52,7 @@ namespace shark {
 /// Random Forests. Leo Breiman. Machine Learning, 1(45), pages 5-32. Springer, 2001.<br/>
 ///
 /// \par
-/// It is a ensemble learner that uses multiple decision trees built
+/// It is an ensemble learner that uses multiple decision trees built
 /// using the CART methodology.
 ///
 class RFClassifier : public MeanModel<CARTClassifier<RealVector> >
@@ -64,11 +65,11 @@ public:
 	// compute the oob error for the forest
 	void computeOOBerror(){
 		std::size_t n_trees = numberOfModels();
-		Statistics stats;
+		m_OOBerror = 0;
 		for(std::size_t j=0;j!=n_trees;++j){
-			stats(m_models[j].OOBerror());
+			m_OOBerror += m_models[j].OOBerror();
 		}
-		m_OOBerror = stats(Statistics::Mean());
+		m_OOBerror /= n_trees;
 	}
 
 	// compute the feature importances for the forest
@@ -77,11 +78,11 @@ public:
 		std::size_t n_trees = numberOfModels();
 
 		for(std::size_t i=0;i!=m_inputDimension;++i){
-			Statistics featureStats;
+			m_featureImportances[i] = 0;
 			for(std::size_t j=0;j!=n_trees;++j){
-				featureStats(m_models[j].featureImportances()[i]);
+				m_featureImportances[i] += m_models[j].featureImportances()[i];
 			}
-			m_featureImportances[i] = featureStats(Statistics::Mean());
+			m_featureImportances[i] /= n_trees;
 		}
 	}
 
@@ -113,6 +114,29 @@ public:
 	// Set the input dimension
 	void setInputDimension(std::size_t in){
 		m_inputDimension = in;
+	}
+
+	ForestInfo getForestInfo() const {
+		ForestInfo finfo(m_models.size());
+		for (std::size_t i=0; i<m_models.size(); ++i)
+			finfo[i]=m_models[i].getTree();
+		return finfo;
+	}
+
+	void setForestInfo(ForestInfo const& finfo, std::vector<double> const& weights = std::vector<double>()) {
+		std::size_t n_tree = finfo.size();
+		std::vector<double> we(weights);
+		m_models.resize(n_tree);
+		if (weights.empty()) // set default weights to 1
+			we.resize(n_tree, 1);
+		else if (weights.size() != n_tree)
+			throw SHARKEXCEPTION("Weights must be the same number as trees");
+
+		for (std::size_t i=0; i<n_tree; ++i){
+			m_models[i]=finfo[i];
+			m_weight.push_back(we[i]);
+			m_weightSum+=we[i];
+		}
 	}
 
 protected:

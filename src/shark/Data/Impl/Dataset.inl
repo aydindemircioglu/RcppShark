@@ -1,20 +1,29 @@
+// [[Rcpp::depends(BH)]]
 /*!
+ *
+ * \brief Internal functionality and implementation of the Data class
+ *
  *  \author O. Krause
+ *  \date 2012
  *
- *
- *  <BR><HR>
- *  This file is part of Shark. This library is free software;
- *  you can redistribute it and/or modify it under the terms of the
- *  GNU General Public License as published by the Free Software
- *  Foundation; either version 3, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this library; if not, see <http://www.gnu.org/licenses/>.
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 #ifndef SHARK_DATA_IMPL_DATASET_INL
@@ -36,7 +45,6 @@
 
 #include <algorithm>
 
-#include <boost/foreach.hpp>
 namespace shark {
 namespace detail{
 
@@ -365,7 +373,7 @@ public:
         template<class Range>
         void repartition(Range const& batchSizes){
                 std::size_t sum = 0;
-                BOOST_FOREACH(std::size_t i, batchSizes)
+                for(std::size_t i: batchSizes)
                         sum += i;
                 SIZE_CHECK(sum == numberOfElements());
 
@@ -476,15 +484,15 @@ void complement(
         std::size_t n,
         T2& comp)
 {
-        std::vector<unsigned int > parentSet(n);
+        std::vector<std::size_t> parentSet(n);
         for(std::size_t i = 0; i != n; ++i){
                 parentSet[i]=i;
         }
-        std::vector<unsigned int > setCopy(set.begin(),set.end());
+        std::vector<std::size_t> setCopy(set.begin(),set.end());
         std::sort(setCopy.begin(),setCopy.end());
 
-        std::vector<unsigned int > resultSet(parentSet.size());
-        std::vector<unsigned int >::iterator pos = std::set_difference(
+        std::vector<std::size_t> resultSet(parentSet.size());
+        std::vector<std::size_t>::iterator pos = std::set_difference(
                 parentSet.begin(),parentSet.end(),
                 setCopy.begin(),setCopy.end(),
                 resultSet.begin()
@@ -554,13 +562,13 @@ private:
         template<class B>
         struct TransformedDataElementTypeFromBatch{
                 typedef typename boost::range_value<
-                        typename boost::result_of<Functor(B)>::type 
+                        typename std::result_of<Functor&&(B)>::type 
                 >::type type;
         };
 public:
         typedef typename boost::mpl::eval_if<
                 CanBeCalled<Functor,T>,
-                boost::result_of<Functor(T) >,
+                std::result_of<Functor&&(T) >,
                 TransformedDataElementTypeFromBatch<
                         typename Batch<T>::type 
                 >

@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
@@ -124,7 +125,7 @@ class Erlang_distribution
     private:
         double mean_;
         double variance_;
-        unsigned k;
+        std::size_t k;
         RealType a;
 };
 

@@ -31,19 +31,16 @@
 
 #ifndef SHARK_LINALG_BLAS_BLAS_H
 #define SHARK_LINALG_BLAS_BLAS_H
-
+#include <shark/Core/Shark.h>
 #include <shark/LinAlg/BLAS/vector.hpp>
 #include <shark/LinAlg/BLAS/vector_sparse.hpp>
 #include <shark/LinAlg/BLAS/vector_expression.hpp>
 #include <shark/LinAlg/BLAS/matrix.hpp>
-#include <shark/LinAlg/BLAS/matrix_set.hpp>
 #include <shark/LinAlg/BLAS/matrix_sparse.hpp>
 #include <shark/LinAlg/BLAS/matrix_expression.hpp>
 #include <shark/LinAlg/BLAS/vector_proxy.hpp>
 #include <shark/LinAlg/BLAS/matrix_proxy.hpp>
-#include <shark/LinAlg/BLAS/operation.hpp>
 #include <shark/LinAlg/BLAS/permutation.hpp>
 #include <shark/LinAlg/BLAS/io.hpp>
-#include <shark/LinAlg/BLAS/lu.hpp>
 
 #endif

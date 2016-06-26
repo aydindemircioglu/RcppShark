@@ -45,71 +45,6 @@ namespace shark{ namespace blas{
  * 
  * @{
  */
-	
-/// \brief In-Place System of linear equations solver.
-///
-///Solves a system of linear equations
-///Ax=b 
-///for x, using LU decomposition and
-///backward substitution sotring the results in b. 
-///This Method is in
-///no way optimized for sparse matrices.
-///Be aware, that the matrix must have full rank!
-template<class MatT,class VecT>
-void solveSystemInPlace(
-	matrix_expression<MatT> const& A, 
-	vector_expression<VecT>& b
-);
-/// \brief System of linear equations solver.
-/// 
-/// Solves asystem of linear equations
-/// Ax=b 
-/// for x, using LU decomposition and
-/// backward substitution. This Method is in
-/// no way optimized for sparse matrices.
-/// Be aware, that the matrix must have full rank!
-template<class MatT,class Vec1T,class Vec2T>
-void solveSystem(
-	const matrix_expression<MatT> & A, 
-	vector_expression<Vec1T>& x,
-	const vector_expression<Vec2T> & b
-);
-
-/// \brief In-Place system of linear equations solver.
-///
-///Solves multiple systems of linear equations
-///Ax_1=b_1
-///Ax_2=b_2
-///...
-///=>AX=B
-///for X, using LU decomposition and
-///backward substitution and stores the result in b
-///Note, that B=(b_1,...,b_n), so the right hand sides are stored as columns
-///This Method is in no way optimized for sparse matrices.
-///Be aware, that the matrix must have full rank!
-template<class MatT,class Mat2T>
-void solveSystemInPlace(
-	matrix_expression<MatT> const& A, 
-	matrix_expression<Mat2T>& B
-);
-/// \brief System of linear equations solver.
-/// 
-/// Solves multiple systems of linear equations
-/// Ax_1=b_1
-/// Ax_2=b_2
-/// ...
-/// =>AX=B
-/// for X, using LU decomposition and
-/// backward substitution.
-/// Note, that B=(b_1,...,b_n), so the right hand sides are stored as columns
-/// This Method is in no way optimized for sparse matrices.
-/// Be aware that the matrix must have full rank!
-template<class MatT,class Mat1T,class Mat2T>
-void solveSystem(
-	const matrix_expression<MatT> & A, 
-	matrix_expression<Mat1T>& X,
-	const matrix_expression<Mat2T> & B
-);
 
 /// \brief System of symmetric linear equations solver. The result is stored in b
 /// 
@@ -312,13 +247,13 @@ void approxsolveSymmPosDefSystem(
 	SIZE_CHECK(A().size1()==b().size());
 	
 	std::size_t dim = b().size();
-	unsigned int maxIt = (maxIterations == 0)? dim: maxIterations;
+	std::size_t maxIt = (maxIterations == 0)? dim: maxIterations;
 	
 	typedef typename VecT::value_type value_type;
 	vector<value_type> r = b;//current residual
 	if(initialSolution){
 		SIZE_CHECK(x().size() == dim);
-		axpy_prod(A,x,r,false,-1.0);
+		noalias(r) -= prod(A,x);
 		if(norm_inf(r) > norm_inf(b)){
 			x().clear();
 			r = b;
@@ -334,7 +269,7 @@ void approxsolveSymmPosDefSystem(
 	vector<value_type> Ap(dim); //stores prod(A,p)
 	
 	for(std::size_t i = 0; i != maxIt; ++i){
-		axpy_prod(A,p,Ap);
+		noalias(Ap) = prod(A,p);
 		double rsqr=inner_prod(r,r);
 		double alpha = rsqr/inner_prod(p,Ap);
 		noalias(x())+=alpha*p;

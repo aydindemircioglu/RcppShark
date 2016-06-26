@@ -1,8 +1,9 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
  *
- * \brief       -
+ * \brief       Traits of matrix expressions
  *
  * \author      O. Krause
  * \date        2013
@@ -33,25 +34,50 @@
 #ifndef SHARK_LINALG_BLAS_DETAIL_TRAITS_HPP
 #define SHARK_LINALG_BLAS_DETAIL_TRAITS_HPP
 
-#include <complex>
-
 #include "../fwd.hpp"
 #include "iterator.hpp"
-#include "returntype_deduction.hpp"
 #include "../expression_types.hpp"
 
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_float.hpp>
-#include <boost/type_traits/is_integral.hpp>
-
 #include <boost/mpl/eval_if.hpp>
-#include <boost/mpl/and.hpp>
-
 #include <boost/range/iterator.hpp>
+
+#include <complex>
+#include <type_traits>
 
 namespace shark {
 namespace blas {
+	
+// Storage tags -- hierarchical definition of storage characteristics
+// this gives the real storage layout of the matix in memory
+// packed_tag ->BLAS packed format and supports packed interface
+// dense_tag -> dense storage scheme an dense interface supported
+// sparse_tag -> sparse storage scheme and supports sparse interface.
+// unknown_storage_tag -> no known storage scheme, only supports basic interface
+struct unknown_storage_tag {};
+struct sparse_tag:public unknown_storage_tag{};
+struct dense_tag: public unknown_storage_tag{};
+struct packed_tag: public unknown_storage_tag{};
+
+//evaluation tags
+struct elementwise_tag{};
+struct blockwise_tag{};
+
+namespace detail{
+	template<class S1, class S2>
+	struct evaluation_restrict_traits {
+		typedef S1 type;
+	};
+	template<>
+	struct evaluation_restrict_traits<elementwise_tag, blockwise_tag> {
+		typedef blockwise_tag type;
+	};
+}
+
+template<class E1, class E2>
+struct evaluation_restrict_traits: public detail::evaluation_restrict_traits<
+	typename E1::evaluation_category,
+	typename E2::evaluation_category
+>{};
 	
 template<class T>
 struct real_traits{
@@ -61,32 +87,6 @@ struct real_traits{
 template<class T>
 struct real_traits<std::complex<T> >{
 	typedef T type;
-};
-
-// Use Joel de Guzman's return type deduction
-// uBLAS assumes a common return type for all binary arithmetic operators
-template<class X, class Y>
-struct promote_traits {
-	typedef type_deduction_detail::base_result_of<X, Y> base_type;
-	static typename base_type::x_type x;
-	static typename base_type::y_type y;
-	static const std::size_t size = sizeof(
-	        type_deduction_detail::test<
-	        typename base_type::x_type
-	        , typename base_type::y_type
-	        >(x + y)     // Use x+y to stand of all the arithmetic actions
-	        );
-
-	static const std::size_t index = (size / sizeof(char)) - 1;
-	typedef typename boost::mpl::at_c<
-	typename base_type::types, index>::type id;
-	typedef typename id::type promote_type;
-};
-// special case for bools. b1+b2 creates a boolean return type - which does not make sense
-// for example when summing bools! therefore we use a signed int type
-template<>
-struct promote_traits<bool, bool> {
-	typedef int promote_type;
 };
 
 struct upper;
@@ -122,7 +122,7 @@ struct unit_upper{
 
 //structure types
 struct linear_structure{};
-struct packed_structure{};
+struct triangular_structure{};
 
 // forward declaration
 struct column_major;
@@ -181,14 +181,6 @@ struct row_major:public linear_structure{
 	static size_type stride2(size_type /*size_i*/, size_type /*size_j*/){
 		return 1;
 	}
-	
-	static size_type  triangular_index(size_type i, size_type j, size_type size,lower){
-		return i*(i+1)/2+j; 
-	}
-	
-	static size_type  triangular_index(size_type i, size_type j, size_type size,upper){
-		return (i*(2*size-i+1))/2+j-i; 
-	}
 };
 
 // This traits class defines storage layout and it's properties
@@ -244,24 +236,19 @@ struct column_major:public linear_structure{
 	static size_type stride2(size_type size_i, size_type /*size_j*/){
 		return size_i;
 	}
-	
-	static size_type  triangular_index(size_type i, size_type j, size_type size,lower){
-		return transposed_orientation::triangular_index(j,i,size,upper()); 
-	}
-	
-	static size_type  triangular_index(size_type i, size_type j, size_type size,upper){
-		return transposed_orientation::triangular_index(j,i,size,lower()); 
-	}
 };
 struct unknown_orientation:public linear_structure
 {typedef unknown_orientation transposed_orientation;};
 
 //storage schemes for packed matrices
 template<class Orientation, class TriangularType>
-struct packed:public packed_structure{
-	typedef  TriangularType triangular_type;
+struct triangular: public triangular_structure{
+public:
+	static const bool is_upper = TriangularType::is_upper;
+	static const bool is_unit = TriangularType::is_unit;
+	typedef TriangularType triangular_type;
 	typedef Orientation orientation;
-	typedef packed<
+	typedef triangular<
 		typename Orientation::transposed_orientation,
 		typename TriangularType::transposed_orientation
 	> transposed_orientation;
@@ -271,87 +258,82 @@ struct packed:public packed_structure{
 		return TriangularType::is_upper? j >= i: i >= j;
 	}
 	
-	static size_type element(size_type i, size_type j, size_type size) {
+	template<class StorageTag>
+	static size_type element(size_type i, size_type j, size_type size, StorageTag tag) {
 		SIZE_CHECK(i <= size);
 		SIZE_CHECK(j <= size);
 		//~ SIZE_CHECK( non_zero(i,j));//lets end iterators fail!
-		
-		return orientation::triangular_index(i,j,size,TriangularType());
+		return triangular_index(i,j,size,TriangularType(), Orientation(), tag);
 	}
-	
-	static size_type stride1(size_type size_i, size_type size_j){
-		return orientation::stride1(size_i,size_j);
+private:
+	static size_type  triangular_index(size_type i, size_type j, size_type size,lower, row_major, packed_tag){
+		return i*(i+1)/2+j; 
 	}
-	static size_type stride2(size_type size_i, size_type size_j){
-		return orientation::stride2(size_i,size_j);
+	static size_type  triangular_index(size_type i, size_type j, size_type size,upper, row_major, packed_tag){
+		return (i*(2*size-i+1))/2+j-i; 
+	}
+	static size_type  triangular_index(size_type i, size_type j, size_type size,lower, row_major, dense_tag){
+		return row_major::element(i,size,j,size); 
+	}
+	static size_type  triangular_index(size_type i, size_type j, size_type size,upper, row_major, dense_tag){
+		return column_major::element(i,size,j,size); 
+	}
+	template<class TriangT, class StructT>
+	static size_type  triangular_index(size_type i, size_type j, size_type size,TriangT, column_major, StructT s){
+		return triangular_index(j,i,size,typename TriangT::transposed_orientation(),row_major(), s);
 	}
 };
 
-// Storage tags -- hierarchical definition of storage characteristics
-// this gives the real storage layout of the matix in memory
-// packed_tag ->BLAS packed format and supports packed interface
-// dense_tag -> dense storage scheme an dense interface supported
-// sparse_tag -> sparse storage scheme and supports sparse interface.
-// unknown_storage_tag -> no known storage scheme, only supports basic interface
-struct unknown_storage_tag {};
-struct sparse_tag:public unknown_storage_tag{};
-struct dense_tag: public unknown_storage_tag{};
-struct packed_tag: public unknown_storage_tag{};
-
-
-template<class S1, class S2>
-struct storage_restrict_traits {
-	typedef S1 storage_category;
-};
-template<>
-struct storage_restrict_traits<dense_tag, sparse_tag> {
-	typedef sparse_tag storage_category;
-};
 
 template<class E>
 struct closure: public boost::mpl::if_<
-	boost::is_const<E>,
+	std::is_const<E>,
 	typename E::const_closure_type,
 	typename E::closure_type
 >{};
+	
+template<class E>
+struct const_expression{
+	typedef typename E::const_closure_type type;
+};
 
 template<class E>
 struct reference: public boost::mpl::if_<
-	boost::is_const<E>,
+	std::is_const<E>,
 	typename E::const_reference,
 	typename E::reference
 >{};
 
 template<class E>
 struct pointer: public boost::mpl::if_<
-	boost::is_const<E>,
+	std::is_const<E>,
 	typename E::const_pointer,
 	typename E::pointer
 >{};
 template<class E>
 struct index_pointer: public boost::mpl::if_<
-	boost::is_const<E>,
+	std::is_const<E>,
 	typename E::const_index_pointer,
 	typename E::index_pointer
 >{};
 	
 template<class M>
 struct row_iterator: public boost::mpl::if_<
-	boost::is_const<M>,
+	std::is_const<M>,
 	typename M::const_row_iterator,
 	typename M::row_iterator
 >{};
 	
 template<class M>
 struct column_iterator: public boost::mpl::if_<
-	boost::is_const<M>,
+	std::is_const<M>,
 	typename M::const_column_iterator,
 	typename M::column_iterator
 >{};
 
 template<class Matrix> 
 struct major_iterator:public boost::mpl::if_<
-	boost::is_same<typename Matrix::orientation, column_major>,
+	std::is_same<typename Matrix::orientation, column_major>,
 	typename column_iterator<Matrix>::type,
 	typename row_iterator<Matrix>::type
 >{};	
@@ -406,7 +388,7 @@ struct vector_temporary{
 	typedef typename vector_temporary_type<
 		typename E::value_type,
 		typename boost::mpl::eval_if<
-			typename boost::is_base_of<vector_expression<E>,E>::type,
+			typename std::is_base_of<vector_expression<E>,E>::type,
 			boost::range_iterator<E>,
 			major_iterator<E>
 		>::type::iterator_category
@@ -420,7 +402,7 @@ struct matrix_temporary{
 		typename E::value_type,
 		typename E::orientation,
 		typename boost::mpl::eval_if<
-			typename boost::is_base_of<vector_expression<E>,E>::type,
+			typename std::is_base_of<vector_expression<E>,E>::type,
 			boost::range_iterator<E>,
 			major_iterator<E>
 		>::type::iterator_category
@@ -434,7 +416,7 @@ struct transposed_matrix_temporary{
 		typename E::value_type,
 		typename E::orientation::transposed_orientation,
 		typename boost::mpl::eval_if<
-			typename boost::is_base_of<vector_expression<E>,E>::type,
+			typename std::is_base_of<vector_expression<E>,E>::type,
 			boost::range_iterator<E>,
 			major_iterator<E>
 		>::type::iterator_category

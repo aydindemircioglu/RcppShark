@@ -1,7 +1,6 @@
 
 SHARKOBJECTS=\
 utils.o \
-SharkDefs.o\
 Csv.o\
 SparseData.o\
 Centroids.o\
@@ -19,6 +18,7 @@ LinearRegression.o\
 SigmoidFit.o\
 PCA.o\
 FisherLDA.o\
+NormalizeComponentsWhitening.o\
 LDA.o\
 KMeans.o\
 CARTTrainer.o\
@@ -29,6 +29,7 @@ TrustRegionNewton.o\
 LBFGS.o\
 CG.o\
 CMA.o\
+CrossEntropyMethod.o\
 CMSA.o\
 ElitistCMA.o\
 DiscreteLoss.o\
@@ -36,13 +37,14 @@ ROC.o\
 KernelBasisDistance.o
 
 
+CXX_STD = CXX11
 
 PKGOBJECTS = RcppExports.o BSGDWrapper.o DeepNetworkWrapper.o
 
 OBJECTS= $(SHARKOBJECTS) $(PKGOBJECTS)
 
 PKG_CPPFLAGS= -I . $(CLINK_CPPFLAGS) -I $(R_INCLUDE_DIR)
-PKG_CXXFLAGS= $(CXXFLAGS) -D BOOST_DISABLE_ASSERTS  -fPIC -DNDEBUG -DRELEASE -I .
+PKG_CXXFLAGS= $(CXXFLAGS) -D BOOST_DISABLE_ASSERTS  -I .  $(FPICFLAGS) -DNDEBUG
 PKG_LIBS= $(LDFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
 all: $(SHLIB) userLibrary 
@@ -69,9 +71,6 @@ $(USERLIBST): 	$(OBJECTS)
 
 utils.o:
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c ./utils.cpp
-
-SharkDefs.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/SharkDefs.cpp
 
 Csv.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Data/Csv.cpp
@@ -124,6 +123,9 @@ PCA.o :
 FisherLDA.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/FisherLDA.cpp
 
+NormalizeComponentsWhitening.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/NormalizeComponentsWhitening.cpp
+
 LDA.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/LDA.cpp
 
@@ -153,6 +155,9 @@ CG.o :
 
 CMA.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/DirectSearch/CMA.cpp
+
+CrossEntropyMethod.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/DirectSearch/CrossEntropyMethod.cpp
 
 CMSA.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/DirectSearch/CMSA.cpp

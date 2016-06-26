@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /**
  * \mainpage Shark Machine Learning Library Ver. 3.0.0.
  * Shark is a modular C++ library for the design and
@@ -13,43 +14,29 @@
  *
  *  \date    2011
  *
- *  \par Copyright (c) 2007-2011:
- *      Institut f&uuml;r Neuroinformatik<BR>
- *      Ruhr-Universit&auml;t Bochum<BR>
- *      D-44780 Bochum, Germany<BR>
- *      Phone: +49-234-32-25558<BR>
- *      Fax:   +49-234-32-14209<BR>
- *      eMail: Shark-admin@neuroinformatik.ruhr-uni-bochum.de<BR>
- *      www:   http://www.neuroinformatik.ruhr-uni-bochum.de<BR>
- *
- *
- *  <BR><HR>
- *  This library is free software;
- *  you can redistribute it and/or modify it under the terms of the
- *  GNU General Public License as published by the Free Software
- *  Foundation; either version 3, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this library; if not, see <http://www.gnu.org/licenses/>.
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 #ifndef SHARK_CORE_SHARK_H
 #define SHARK_CORE_SHARK_H
 
-#include <boost/version.hpp>
-#include <boost/static_assert.hpp>
-
-/**
- * \brief Bails out the compiler if the boost version is < 1.44.
- */
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-    BOOST_STATIC_ASSERT( BOOST_VERSION >= 104400 );
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 #include <boost/assign.hpp>
 #include <boost/config.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -94,8 +81,39 @@ struct BuildTypeTag {
 };
 
 /**
+ * \brief Tags whether this is a dynamic build
+ */
+/* #undef SHARK_USE_DYNLIB */
+struct DynamicLibraryTag{
+  /**
+   * \brief Whether this is a dynamic or static build of Shark
+   */
+#ifdef SHARK_USE_DYNLIB
+  static const bool VALUE = true;
+#else
+  static const bool VALUE = false;
+#endif
+};
+
+/**
+ * \brief Tags whether BLAS has been enabled.
+ */
+/* #undef SHARK_USE_CBLAS */
+
+ /**
+ * \brief Tags whether full LAPACK is available
+ */
+/* #undef SHARK_USE_LAPACK */
+
+ /**
+ * \brief Tags whether the LAPACK portion of ATLAS is used
+ */
+/* #undef SHARK_USE_ATLAS_LAPACK */
+
+/**
  * \brief Tags whether OpenMP has been enabled.
  */
+#define SHARK_USE_OPENMP
 struct OpenMpTag {
 #ifdef _OPENMP
   static const bool VALUE = true;
@@ -127,8 +145,6 @@ class Shark {
   Shark();
   Shark( const Shark & shark );
   Shark & operator=( const Shark & rhs );
-
-  static std::map< BuildType, std::string > m_buildTypeMap; ///< Translates BuildType's to human readable form.
  public:
 
   /**
@@ -164,9 +180,9 @@ class Shark {
    */
   typedef Version<
     3,
-    0,
+    1,
     0
-    > version_type;
+  > version_type;
 
   /**
    * \brief Marks the boost version Shark has been built against.
@@ -190,6 +206,13 @@ class Shark {
   static bool hasOpenMp() {
     return( tag::OpenMpTag::VALUE );
   }
+  
+  /**
+   * \brief Queries whether Shark has been compiled as dynamic library
+   */
+  static bool isDynamicLibrary() {
+    return( tag::DynamicLibraryTag::VALUE );
+  }
 
   /**
    * \brief Checks whether this is an official Shark release.
@@ -203,6 +226,8 @@ class Shark {
    */
   template<typename Stream>
   static void info( Stream & s ) {
+    std::map< BuildType, std::string > buildTypeMap = boost::assign::map_list_of( RELEASE_BUILD_TYPE, "Release" )( DEBUG_BUILD_TYPE, "Debug" );
+
     boost::property_tree::ptree pt, version;
     version.add("major", version_type::MAJOR());
     version.add("minor", version_type::MINOR());
@@ -217,18 +242,14 @@ class Shark {
     version.put("minor", boost_version_type::MINOR());
     version.put("patch", boost_version_type::PATCH());
     pt.add_child("boostVersion", version);
-    pt.add("buildType", m_buildTypeMap[buildType()]);
+    pt.add("buildType", buildTypeMap[buildType()]);
+    pt.add("dynamicBuild", isDynamicLibrary());
     pt.add("hasOpenMp", hasOpenMp());
 
     boost::property_tree::write_json(s, pt);
   }
 
 };
-
-/**
- * \brief Fills in values to translate BuildTypes to human readable form.
- */
-std::map< BuildType, std::string > Shark::m_buildTypeMap = boost::assign::map_list_of( RELEASE_BUILD_TYPE, "Release" )( DEBUG_BUILD_TYPE, "Debug" );
 
 }
 

@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -39,12 +40,8 @@
 #include "shark/Core/Math.h"
 #include "shark/Models/AbstractModel.h"
 
-#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
-#include <boost/static_assert.hpp>
-
-#include <boost/type_traits.hpp>
 
 #include <limits>
 #include <utility>
@@ -159,7 +156,7 @@ public:
 				// We use log to ensure that the result stays in a valid range of double, even when the propability is very low
 				double currentLogProb = safeLog(classDistribution); 
 				std::size_t featureIndex = 0u;
-				BOOST_FOREACH(AbstractDistPtr const& featureDistribution, m_featureDistributions[classIndex])
+				for(auto const& featureDistribution: m_featureDistributions[classIndex])
 					currentLogProb += featureDistribution->logP(patterns(p,featureIndex++));
 
 				// Record the greater one
@@ -203,9 +200,6 @@ protected:
 	FeatureDistributionsType m_featureDistributions;
 	ClassPriorsType m_classPriors;
 	///@}
-
-	/// Output should be integer/discrete type
-	BOOST_STATIC_ASSERT(boost::is_integral<OutputType>::value);
 };
 
 } // namespace shark {

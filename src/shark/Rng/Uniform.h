@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
@@ -117,6 +118,13 @@ public:
 		return x >= low() && x < high() ? 1 / (high() - low()) : 0;
 	}
 };
+
+///\brief Draws a number uniformly in [lower,upper] by drawing random numbers from rng.
+template<class RngType>
+double uni(RngType& rng, double lower, double upper){
+	Uniform<RngType> dist(rng, lower, upper);
+	return dist();
+}
 
 } // namespace shark {
 

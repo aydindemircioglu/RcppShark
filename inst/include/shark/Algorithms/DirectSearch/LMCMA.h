@@ -33,7 +33,6 @@
 
 #include <shark/Algorithms/DirectSearch/Operators/Evaluation/PenalizingEvaluator.h>
 #include <shark/Algorithms/DirectSearch/Operators/PopulationBasedStepSizeAdaptation.h>
-#include <shark/Algorithms/DirectSearch/FitnessExtractor.h>
 #include <shark/Algorithms/DirectSearch/Operators/Selection/ElitistSelection.h>
 
 
@@ -44,9 +43,9 @@ namespace detail{
 
 ///\brief Approximates a Limited Memory Cholesky Matrix from a stream of samples.
 ///
-/// GIven a set of points \f$ v_i\f$, produces an approximation of the cholesky factor of a matrix:
+/// Given a set of points \f$ v_i\f$, produces an approximation of the cholesky factor of a matrix:
 /// \f[ AA^T=C= (1-\alpha) C^{t-1} + \alpha* x_{j_t} x_{j_t}^T \f]
-/// here the \f j_t \f$ are chosen such to have an approximate distance \f$ N_{steps} \f$. It is assumed
+/// here the \f$ j_t \f$ are chosen such to have an approximate distance \f$ N_{steps} \f$. It is assumed
 /// that the \f$x_i \f$ are correlated and thus a big \f$ N_{steps} \f$ tris to get points which are less 
 /// correlated. The matrix keeps a set of vectors and decides at every step which is will discard.
 ///
@@ -200,7 +199,7 @@ class LMCMA: public AbstractSingleObjectiveOptimizer<RealVector >
 {
 public:
 	/// \brief Default c'tor.
-	LMCMA(){
+	LMCMA(DefaultRngType& rng = Rng::globalRng):mpe_rng(&rng){
 		m_features |= REQUIRES_VALUE;
 	}
 	
@@ -211,7 +210,7 @@ public:
 
 	/// \brief Calculates lambda for the supplied dimensionality n.
 	unsigned suggestLambda( unsigned int dimension ) {
-		unsigned lambda = unsigned( 4. + ::floor( 3. * ::log( static_cast<double>( dimension ) ) ) ); // eq. (44)
+		unsigned lambda = unsigned( 4. + ::floor( 3. * ::log( static_cast<double>( dimension ) ) ) );
 		// heuristic for small search spaces
 		lambda = std::max<unsigned int>( 5, std::min( lambda, dimension ) );
 		return( lambda );
@@ -219,7 +218,7 @@ public:
 
 	/// \brief Calculates mu for the supplied lambda and the recombination strategy.
 	double suggestMu( unsigned int lambda) {
-		return lambda / 2.; // eq. (44)
+		return lambda / 2.;
 	}
 
 	using AbstractSingleObjectiveOptimizer<RealVector >::init;
@@ -245,7 +244,6 @@ public:
 		double initialSigma
 	) {
 		checkFeatures(function);
-		function.init();
 		
 		m_numberOfVariables = function.numberOfVariables();
 		m_lambda = lambda;
@@ -278,8 +276,8 @@ public:
 
 	/// \brief Executes one iteration of the algorithm.
 	void step(ObjectiveFunctionType const& function){
-
-		std::vector< Individual<RealVector, double, RealVector> > offspring( m_lambda );
+		typedef Individual<RealVector, double, RealVector> IndividualType;
+		std::vector< IndividualType > offspring( m_lambda );
 
 		PenalizingEvaluator penalizingEvaluator;
 		for( unsigned int i = 0; i < offspring.size(); i++ ) {
@@ -290,8 +288,8 @@ public:
 		// Selection and parameter update
 		// opposed to normal CMA selection, we don't remove any indidivudals but only order
 		// them by rank to allow the use of the population based strategy.
-		std::vector< Individual<RealVector, double, RealVector> > parents( lambda() );
-		ElitistSelection<FitnessExtractor> selection;
+		std::vector< IndividualType > parents( lambda() );
+		ElitistSelection< IndividualType::FitnessOrdering > selection;
 		selection(offspring.begin(),offspring.end(),parents.begin(), parents.end());
 		updateStrategyParameters( parents );
 
@@ -369,7 +367,7 @@ private:
 		x.resize(m_numberOfVariables);
 		z.resize(m_numberOfVariables);
 		for(std::size_t i = 0; i != m_numberOfVariables; ++i){
-			z(i) = Rng::gauss(0,1);
+			z(i) = gauss(*mpe_rng,0,1);
 		}
 		m_A.prod(x,z);
 		noalias(x) = sigma()*x +m_mean;
@@ -389,8 +387,9 @@ private:
 	RealVector m_weights;///< weighting for the mu best individuals
 	double m_muEff;///< effective sample size for the weighted samples
 
-	RealVector m_evolutionPathC;///< 
+	RealVector m_evolutionPathC;///< evolution path
 	
+	DefaultRngType* mpe_rng;
 	
 };
 

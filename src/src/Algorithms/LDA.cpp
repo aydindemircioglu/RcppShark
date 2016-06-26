@@ -41,8 +41,6 @@ void LDA::train(LinearClassifier<>& model, LabeledData<RealVector,unsigned int> 
 	if(dataset.empty()){
 		throw SHARKEXCEPTION("[LDA::train] the dataset must not be empty");
 	}
-	typedef LabeledData<RealVector,unsigned int>::const_batch_reference BatchReference;
-	
 	std::size_t inputs = dataset.numberOfElements();
 	std::size_t dim = inputDimension(dataset);
 	std::size_t classes = numberOfClasses(dataset);
@@ -53,7 +51,7 @@ void LDA::train(LinearClassifier<>& model, LabeledData<RealVector,unsigned int> 
 	RealMatrix covariance(dim, dim,0.0);
 	
 	//we compute the data batch wise
-	BOOST_FOREACH(BatchReference batch, dataset.batches()){
+	for(auto const& batch: dataset.batches()){
 		UIntVector const& labels = batch.label;
 		RealMatrix const& points = batch.input;
 		//load batch and update mean
@@ -65,7 +63,7 @@ void LDA::train(LinearClassifier<>& model, LabeledData<RealVector,unsigned int> 
 			noalias(row(means,c))+=row(points,e);
 		}
 		//update second moment matrix
-		symm_prod(trans(points),covariance,false);
+		noalias(covariance) += prod(trans(points),points);
 	}
 	covariance/=inputs-classes;
 	//calculate mean and the covariance matrix from second moment
@@ -112,8 +110,6 @@ void LDA::train(LinearClassifier<>& model, WeightedLabeledData<RealVector,unsign
 	if(dataset.empty()){
 		throw SHARKEXCEPTION("[LDA::train] the dataset must not be empty");
 	}
-	typedef WeightedLabeledData<RealVector,unsigned int>::const_batch_reference BatchReference;
-	
 	std::size_t dim = inputDimension(dataset);
 	std::size_t classes = numberOfClasses(dataset);
 
@@ -124,7 +120,7 @@ void LDA::train(LinearClassifier<>& model, WeightedLabeledData<RealVector,unsign
 	RealVector classWeight(classes,0.0);
 	
 	//we compute the data batch wise
-	BOOST_FOREACH(BatchReference batch, dataset.batches()){
+	for(auto const& batch: dataset.batches()){
 		UIntVector const& labels = batch.data.label;
 		RealMatrix points = batch.data.input;
 		RealVector const& weights = batch.weight;
@@ -139,7 +135,7 @@ void LDA::train(LinearClassifier<>& model, WeightedLabeledData<RealVector,unsign
 			
 		}
 		//update second moment matrix
-		symm_prod(trans(points),covariance,false);
+		noalias(covariance) += prod(trans(points),points);
 	}
 	covariance /= weightSum;
 	
@@ -154,7 +150,7 @@ void LDA::train(LinearClassifier<>& model, WeightedLabeledData<RealVector,unsign
 	
 
 	//add regularization
-	noalias(shark::blas::diag (covariance)) += blas::repeat(m_regularization,dim);
+	shark::blas::diag (covariance) += m_regularization;
 	
 	//the formula for the linear classifier is
 	// arg max_i log(P(x|i) * P(i))

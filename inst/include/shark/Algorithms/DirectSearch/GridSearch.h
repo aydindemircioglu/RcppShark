@@ -39,7 +39,6 @@
 #include <Rcpp.h>
 #include <shark/Algorithms/AbstractSingleObjectiveOptimizer.h>
 #include <shark/Rng/GlobalRng.h>
-#include <boost/foreach.hpp>
 
 
 
@@ -88,8 +87,8 @@ public:
                 for (size_t i = 0; i < numSections; i++)
                 {
                         double section = min + i * (max - min) / (numSections - 1.0);
-                        BOOST_FOREACH(std::vector<double>& node,m_nodeValues)
-                        node.push_back(section);
+                        for(auto& node: m_nodeValues)
+                                node.push_back(section);
                 }
                 m_configured=true;
         }
@@ -184,8 +183,8 @@ public:
                 SIZE_CHECK(params > 0);
                 SIZE_CHECK(values.size() > 0);
                 m_nodeValues.resize(params);
-                BOOST_FOREACH(std::vector<double>& node,m_nodeValues)
-                node=values;
+                for(auto& node: m_nodeValues)
+                        node=values;
                 m_configured=true;
         }
 
@@ -205,7 +204,6 @@ public:
          *  The startingPoint can actually be anything, only its dimension has to be correct.
          */
         virtual void init(ObjectiveFunctionType & objectiveFunction, SearchPointType const& startingPoint) {
-                objectiveFunction.init();
                 checkFeatures(objectiveFunction);
 
                 if(!m_configured)
@@ -421,8 +419,8 @@ public:
                 m_best.point.resize(parameters);
 
                 double start=0.5 *(min + max);
-                BOOST_FOREACH(double& value,m_best.point)
-                value=start;
+                for(double& value: m_best.point)
+                        value=start;
                 m_configured=true;
         }
 
@@ -494,8 +492,8 @@ public:
                         if (d == dimensions) break;
                 }
                 // decrease the step sizes
-                BOOST_FOREACH(double& step,m_stepsize)
-                step *= 0.5;
+                for(double& step: m_stepsize)
+                        step *= 0.5;
         }
 
 protected:

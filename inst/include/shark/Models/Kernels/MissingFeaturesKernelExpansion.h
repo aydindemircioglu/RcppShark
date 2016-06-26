@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -35,9 +36,6 @@
 #include <shark/Data/DataView.h>
 #include <shark/Models/Kernels/EvalSkipMissingFeatures.h>
 #include <shark/Models/Kernels/KernelExpansion.h>
-
-#include <boost/foreach.hpp>
-#include <boost/optional/optional.hpp>
 
 namespace shark {
 
@@ -184,7 +182,7 @@ public:
 	void setScalingCoefficients(const RealVector& scalingCoefficients)
 	{
 #if DEBUG
-		BOOST_FOREACH(double v, scalingCoefficients)
+		for(double v: scalingCoefficients)
 		{
 			SHARK_ASSERT(v > 0.0);
 		}

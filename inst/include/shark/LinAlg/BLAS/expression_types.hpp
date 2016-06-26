@@ -1,3 +1,31 @@
+// [[Rcpp::depends(BH)]]
+/*!
+ * \brief       Defines the basic types of CRTP base-classes
+ * 
+ * \author      O. Krause
+ * \date        2013
+ *
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_LINALG_BLAS_EXPRESSION_TYPE_HPP
 #define SHARK_LINALG_BLAS_EXPRESSION_TYPE_HPP
 
@@ -54,31 +82,6 @@ struct vector_container:public vector_expression<C> {
  */
 template<class E>
 struct matrix_expression {
-	typedef E expression_type;
-
-	const expression_type &operator()() const {
-		return *static_cast<const expression_type *>(this);
-	}
-
-	expression_type &operator()() {
-		return *static_cast<expression_type *>(this);
-	}
-};
-
-/** \brief Base class for expressions of matrix sets
- *
- * The matrix set expression type is similar to a tensor type. However it behaves
- * like a vector of matrices with elements of the vector being matrices. Moreover
- * all usual operations can be used. There is no distinction to the sizes of the matrices
- * and all matrices may have different dimensionalities.
- *
- * it does not model the Matrix Expression concept but all derived types should.
- * The class defines a common base type and some common interface for all
- * statically derived Matrix Expression classes
- * We iboost::mplement the casts to the statically derived type.
- */
-template<class E>
-struct matrix_set_expression {
 	typedef E expression_type;
 
 	const expression_type &operator()() const {
@@ -148,88 +151,6 @@ struct temporary_proxy:public P{
 		return static_cast<P&>(*this) = e;
 	}
 };
-
-// Assignment proxy.
-// Provides temporary free assigment when LHS has no alias on RHS
-template<class C>
-class noalias_proxy{
-public:
-	typedef typename C::closure_type closure_type;
-	typedef typename C::scalar_type scalar_type;
-
-	noalias_proxy(C &lval): m_lval(lval) {}
-
-	noalias_proxy(const noalias_proxy &p):m_lval(p.m_lval) {}
-
-	template <class E>
-	closure_type &operator= (const E &e) {
-		m_lval.assign(e);
-		return m_lval;
-	}
-
-	template <class E>
-	closure_type &operator+= (const E &e) {
-		m_lval.plus_assign(e);
-		return m_lval;
-	}
-
-	template <class E>
-	closure_type &operator-= (const E &e) {
-		m_lval.minus_assign(e);
-		return m_lval;
-	}
-	
-	template <class E>
-	closure_type &operator*= (const E &e) {
-		m_lval.multiply_assign(e);
-		return m_lval;
-	}
-
-	template <class E>
-	closure_type &operator/= (const E &e) {
-		m_lval.divide_assign(e);
-		return m_lval;
-	}
-	
-	//this is not needed, but prevents errors when fr example doing noalias(x)*=2;
-	closure_type &operator*= (scalar_type t) {
-		m_lval *= t;
-		return m_lval;
-	}
-
-	//this is not needed, but prevents errors when for example doing noalias(x)/=2;
-	closure_type &operator/= (scalar_type t) {
-		m_lval *=t;
-		return m_lval;
-	}
-
-private:
-	closure_type m_lval;
-};
-
-// Improve syntax of efficient assignment where no aliases of LHS appear on the RHS
-//  noalias(lhs) = rhs_expression
-template <class C>
-noalias_proxy<C> noalias(matrix_expression<C>& lvalue) {
-	return noalias_proxy<C> (lvalue());
-}
-template <class C>
-noalias_proxy<C> noalias(vector_expression<C>& lvalue) {
-	return noalias_proxy<C> (lvalue());
-}
-
-template <class C>
-noalias_proxy<C> noalias(matrix_set_expression<C>& lvalue) {
-	return noalias_proxy<C> (lvalue());
-}
-template <class C>
-noalias_proxy<C> noalias(vector_set_expression<C>& lvalue) {
-	return noalias_proxy<C> (lvalue());
-}
-template <class C>
-noalias_proxy<C> noalias(temporary_proxy<C> lvalue) {
-	return noalias_proxy<C> (static_cast<C&>(lvalue));
-}
 
 }
 }

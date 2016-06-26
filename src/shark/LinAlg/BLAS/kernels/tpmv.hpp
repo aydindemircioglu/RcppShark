@@ -1,7 +1,8 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
- * \brief       -
+ * \brief       Triangular packed matrix-vector multiplication
  *
  * \author      O. Krause
  * \date        2012
@@ -32,7 +33,7 @@
 #define SHARK_LINALG_BLAS_KERNELS_TPMV_HPP
 
 #ifdef SHARK_USE_CBLAS
-#include "atlas/tpmv.hpp"
+#include "cblas/tpmv.hpp"
 #else
 // if no bindings are included, we have to provide the default has_optimized_gemv 
 // otherwise the binding will take care of this
@@ -49,7 +50,7 @@ namespace shark { namespace blas {namespace kernels{
 	
 ///\brief Implements the Tringular Packed Matrix-Vector multiplication(TPMV)
 ///
-/// It computes b=Ax where A is a lower or upper packed triangular matrix.
+/// It computes b=A*b where A is a lower or upper packed triangular matrix.
 template <typename TriangularA, typename VecB>
 void tpmv(
 	matrix_expression<TriangularA> const &A, 

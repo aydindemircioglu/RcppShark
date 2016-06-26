@@ -302,8 +302,8 @@ public:
 		}
 		
 		//iterate through all simplices.
-		for (int i= m_activeEx-1; i >= 0; i--){
-			Example const& ex = m_examples[i];
+		for (std::size_t i = m_activeEx; i > 0; i--){
+			Example const& ex = m_examples[i-1];
 			std::pair<std::pair<double,std::size_t>,std::pair<double,std::size_t> > pair = getSimplexMVP(ex);
 			double up = pair.first.first;
 			double down = pair.second.first;
@@ -501,9 +501,9 @@ protected:
 		///index into the example list
 		std::size_t example;
 		/// constraint corresponding to this variable
-		unsigned int p;
+		std::size_t p;
 		/// index into example->m_numVariables
-		unsigned int index;
+		std::size_t index;
 		/// diagonal entry of the big Q-matrix
 		double diagonal;
 	};
@@ -516,7 +516,7 @@ protected:
 		/// label of this example
 		unsigned int y;
 		/// number of active variables
-		unsigned int active;
+		std::size_t active;
 		/// list of all m_cardP variables, in order of the p-index
 		std::size_t* var;
 		/// list of active variables
@@ -841,10 +841,10 @@ protected:
 	double m_C;
 	
 	/// number of classes in the problem
-	unsigned int m_classes;
+	std::size_t m_classes;
 	
 	/// number of dual variables per example
-	unsigned int m_cardP;
+	std::size_t m_cardP;
 	
 	/// number of examples in the problem (size of the kernel matrix)
 	std::size_t m_numExamples;
@@ -919,7 +919,7 @@ public:
 				RealVector grad(classes,0);
 				for (std::size_t i=0; i<numExamples; i++)
 				{
-					unsigned int largestP = cardP;
+					std::size_t largestP = cardP;
 					double largest_value = 0.0;
 					for (std::size_t p=0; p<cardP; p++)
 					{
@@ -941,8 +941,7 @@ public:
 				if (sumToZero)
 				{
 					// project the m_gradient
-					double mean = sum(grad) / (double)classes;
-					grad -= blas::repeat(mean,classes);
+					grad -= sum(grad) / classes;
 				}
 
 				// Rprop
@@ -965,8 +964,7 @@ public:
 				if (sumToZero)
 				{
 					// project the step
-					double mean = sum(step) / (double)classes;
-					step -= blas::repeat(mean,classes);
+					step -= sum(step) / classes;
 				}
 
 				// update the solution and the dual m_gradient

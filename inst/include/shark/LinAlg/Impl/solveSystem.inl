@@ -3,31 +3,24 @@
  *  \author  O.Krause
  *  \date    2012
  *
- *  \par Copyright (c) 1998-2001:
- *      Institut f&uuml;r Neuroinformatik<BR>
- *      Ruhr-Universit&auml;t Bochum<BR>
- *      D-44780 Bochum, Germany<BR>
- *      Phone: +49-234-32-25558<BR>
- *      Fax:   +49-234-32-14209<BR>
- *      eMail: Shark-admin@neuroinformatik.ruhr-uni-bochum.de<BR>
- *      www:   http://www.neuroinformatik.ruhr-uni-bochum.de<BR>
- *      <BR>
- *
- *
- *
- *  <BR><HR>
- *  This file is part of Shark. This library is free software;
- *  you can redistribute it and/or modify it under the terms of the
- *  GNU General Public License as published by the Free Software
- *  Foundation; either version 3, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this library; if not, see <http://www.gnu.org/licenses/>.
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -35,78 +28,7 @@
 #define SHARK_LINALG_IMPL_SOLVE_SYSTEM_INL
 
 //full rank indefinite solvers
-#include <shark/LinAlg/Cholesky.h>
-
-//todo implement this using ATLAS
-template<class MatT,class VecT>
-void shark::blas::solveSystemInPlace(
-	matrix_expression<MatT> const& A, 
-	vector_expression<VecT>& b
-){
-	SIZE_CHECK(A().size1() == b().size());
-	SIZE_CHECK(A().size1() == A().size2());
-	std::size_t n = A().size1();
-	
-	PermutationMatrix permutation(n);
-	MatT LUDecomposition= A();
-	
-	lu_factorize(LUDecomposition,permutation);
-	
-	swap_rows(permutation,b);
-	solveTriangularSystemInPlace<SolveAXB,unit_lower>(LUDecomposition,b);
-	solveTriangularSystemInPlace<SolveAXB,upper>(LUDecomposition,b);
-}
-template<class MatT,class Mat2T>
-void shark::blas::solveSystemInPlace(
-	matrix_expression<MatT> const& A, 
-	matrix_expression<Mat2T> & B
-){
-	SIZE_CHECK(A().size1() == B().size1());
-	SIZE_CHECK(A().size1() == A().size2());
-	std::size_t n = A().size1();
-	
-	PermutationMatrix permutation(n);
-	MatT LUDecomposition = A;
-	
-	lu_factorize(LUDecomposition,permutation);
-	
-	swap_rows(permutation,B);
-	solveTriangularSystemInPlace<SolveAXB,unit_lower>(LUDecomposition,B);
-	solveTriangularSystemInPlace<SolveAXB,upper>(LUDecomposition,B);
-}
-
-template<class MatT,class Vec1T,class Vec2T>
-void shark::blas::solveSystem(
-	matrix_expression<MatT> const& A, 
-	vector_expression<Vec1T>& x,
-	vector_expression<Vec2T> const& b
-){
-	SIZE_CHECK(A().size1() == b().size());
-	SIZE_CHECK(A().size1() == A().size2());
-	
-	ensure_size(x,A().size1());
-	noalias(x()) = b();
-	
-	solveSystemInPlace(A,x);
-}
-
-
-template<class MatT,class Mat1T,class Mat2T>
-void shark::blas::solveSystem(
-	const shark::blas::matrix_expression<MatT> & A, 
-	shark::blas::matrix_expression<Mat1T>& X,
-	const shark::blas::matrix_expression<Mat2T> & B
-){
-	SIZE_CHECK(A().size1() == B().size1());
-	SIZE_CHECK(A().size1() == A().size2());
-	
-	ensure_size(X,A().size1(),B().size2());
-	noalias(X()) = B();
-	
-	solveSystemInPlace(A,X);
-}
-
-
+#include "../Cholesky.h"
 
 // Symmetric solvers
 template<class System,class MatT,class Mat1T>
@@ -214,12 +136,10 @@ void shark::blas::solveSymmSemiDefiniteSystemInPlace(
 	{
 		//complex case. 
 		//A' = L(L^TL)^-1(L^TL)^-1 L^T
-		RealMatrix LTL(rank,rank);
-		symm_prod(trans(L),LTL);
+		RealMatrix LTL = prod(trans(L),L);
 		
 		//compute z= L^Tb
-		RealVector z(rank);
-		axpy_prod(trans(L),b,z);
+		RealVector z = prod(trans(L),b);
 		
 		//compute cholesky factor of L^TL
 		RealMatrix LTLcholesky(rank,rank);
@@ -228,7 +148,7 @@ void shark::blas::solveSymmSemiDefiniteSystemInPlace(
 		//A'b =  L(L^TL)^-1(L^TL)^-1z
 		solveTriangularCholeskyInPlace<SolveAXB>(LTLcholesky,z);
 		solveTriangularCholeskyInPlace<SolveAXB>(LTLcholesky,z);
-		axpy_prod(L,z,b);
+		noalias(b)=prod(L,z);
 	}
 	//finally swap back into the unpermuted coordinate system
 	swap_rows_inverted(permutation,b);
@@ -274,12 +194,10 @@ void shark::blas::solveSymmSemiDefiniteSystemInPlace(
 	{
 		//complex case. 
 		//X=L(L^TL)^-1(L^TL)^-1 L^TB
-		RealMatrix LTL(rank,rank);
-		symm_prod(trans(L),LTL);
+		RealMatrix LTL = prod(trans(L),L);
 		
-		//compute z= L^TB
-		RealMatrix Z(rank,B().size2());
-		axpy_prod(trans(L),B,Z);
+		//compute Z= L^TB
+		RealMatrix Z = prod(trans(L),B);
 		
 		//compute cholesky factor of L^TL
 		RealMatrix LTLcholesky(rank,rank);
@@ -288,16 +206,14 @@ void shark::blas::solveSymmSemiDefiniteSystemInPlace(
 		//A'b =  L(L^TL)^-1(L^TL)^-1z
 		solveTriangularCholeskyInPlace<System>(LTLcholesky,Z);
 		solveTriangularCholeskyInPlace<System>(LTLcholesky,Z);
-		axpy_prod(L,Z,B);
+		noalias(B) = prod(L,Z);
 	}else{
 		//complex case. 
 		//X=BL(L^TL)^-1(L^TL)^-1 L^T
-		RealMatrix LTL(rank,rank);
-		symm_prod(trans(L),LTL);
+		RealMatrix LTL = prod(trans(L),L);
 		
 		//compute z= L^TB
-		RealMatrix Z(B().size1(),rank);
-		axpy_prod(B,L,Z);
+		RealMatrix Z = prod(B,L);
 		
 		//compute cholesky factor of L^TL
 		RealMatrix LTLcholesky(rank,rank);
@@ -306,7 +222,7 @@ void shark::blas::solveSymmSemiDefiniteSystemInPlace(
 		//A'b =  L(L^TL)^-1(L^TL)^-1z
 		solveTriangularCholeskyInPlace<System>(LTLcholesky,Z);
 		solveTriangularCholeskyInPlace<System>(LTLcholesky,Z);
-		axpy_prod(Z,trans(L),B);
+		noalias(B) = prod(Z,trans(L));
 	}
 	//finally swap back into the unpermuted coordinate system
 	if(System::left)
@@ -320,21 +236,16 @@ void shark::blas::generalSolveSystemInPlace(
 	matrix_expression<MatT> const& A, 
 	vector_expression<VecT>& b
 ){
-	std::size_t m = A().size1();
-	std::size_t n = A().size2();
-	
 	if( System::left){
 		SIZE_CHECK(A().size1() == b().size());
 		//reduce to the case of quadratic A
 		//Ax=b => A^TAx=A'b => x= A'b = (A^TA)' Ab
 		// with z = Ab => (A^TA) x= z
 		//compute A^TA
-		RealMatrix ATA(n,n);
-		axpy_prod(trans(A),A,ATA);
+		RealMatrix ATA = prod(trans(A),A);
 		
 		//compute z=Ab
-		RealVector z(n);
-		axpy_prod(trans(A),b,z);
+		RealVector z = prod(trans(A),b);
 		
 		//call recursively for the quadratic case
 		solveSymmSemiDefiniteSystemInPlace<System>(ATA,z);
@@ -346,12 +257,10 @@ void shark::blas::generalSolveSystemInPlace(
 		//x^TA=b^T => x^TAA'=b^TA' => x^T= b^TA' = b^TA^T(AA^T)'
 		// with z = Ab => x^T(AA^T) = z^T
 		//compute AAT
-		RealMatrix AAT(m,m);
-		axpy_prod(A,trans(A),AAT);
+		RealMatrix AAT = prod(A,trans(A));
 		
 		//compute z=Ab
-		RealVector z(m);
-		axpy_prod(A,b,z);
+		RealVector z = prod(A,b);
 		
 		//call recursively for the quadratic case
 		solveSymmSemiDefiniteSystemInPlace<System>(AAT,z);
@@ -363,22 +272,16 @@ template<class System,class MatA,class MatB>
 void shark::blas::generalSolveSystemInPlace(
 	matrix_expression<MatA> const& A, 
 	matrix_expression<MatB>& B
-){
-	std::size_t m = A().size1();
-	std::size_t n = A().size2();
-	
+){	
 	if( System::left){
 		SIZE_CHECK(A().size1() == B().size1());
 		//reduce to the case of quadratic A
 		//AX=B => A'AX=A'B => X= A'B = (A^TA)' A^TB
 		// with Z = A^TB => (A^TA) X= Z
 		//compute A^TA
-		RealMatrix ATA(n,n);
-		axpy_prod(trans(A),A,ATA);
+		RealMatrix ATA = prod(trans(A),A);
 		
-		//compute Z=AB
-		RealMatrix Z(n,B().size2());
-		axpy_prod(trans(A),B,Z);
+		RealMatrix Z = prod(trans(A),B);
 		
 		//call recursively for the quadratic case
 		solveSymmSemiDefiniteSystemInPlace<System>(ATA,Z);
@@ -390,12 +293,9 @@ void shark::blas::generalSolveSystemInPlace(
 		//~ //XA=B => XAA'=BA' => X = BA' = BA^T(AA^T)'
 		//~ // with Z = BA^T => X(AA^T) = Z
 		//~ //compute AAT
-		RealMatrix AAT(m,m);
-		axpy_prod(A,trans(A),AAT);
+		RealMatrix AAT = prod(A,trans(A));
 		
-		//compute z=Ab
-		RealMatrix Z(B().size1(),m);
-		axpy_prod(B,trans(A),Z);
+		RealMatrix Z= prod(B,trans(A));
 		
 		//call recursively for the quadratic case
 		solveSymmSemiDefiniteSystemInPlace<System>(AAT,Z);

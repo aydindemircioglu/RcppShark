@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -88,7 +89,7 @@ void RFTrainer::setDefaults(){
 }
 
 // Regression
-void RFTrainer::train(RFClassifier& model, const RegressionDataset& dataset)
+void RFTrainer::train(RFClassifier& model, RegressionDataset const& dataset)
 {
 	model.clearModels();   // added by TG 23.02.2015
 
@@ -135,8 +136,8 @@ void RFTrainer::train(RFClassifier& model, const RegressionDataset& dataset)
 			labels.push_back(dataTrain.element(i).label);
 		}
 
-		CARTClassifier<RealVector>::SplitMatrixType splitMatrix = buildTree(tables, dataTrain, labels, 0);
-		CARTClassifier<RealVector> tree(splitMatrix, m_inputDimension);
+		CARTClassifier<RealVector>::TreeType tree = buildTree(tables, dataTrain, labels, 0);
+		CARTClassifier<RealVector> cart(tree, m_inputDimension);
 
 		// if oob error or importances have to be computed, create an oob sample
 		if(m_computeOOBerror || m_computeFeatureImportances){
@@ -145,15 +146,15 @@ void RFTrainer::train(RFClassifier& model, const RegressionDataset& dataset)
 
 			// if importances should be computed, oob errors are computed implicitly
 			if(m_computeFeatureImportances){
-				tree.computeFeatureImportances(dataOOB);
+				cart.computeFeatureImportances(dataOOB);
 			} // if importances should not be computed, only compute the oob errors
 			else{
-				tree.computeOOBerror(dataOOB);
+				cart.computeOOBerror(dataOOB);
 			}
 		}
 
 		SHARK_CRITICAL_REGION{
-			model.addModel(tree);
+			model.addModel(cart);
 		}
 	}
 
@@ -167,7 +168,7 @@ void RFTrainer::train(RFClassifier& model, const RegressionDataset& dataset)
 }
 
 // Classification
-void RFTrainer::train(RFClassifier& model, const ClassificationDataset& dataset)
+void RFTrainer::train(RFClassifier& model, ClassificationDataset const& dataset)
 {
 	model.clearModels();
 
@@ -178,7 +179,7 @@ void RFTrainer::train(RFClassifier& model, const ClassificationDataset& dataset)
 	model.setLabelDimension(numberOfClasses(dataset));
 
 	//Find the largest label, so we know how big the histogram should be
-	m_maxLabel = numberOfClasses(dataset)-1;
+	m_maxLabel = static_cast<unsigned int>(numberOfClasses(dataset))-1;
 
 	m_regressionLearner = false;
 	setDefaults();
@@ -209,8 +210,8 @@ void RFTrainer::train(RFClassifier& model, const ClassificationDataset& dataset)
 		createAttributeTables(dataTrain.inputs(), tables);
 		createCountMatrix(dataTrain, cAbove);
 
-		CARTClassifier<RealVector>::SplitMatrixType splitMatrix = buildTree(tables, dataTrain, cAbove, 0);
-		CARTClassifier<RealVector> tree(splitMatrix, m_inputDimension);
+		CARTClassifier<RealVector>::TreeType tree = buildTree(tables, dataTrain, cAbove, 0);
+		CARTClassifier<RealVector> cart(tree, m_inputDimension);
 
 		// if oob error or importances have to be computed, create an oob sample
 		if(m_computeOOBerror || m_computeFeatureImportances){
@@ -219,15 +220,15 @@ void RFTrainer::train(RFClassifier& model, const ClassificationDataset& dataset)
 
 			// if importances should be computed, oob errors are computed implicitly
 			if(m_computeFeatureImportances){
-				tree.computeFeatureImportances(dataOOB);
+				cart.computeFeatureImportances(dataOOB);
 			} // if importances should not be computed, only compute the oob errors
 			else{
-				tree.computeOOBerror(dataOOB);
+				cart.computeOOBerror(dataOOB);
 			}
 		}
 
 		SHARK_CRITICAL_REGION{
-			model.addModel(tree);
+			model.addModel(cart);
 		}
 	}
 
@@ -260,57 +261,48 @@ void RFTrainer::setOOBratio(double ratio){
 
 
 
-CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables& tables, const ClassificationDataset& dataset, boost::unordered_map<std::size_t, std::size_t>& cAbove, std::size_t nodeId ){
-	CARTClassifier<RealVector>::SplitMatrixType lSplitMatrix, rSplitMatrix;
+CARTClassifier<RealVector>::TreeType RFTrainer::buildTree(AttributeTables& tables, ClassificationDataset const& dataset, boost::unordered_map<std::size_t, std::size_t>& cAbove, std::size_t nodeId ){
+	CARTClassifier<RealVector>::TreeType lTree, rTree;
 
-	//Construct split matrix
-	CARTClassifier<RealVector>::SplitInfo splitInfo;
+	//Construct tree
+	CARTClassifier<RealVector>::NodeInfo nodeInfo;
 
-	splitInfo.nodeId = nodeId;
-	splitInfo.attributeIndex = 0;
-	splitInfo.attributeValue = 0.0;
-	splitInfo.leftNodeId = 0;
-	splitInfo.rightNodeId = 0;
-	splitInfo.misclassProp = 0.0;
-	splitInfo.r = 0;
-	splitInfo.g = 0.0;
+	nodeInfo.nodeId = nodeId;
+	nodeInfo.attributeIndex = 0;
+	nodeInfo.attributeValue = 0.0;
+	nodeInfo.leftNodeId = 0;
+	nodeInfo.rightNodeId = 0;
+	nodeInfo.misclassProp = 0.0;
+	nodeInfo.r = 0;
+	nodeInfo.g = 0.0;
 
 	//n = Total number of cases in the dataset
-	//n1 = Number of cases to the left child node
-	//n2 = number of cases to the right child node
-	unsigned int n, n1, n2;
-
-	n = tables[0].size();
+	std::size_t n = tables[0].size();
 
 	bool isLeaf = false;
 	if(gini(cAbove,tables[0].size())==0 || n <= m_nodeSize){
 		isLeaf = true;
 	}else{
 		//Count matrices
-		boost::unordered_map<std::size_t, std::size_t> cBelow, cBestBelow, cTmpAbove, cBestAbove;
+		boost::unordered_map<std::size_t, std::size_t> cBelow, cBestBelow, cBestAbove;
 
 		//Randomly select the attributes to test for split
 		set<std::size_t> tableIndicies;
 		generateRandomTableIndicies(tableIndicies);
 
-		//Iterate over the chosen attributes
-		set<std::size_t>::iterator it;
-
 		//Index of attributes
-		std::size_t attributeIndex, bestAttributeIndex, bestAttributeValIndex;
+		std::size_t bestAttributeIndex, bestAttributeValIndex;
 
 		//Attribute values
 		double bestAttributeVal;
-		double impurity, bestImpurity = n+1;
+		double bestImpurity = n+1.0;
 
-		std::size_t prev;
-
-		for ( it=tableIndicies.begin() ; it != tableIndicies.end(); it++ ){
-			attributeIndex = *it;
-			cTmpAbove = cAbove;
+		for (set<std::size_t>::iterator it=tableIndicies.begin() ; it != tableIndicies.end(); it++ ){
+			std::size_t attributeIndex = *it;
+			boost::unordered_map<std::size_t, std::size_t> cTmpAbove = cAbove;
 			cBelow.clear();
 			for(std::size_t i=1; i<n; i++){
-				prev = i-1;
+				std::size_t prev = i-1;
 
 				//Update the count of the label
 				cBelow[dataset.element(tables[attributeIndex][prev].id).label]++;
@@ -319,11 +311,11 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 				if(tables[attributeIndex][prev].value!=tables[attributeIndex][i].value){
 					//n1 = Number of cases to the left child node
 					//n2 = number of cases to the right child node
-					n1 = i;
-					n2 = n-n1;
+					std::size_t n1 = i;
+					std::size_t n2 = n-n1;
 
 					//Calculate the Gini impurity of the split
-					impurity = n1*gini(cBelow,n1)+n2*gini(cTmpAbove,n2);
+					double impurity = n1*gini(cBelow,n1)+n2*gini(cTmpAbove,n2);
 					if(impurity<bestImpurity){
 						//Found a more pure split, store the attribute index and value
 						bestImpurity = impurity;
@@ -343,13 +335,13 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 			tables.clear();
 			//Continue recursively
 
-			splitInfo.attributeIndex = bestAttributeIndex;
-			splitInfo.attributeValue = bestAttributeVal;
-			splitInfo.leftNodeId = 2*nodeId+1;
-			splitInfo.rightNodeId = 2*nodeId+2;
+			nodeInfo.attributeIndex = bestAttributeIndex;
+			nodeInfo.attributeValue = bestAttributeVal;
+			nodeInfo.leftNodeId = 2*nodeId+1;
+			nodeInfo.rightNodeId = 2*nodeId+2;
 
-			lSplitMatrix = buildTree(lTables, dataset, cBestBelow, splitInfo.leftNodeId);
-			rSplitMatrix = buildTree(rTables, dataset, cBestAbove, splitInfo.rightNodeId);
+			lTree = buildTree(lTables, dataset, cBestBelow, nodeInfo.leftNodeId);
+			rTree = buildTree(rTables, dataset, cBestAbove, nodeInfo.rightNodeId);
 		}else{
 			//Leaf node
 			isLeaf = true;
@@ -357,65 +349,57 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 
 	}
 
-	//Store entry in the splitMatrix table
-	CARTClassifier<RealVector>::SplitMatrixType splitMatrix;
+	//Store entry in the tree table
+	CARTClassifier<RealVector>::TreeType tree;
 
 	if(isLeaf){
-		splitInfo.label = hist(cAbove);
-		splitMatrix.push_back(splitInfo);
-		return splitMatrix;
+		nodeInfo.label = hist(cAbove);
+		tree.push_back(nodeInfo);
+		return tree;
 	}
 
-	splitMatrix.push_back(splitInfo);
-	splitMatrix.insert(splitMatrix.end(), lSplitMatrix.begin(), lSplitMatrix.end());
-	splitMatrix.insert(splitMatrix.end(), rSplitMatrix.begin(), rSplitMatrix.end());
+	tree.push_back(nodeInfo);
+	tree.insert(tree.end(), lTree.begin(), lTree.end());
+	tree.insert(tree.end(), rTree.begin(), rTree.end());
 
-	return splitMatrix;
+	return tree;
 }
 
 RealVector RFTrainer::hist(boost::unordered_map<std::size_t, std::size_t> countMatrix){
 
-	std::vector<unsigned int> histogram(m_maxLabel+1);
+	RealVector histogram(m_maxLabel+1,0.0);
 
-	unsigned int totalElements = 0;
+	std::size_t totalElements = 0;
 
 	boost::unordered_map<std::size_t, std::size_t>::iterator it;
 	for ( it=countMatrix.begin() ; it != countMatrix.end(); it++ ){
-		histogram[it->first] = it->second;
+		histogram(it->first) = (double)it->second;
 		totalElements += it->second;
 	}
+	histogram /= totalElements;
 
-	RealVector normHist(histogram.size());
-	for(std::size_t n = 0; n < histogram.size(); n++){
-		normHist[n] = double(histogram[n]) / double(totalElements);
-	}
-
-	return normHist;
+	return histogram;
 }
 
-CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables& tables, const RegressionDataset& dataset, const std::vector<RealVector>& labels, std::size_t nodeId ){
+CARTClassifier<RealVector>::TreeType RFTrainer::buildTree(AttributeTables& tables, RegressionDataset const& dataset, std::vector<RealVector> const& labels, std::size_t nodeId ){
 
-	//Construct split matrix
-	CARTClassifier<RealVector>::SplitInfo splitInfo;
+	//Construct tree
+	CARTClassifier<RealVector>::NodeInfo nodeInfo;
 
-	splitInfo.nodeId = nodeId;
-	splitInfo.attributeIndex = 0;
-	splitInfo.attributeValue = 0.0;
-	splitInfo.leftNodeId = 0;
-	splitInfo.rightNodeId = 0;
-	splitInfo.label = average(labels);
-	splitInfo.misclassProp = 0.0;
-	splitInfo.r = 0;
-	splitInfo.g = 0.0;
+	nodeInfo.nodeId = nodeId;
+	nodeInfo.attributeIndex = 0;
+	nodeInfo.attributeValue = 0.0;
+	nodeInfo.leftNodeId = 0;
+	nodeInfo.rightNodeId = 0;
+	nodeInfo.label = average(labels);
+	nodeInfo.misclassProp = 0.0;
+	nodeInfo.r = 0;
+	nodeInfo.g = 0.0;
 
-	CARTClassifier<RealVector>::SplitMatrixType splitMatrix, lSplitMatrix, rSplitMatrix;
+	CARTClassifier<RealVector>::TreeType tree, lTree, rTree;
 
 	//n = Total number of cases in the dataset
-	//n1 = Number of cases to the left child node
-	//n2 = number of cases to the right child node
-	std::size_t n, n1, n2;
-
-	n = tables[0].size();
+	std::size_t n = tables[0].size();
 	bool isLeaf = false;
 	if(n <= m_nodeSize){
 		isLeaf = true;
@@ -429,19 +413,16 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 		set<std::size_t> tableIndicies;
 		generateRandomTableIndicies(tableIndicies);
 
-		//Iterate over the chosen attributes
-		set<std::size_t>::iterator it;
-
 		//Index of attributes
 		std::size_t attributeIndex, bestAttributeIndex, bestAttributeValIndex;
 
 		//Attribute values
 		double bestAttributeVal;
-		double impurity, bestImpurity = -1;
+		double bestImpurity = -1;
 
 		std::size_t prev;
 		bool doSplit = false;
-		for ( it=tableIndicies.begin() ; it != tableIndicies.end(); it++ ){
+		for (set<std::size_t>::iterator it=tableIndicies.begin() ; it != tableIndicies.end(); it++ ){
 			attributeIndex = *it;
 
 			labelSumBelow.clear();
@@ -459,10 +440,10 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 			for(std::size_t i=1; i<n; i++){
 				prev = i-1;
 				if(tables[attributeIndex][prev].value!=tables[attributeIndex][i].value){
-					n1=i;
-					n2 = n-n1;
+					std::size_t n1=i;
+					std::size_t n2 = n-n1;
 					//Calculate the squared error of the split
-					impurity = (n1*totalSumOfSquares(tmpLabels,0,n1,labelSumAbove)+n2*totalSumOfSquares(tmpLabels,n1,n2,labelSumBelow))/(double)(n);
+					double impurity = (n1*totalSumOfSquares(tmpLabels,0,n1,labelSumAbove)+n2*totalSumOfSquares(tmpLabels,n1,n2,labelSumBelow))/(double)(n);
 
 					if(impurity<bestImpurity || bestImpurity<0){
 						//Found a more pure split, store the attribute index and value
@@ -497,13 +478,13 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 			}
 
 			//Continue recursively
-			splitInfo.attributeIndex = bestAttributeIndex;
-			splitInfo.attributeValue = bestAttributeVal;
-			splitInfo.leftNodeId = 2*nodeId+1;
-			splitInfo.rightNodeId = 2*nodeId+2;
+			nodeInfo.attributeIndex = bestAttributeIndex;
+			nodeInfo.attributeValue = bestAttributeVal;
+			nodeInfo.leftNodeId = 2*nodeId+1;
+			nodeInfo.rightNodeId = 2*nodeId+2;
 
-			lSplitMatrix = buildTree(lTables, dataset, lLabels, splitInfo.leftNodeId);
-			rSplitMatrix = buildTree(rTables, dataset, rLabels, splitInfo.rightNodeId);
+			lTree = buildTree(lTables, dataset, lLabels, nodeInfo.leftNodeId);
+			rTree = buildTree(rTables, dataset, rLabels, nodeInfo.rightNodeId);
 		}else{
 			//Leaf node
 			isLeaf = true;
@@ -512,16 +493,16 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 	}
 
 	if(isLeaf){
-		splitMatrix.push_back(splitInfo);
-		return splitMatrix;
+		tree.push_back(nodeInfo);
+		return tree;
 	}
 
-	splitMatrix.push_back(splitInfo);
-	splitMatrix.insert(splitMatrix.end(), lSplitMatrix.begin(), lSplitMatrix.end());
-	splitMatrix.insert(splitMatrix.end(), rSplitMatrix.begin(), rSplitMatrix.end());
+	tree.push_back(nodeInfo);
+	tree.insert(tree.end(), lTree.begin(), lTree.end());
+	tree.insert(tree.end(), rTree.begin(), rTree.end());
 
-	//Store entry in the splitMatrix table
-	return splitMatrix;
+	//Store entry in the tree
+	return tree;
 
 }
 
@@ -530,7 +511,7 @@ CARTClassifier<RealVector>::SplitMatrixType RFTrainer::buildTree(AttributeTables
 /**
  * Returns the average vector of a vector of real vectors
  */
-RealVector RFTrainer::average(const std::vector<RealVector>& labels){
+RealVector RFTrainer::average(std::vector<RealVector> const& labels){
 	RealVector avg(labels[0]);
 	for(std::size_t i = 1; i < labels.size(); i++){
 		avg += labels[i];
@@ -559,7 +540,7 @@ double RFTrainer::totalSumOfSquares(std::vector<RealVector>& labels, std::size_t
  * Returns two attribute tables: LAttrbuteTables and RAttrbuteTables
  * Calculated from splitting tables at (index, valIndex)
  */
-void RFTrainer::splitAttributeTables(const AttributeTables& tables, std::size_t index, std::size_t valIndex, AttributeTables& LAttributeTables, AttributeTables& RAttributeTables){
+void RFTrainer::splitAttributeTables(AttributeTables const& tables, std::size_t index, std::size_t valIndex, AttributeTables& LAttributeTables, AttributeTables& RAttributeTables){
 	AttributeTable table;
 
 	//Build a hash table for fast lookup
@@ -596,7 +577,7 @@ void RFTrainer::generateRandomTableIndicies(set<std::size_t>& tableIndicies){
 ///Calculates the Gini impurity of a node. The impurity is defined as
 ///1-sum_j p(j|t)^2
 ///i.e the 1 minus the sum of the squared probability of observing class j in node t
-double RFTrainer::gini(boost::unordered_map<std::size_t, std::size_t>& countMatrix, std::size_t n){
+double RFTrainer::gini(boost::unordered_map<std::size_t, std::size_t> & countMatrix, std::size_t n){
 	double res = 0;
 	boost::unordered_map<std::size_t, std::size_t>::iterator it;
 	if(n){
@@ -634,13 +615,13 @@ void RFTrainer::createAttributeTables(Data<RealVector> const& dataset, Attribute
 }
 
 
-void RFTrainer::createCountMatrix(const ClassificationDataset& dataset, boost::unordered_map<std::size_t, std::size_t>& cAbove){
+void RFTrainer::createCountMatrix(ClassificationDataset const& dataset, boost::unordered_map<std::size_t, std::size_t>& cAbove){
 	std::size_t elements = dataset.numberOfElements();
 	for(std::size_t i = 0 ; i < elements; i++){
 		cAbove[dataset.element(i).label]++;
 	}
 }
 
-bool RFTrainer::tableSort(const RFAttribute& v1, const RFAttribute& v2) {
+bool RFTrainer::tableSort(RFAttribute const& v1, RFAttribute const& v2) {
 	return v1.value < v2.value;
 }

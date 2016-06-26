@@ -34,13 +34,12 @@
 
 using namespace shark;
 
-ElitistCMA::ElitistCMA(): m_activeUpdate(true) {
+ElitistCMA::ElitistCMA(DefaultRngType& rng): m_activeUpdate(true),mpe_rng(&rng){
         m_features |= REQUIRES_VALUE;
 }
 
 void ElitistCMA::init( ObjectiveFunctionType& function, SearchPointType const& p){
         checkFeatures(function);
-        function.init();
 
         //create and evaluate individual
         m_individual = CMAIndividual<double>(p.size());
@@ -59,7 +58,7 @@ void ElitistCMA::init( ObjectiveFunctionType& function, SearchPointType const& p
 
 void ElitistCMA::step(ObjectiveFunctionType const& function) {
         //create and evaluate offspring
-        m_individual.mutate();
+        m_individual.mutate(*mpe_rng);
         m_evaluator( function, m_individual );
         
         //evaluate success status of individual

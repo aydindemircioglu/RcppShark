@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -37,13 +38,13 @@
 
 #define SHARK_LAPACK_DSYEV FORTRAN_ID(dsyev)
 
-//extern "C"{
-//void SHARK_LAPACK_DSYEV( 
-//	const char* jobz, const char* uplo, const int *n,
-//	double* a, const int * lda, double* w,
-//	double* work, const int * lwork, int* info
-//);
-//}
+extern "C"{
+void SHARK_LAPACK_DSYEV( 
+	const char* jobz, const char* uplo, const int *n,
+	double* a, const int * lda, double* w,
+	double* work, const int * lwork, int* info
+);
+}
 
 
 
@@ -61,7 +62,7 @@ inline void syev(
 	char job = 'V';
 	char uplo = upper?'U':'L';
 	SHARK_LAPACK_DSYEV(&job, &uplo, &n, A, &lda,eigenvalues,work,&lwork,&info);
-	delete work;
+	delete[] work;
 	
 }
 

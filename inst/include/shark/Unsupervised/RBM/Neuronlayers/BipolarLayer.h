@@ -1,18 +1,30 @@
-/*
-*  <BR><HR>
-*  This file is part of Shark. This library is free software;
-*  you can redistribute it and/or modify it under the terms of the
-*  GNU General Public License as published by the Free Software
-*  Foundation; either version 3, or (at your option) any later version.
-*
-*  This library is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*  GNU General Public License for more details.
-*
-*  You should have received a copy of the GNU General Public License
-*  along with this library; if not, see <http://www.gnu.org/licenses/>.
-*/
+/*!
+ *
+ * \brief Implements the bipolar (-1,1) state neuron layer
+ *
+ * \author Asja Fischer
+ * \date 2013
+ *
+ * \par Copyright 1995-2015 Shark Development Team
+ * 
+ * <BR><HR>
+ * This file is part of Shark.
+ * <http://image.diku.dk/shark/>
+ * 
+ * Shark is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published 
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Shark is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #ifndef SHARK_UNSUPERVISED_RBM_NEURONLAYERS_BIPOLARLAYER_H
 #define SHARK_UNSUPERVISED_RBM_NEURONLAYERS_BIPOLARLAYER_H
 
@@ -22,7 +34,7 @@
 #include <shark/Data/BatchInterfaceAdaptStruct.h>
 #include <shark/Rng/Bernoulli.h>
 #include <shark/Unsupervised/RBM/StateSpaces/TwoStateSpace.h>
-
+#include <shark/Core/OpenMP.h>
 namespace shark{
 
 ///\brief Layer of bipolar units taking values in {-1,1}. 
@@ -99,35 +111,36 @@ public:
                 SIZE_CHECK(statistics.size1() == state.size1());
                 SIZE_CHECK(statistics.size2() == state.size2());
                 
-                Bernoulli<Rng> coinToss(rng,0.5);
-                if(alpha == 0.0){//special case: normal gibbs sampling
-                        for(std::size_t s = 0; s != state.size1();++s){
-                                for(std::size_t i = 0; i != state.size2();++i){
-                                        state(s,i) = coinToss(statistics(s,i));
-                                        if(state(s,i)==0) state(s,i)=-1.;
+                SHARK_CRITICAL_REGION{
+                        Bernoulli<Rng> coinToss(rng,0.5);
+                        if(alpha == 0.0){//special case: normal gibbs sampling
+                                for(std::size_t s = 0; s != state.size1();++s){
+                                        for(std::size_t i = 0; i != state.size2();++i){
+                                                state(s,i) = coinToss(statistics(s,i));
+                                                if(state(s,i)==0) state(s,i)=-1.;
+                                        }
                                 }
                         }
-                        return;
-                }
-                else{//flip-the state sampling
-                        for(size_t s = 0; s != state.size1(); ++s){
-                                for (size_t i = 0; i != state.size2(); i++) {
-                                        double prob = statistics(s,i);
-                                        if (state(s,i) == -1) {
-                                                if (prob <= 0.5) {
-                                                        prob = (1. - alpha) * prob + alpha * prob / (1. - prob);
+                        else{//flip-the state sampling
+                                for(size_t s = 0; s != state.size1(); ++s){
+                                        for (size_t i = 0; i != state.size2(); i++) {
+                                                double prob = statistics(s,i);
+                                                if (state(s,i) == -1) {
+                                                        if (prob <= 0.5) {
+                                                                prob = (1. - alpha) * prob + alpha * prob / (1. - prob);
+                                                        } else {
+                                                                prob = (1. - alpha) * prob  + alpha;
+                                                        }
                                                 } else {
-                                                        prob = (1. - alpha) * prob  + alpha;
+                                                        if (prob >= 0.5) {
+                                                                prob = (1. - alpha) * prob + alpha * (1. - (1. - prob) / prob);
+                                                        } else {
+                                                                prob = (1. - alpha) * prob;
+                                                        }
                                                 }
-                                        } else {
-                                                if (prob >= 0.5) {
-                                                        prob = (1. - alpha) * prob + alpha * (1. - (1. - prob) / prob);
-                                                } else {
-                                                        prob = (1. - alpha) * prob;
-                                                }
+                                                state(s,i) = coinToss(prob);
+                                                if(state(s,i)==0) state(s,i)=-1.;
                                         }
-                                        state(s,i) = coinToss(prob);
-                                        if(state(s,i)==0) state(s,i)=-1.;
                                 }
                         }
                 }
@@ -172,7 +185,7 @@ public:
         /// @param statistics the sufficient statistics of the layer
         RealMatrix expectedPhiValue(StatisticsBatch const& statistics)const{ 
                 //calculation of the expectation: 1*P(h_i=1|v)- 1*(1-P(h_i=1|v))= 2*P(h_i=1|v)-1
-                return (2*statistics-blas::repeat(1,statistics.size1(),size()));        
+                return 2*statistics - 1;        
         }
 
         /// \brief Returns the mean of the distribution
@@ -181,7 +194,7 @@ public:
         RealMatrix mean(StatisticsBatch const& statistics)const{ 
                 SIZE_CHECK(statistics.size2() == size());
                 //calculation of the expectation: 1*P(h_i=1|v)- 1*(1-P(h_i=1|v))= 2*P(h_i=1|v)-1
-                return (2*statistics-blas::repeat(1,statistics.size1(),size()));        
+                return 2*statistics - 1;        
         }
 
 
@@ -194,9 +207,7 @@ public:
         RealVector energyTerm(Matrix const& state, BetaVector const& beta)const{
                 SIZE_CHECK(state.size2() == size());
                 
-                RealVector energies(state.size1(),0.0);
-                axpy_prod(state,m_bias,energies,false);
-                noalias(energies) *= beta;
+                RealVector energies = beta*prod(state,m_bias);
                 return energies;
         }
         
@@ -232,7 +243,8 @@ public:
         template<class Vector, class SampleBatch>
         void expectedParameterDerivative(Vector& derivative, SampleBatch const& samples )const{
                 SIZE_CHECK(derivative.size() == size());
-                sumRows(expectedPhiValue(samples.statistics),derivative);
+                sumRows(2*samples.statistics,derivative);
+                derivative -= samples.size();
         }
         
         ///\brief Calculates the expectation of the derivatives of the energy term of this neuron layer with respect to it's parameters - the bias weights.
@@ -245,7 +257,7 @@ public:
         template<class Vector, class SampleBatch, class WeightVector>
         void expectedParameterDerivative(Vector& derivative, SampleBatch const& samples, WeightVector const& weights )const{
                 SIZE_CHECK(derivative.size() == size());
-                axpy_prod(trans(expectedPhiValue(samples.statistics)),weights,derivative,1.0);
+                noalias(derivative) += 2*prod(weights,samples.statistics) - sum(weights);
         }
 
 
@@ -269,7 +281,7 @@ public:
         template<class Vector, class SampleBatch, class WeightVector>
         void parameterDerivative(Vector& derivative, SampleBatch const& samples, WeightVector const& weights)const{
                 SIZE_CHECK(derivative.size() == size());
-                axpy_prod(trans(samples.state),weights,derivative,false);
+                noalias(derivative) += prod(weights,samples.state);
         }
         
         /// \brief Returns the vector with the parameters associated with the neurons in the layer, i.e. the bias vector.

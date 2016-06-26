@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
  * 
@@ -40,8 +41,6 @@
 #include "shark/Core/Exception.h"
 #include "shark/Models/NBClassifier.h"
 
-#include <boost/foreach.hpp>
-#include "boost/tuple/tuple.hpp"
 #include <cmath>
 
 namespace shark {
@@ -125,8 +124,7 @@ private:
 		std::size_t featureIndex
 	) const{
 		SHARK_CHECK(samples.empty(), "The output buffer should be cleaned before usage usually.");
-		typedef typename  LabeledData<InputType, OutputType>::const_element_reference reference;
-		BOOST_FOREACH(reference elem, dataset.elements()){
+		for(auto elem: dataset.elements()){
 			if (elem.label == classIndex)
 				samples.push_back(elem.input(featureIndex));
 		}

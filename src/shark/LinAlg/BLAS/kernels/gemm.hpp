@@ -1,7 +1,8 @@
+// [[Rcpp::depends(BH)]]
 /*!
  * 
  *
- * \brief       -
+ * \brief       matrix-matrix multiplication kernel
  *
  * \author      O. Krause
  * \date        2012
@@ -34,7 +35,7 @@
 #include "default/gemm.hpp"
 
 #ifdef SHARK_USE_CBLAS
-#include "atlas/gemm.hpp"
+#include "cblas/gemm.hpp"
 #else
 //if no bindings are included, we have to provide the default has_optimized_gemm otherwise the binding will take care of this
 namespace shark { namespace blas { namespace bindings{
