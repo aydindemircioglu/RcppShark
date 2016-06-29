@@ -48,6 +48,6 @@ RcppSharkEnv = new.env(parent = emptyenv())
 
 
 .onAttach <- function (libname, pkgname) {
-        packageStartupMessage("RcppShark v3.1 loaded.")
+        packageStartupMessage("RcppShark v3.1.0 loaded.")
 }
 

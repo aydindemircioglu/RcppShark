@@ -1,5 +1,5 @@
 
-v3.1:
+v3.1.0:
 	-Update to Shark v3.1 (git commit e3ac977c2b84cee7202033d8ddbfa6e9272ea83a)
 	-Add C+11 requirements (as necessary for current Shark)
 	-Rename some files (see README) to avoid portability issues with .tar
