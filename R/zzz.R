@@ -34,7 +34,7 @@ RcppSharkEnv = new.env(parent = emptyenv())
     devtools.install.args = "",
     devtools.name = "Aydin Demircioglu",
     devtools.desc.author = '"Aydin Demircioglu <aydin.demircioglu@ini.rub.de> [aut, cre]"',
-    devtools.desc.license = "GPL-3 + file LICENSE",
+    devtools.desc.license = "GPL >= 2",
     devtools.desc.suggests = NULL,
     devtools.desc = list()
   )
@@ -48,6 +48,6 @@ RcppSharkEnv = new.env(parent = emptyenv())
 
 
 .onAttach <- function (libname, pkgname) {
-        packageStartupMessage("RcppShark v0.1 loaded.")
+        packageStartupMessage("RcppShark v3.1 loaded.")
 }
 
