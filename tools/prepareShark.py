@@ -96,6 +96,9 @@ for  includeDir in includeDirs:
 			else:
 				continue
 
+#			if "Shark.h" not in filepath:
+#				continue
+
 			# read whole file
 			with open(filepath) as f:
 				data = f.read()
@@ -357,7 +360,21 @@ for  includeDir in includeDirs:
 #					data = re.sub(r'(?i)#define TYPE_CHECK.*', r'#define TYPE_CHECK', data)
 #					data = re.sub(r'(?i)#define IO_CHECK.*', r'#define IO_CHECK', data)
 					
+					# could do this differently, but well
+					data = re.sub(r'(?i)(.ifdef.SHARK_USE_OPENMP)', r'#undef SHARK_USE_OPENMP\n\1 ', data)
 
+
+					# this is basically only for Shark.h, if BH adds property_tree, we can disable this
+					data = re.sub(r'(?i)(.include..boost.property_tree.ptree.hpp.)', r'// \1 ', data)
+					data = re.sub(r'(?i)(.include..boost.property_tree.json_parser.hpp.)', r'// \1 ', data)
+
+					data = re.sub(r'(?ism)(template.typename Stream.*?static void info..Stream.*?\).*?)\{.*?\}', r'\1{}', data)
+						
+					try:
+						matchS = enclosed.parseString (data)
+						data = (matchS['pre'][0] + matchS['post'])
+					except:
+						pass
 
 					#print (data)
 				# save file to our local path

@@ -39,8 +39,8 @@
 
 #include <boost/assign.hpp>
 #include <boost/config.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
+// #include <boost/property_tree/ptree.hpp> 
+// #include <boost/property_tree/json_parser.hpp> 
 
 #include <iostream>
 #include <map>
@@ -225,29 +225,7 @@ class Shark {
    * \brief Prints information about the Shark Machine Learning Library to the supplied stream.
    */
   template<typename Stream>
-  static void info( Stream & s ) {
-    std::map< BuildType, std::string > buildTypeMap = boost::assign::map_list_of( RELEASE_BUILD_TYPE, "Release" )( DEBUG_BUILD_TYPE, "Debug" );
-
-    boost::property_tree::ptree pt, version;
-    version.add("major", version_type::MAJOR());
-    version.add("minor", version_type::MINOR());
-    version.add("patch", version_type::PATCH());
-
-    pt.add_child("version", version);
-    pt.add("isOfficialRelease", isOfficialRelease());
-    pt.add("platform", BOOST_PLATFORM);
-    pt.add("compiler", BOOST_COMPILER);
-    pt.add("stdLib", BOOST_STDLIB);
-    version.put("major", boost_version_type::MAJOR());
-    version.put("minor", boost_version_type::MINOR());
-    version.put("patch", boost_version_type::PATCH());
-    pt.add_child("boostVersion", version);
-    pt.add("buildType", buildTypeMap[buildType()]);
-    pt.add("dynamicBuild", isDynamicLibrary());
-    pt.add("hasOpenMp", hasOpenMp());
-
-    boost::property_tree::write_json(s, pt);
-  }
+  static void info( Stream & s ) {}
 
 };
 
