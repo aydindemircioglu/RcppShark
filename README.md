@@ -2,7 +2,7 @@
 
 Goal of this package is to allow users to use the 
 [Shark C++ machine learning library](http://image.diku.dk/shark/sphinx_pages/build/html/index.html)
-in their own R projects.
+in their own R projects. Actually the github version from 19th februrary 2017 is used.
 
 
 
@@ -35,6 +35,10 @@ The source code of Shark is largly unchanged. Apart from removing asserts (via -
 - HypervolumeContributionMD.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/  is renamed to  HVContributionMD.h
 - HypervolumeContribution2D.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/  is renamed to  HVContribution2D.h
 - PartiallyMappedCrossover.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/ is renamed to Recombination/PMXCrossover.h
+- PartiallyMappedCrossover.h in ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/ is renamed to Recombination/PMXCrossover.h
+- aligned_alloc_android.hpp in ./inst/include/shark/LinAlg/BLAS/kernels/default/boost_align/detail/aligned_alloc_a.hpp
+- is_alignment_constant.hpp in ./inst/include/shark/LinAlg/BLAS/kernels/default/boost_align/detail/is_alignment_c.hpp
+
 
 
 
@@ -55,11 +59,19 @@ The source code of Shark is largly unchanged. Apart from removing asserts (via -
 
 ### Internal notes
 
-- To transform the Shark code to RcppShark, simply call python ./prepareShark.sh. This will assume that the Shark sources can be found under ~/Shark. It will then extract the parts it needs and put them under ./src (previous sources in src/shark and src/src will be deleted, so be sure not to have individual changes to these files). Currently this process is 100% (as of 8th august 2015), there is no manual step involved. This might change, if later versions of Shark become available.
+- To transform the Shark code to RcppShark, simply call python ./prepareShark.sh. This will assume that the Shark sources can be found under ~/Shark. It will then extract the parts it needs and put them under ./src (previous sources in src/shark and src/src will be deleted, so be sure not to have individual changes to these files). Currently this process is 100% (as of 19th februrary 2017), there is no manual step involved. This might change, if later versions of Shark become available.
 
 - To create a proper Makevars, or to change things, edit the template found under ./tools/Makevars_template. Then call the python script ./generateMakevars.py. This script will find all *.cpp files below /src/src and will add them to the Makevars. 
 
 - Finally make sure that the Shark you have checked out below ~/Shark was compiled without LAPACK support, as R packages with LAPACK are not really supported by CRAN. If you forget to do so, an error message like "clapack.h not found" will be thrown. 
+
+- If you want to compile it by yourself, follow these instructions:
+
+1. Download Shark into ~/Shark
+2. Compile shark via cmake .
+3. Call ./prepareShark.py in ./tools
+4. Call ./testInstall.py in ./
+5. Call ./postTestInstall.py in ./
 
 
 ### Authors
