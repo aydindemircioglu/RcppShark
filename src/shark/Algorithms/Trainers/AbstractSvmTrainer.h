@@ -21,11 +21,11 @@
  * \date        -
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -44,8 +44,8 @@
 //===========================================================================
 
 
-#ifndef SHARK_ALGORITHMS_ABSTRACTSVMTRAINER_H
-#define SHARK_ALGORITHMS_ABSTRACTSVMTRAINER_H
+#ifndef SHARK_ALGORITHMS_TRAINERS_ABSTRACTSVMTRAINER_H
+#define SHARK_ALGORITHMS_TRAINERS_ABSTRACTSVMTRAINER_H
 
 
 #include <shark/LinAlg/Base.h>
@@ -227,6 +227,11 @@ public:
 		SIZE_CHECK(m_regularizers.size() == 1);
 		return m_regularizers[0];
 	}
+	double& C()
+	{
+		SIZE_CHECK(m_regularizers.size() == 1);
+		return m_regularizers[0];
+	}
 	
 	RealVector const& regularizationParameters() const
 	{
@@ -251,7 +256,7 @@ public:
 	bool trainOffset() const
 	{ return m_trainOffset; }
 
-	double CacheSize() const
+	double cacheSize() const
 	{ return m_cacheSize; }
 	void setCacheSize( std::size_t size )
 	{ m_cacheSize = size; }
@@ -319,10 +324,12 @@ public:
 	typedef LinearClassifier<InputType> ModelType;
 
 	//! Constructor
-	//! \param  C              regularization parameter - always the 'true' value of C, even when unconstrained is set
-	//! \param  unconstrained  when a C-value is given via setParameter, should it be piped through the exp-function before using it in the solver?
-	AbstractLinearSvmTrainer(double C, bool unconstrained = false)
+	//! \param C              regularization parameter - always the 'true' value of C, even when unconstrained is set
+	//! \param offset         train svm with offset - this is not supported for all SVM solvers.
+	//! \param unconstrained  when a C-value is given via setParameter, should it be piped through the exp-function before using it in the solver?
+	AbstractLinearSvmTrainer(double C, bool offset, bool unconstrained)
 	: m_C(C)
+	, m_trainOffset(offset)
 	, m_unconstrained(unconstrained)
 	{ RANGE_CHECK( C > 0 ); }
 
@@ -339,6 +346,9 @@ public:
 	/// \brief Is the regularization parameter provided in logarithmic (unconstrained) form as a parameter?
 	bool isUnconstrained() const
 	{ return m_unconstrained; }
+	
+	bool trainOffset() const
+	{ return m_trainOffset; }
 
 	/// \brief Get the hyper-parameter vector.
 	RealVector parameterVector() const
@@ -365,7 +375,9 @@ public:
 
 protected:
 	double m_C;                         ///< Regularization parameter. The exact meaning depends on the sub-class, but the value is always positive, and higher implies a less regular solution.
+	bool m_trainOffset;		    ///< Is the SVM trained with or without bias?
 	bool m_unconstrained;               ///< Is log(C) stored internally as a parameter instead of C? If yes, then we get rid of the constraint C > 0 on the level of the parameter interface.
+	
 };
 
 

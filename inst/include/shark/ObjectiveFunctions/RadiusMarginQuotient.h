@@ -9,11 +9,11 @@
  * \date        2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -121,7 +121,7 @@ public:
 		
 		derivative = calculateKernelMatrixParameterDerivative(
 			*mep_kernel, m_dataset.inputs(),
-			result.w2*(RealDiagonalMatrix(result.beta)-outer_prod(result.beta,result.beta))
+			result.w2*(to_diagonal(result.beta)-outer_prod(result.beta,result.beta))
 			-result.R2*outer_prod(result.alpha,result.alpha)
 		);
 		

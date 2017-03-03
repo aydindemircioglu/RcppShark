@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -10,11 +11,11 @@
  * \date        2009-2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -231,6 +232,7 @@ public:
 			KernelClassifier<InputType> svm;   //the SVM
 			CSvmTrainer<InputType, double> csvm_trainer(mep_kernel, C_reg, true, m_svmCIsUnconstrained);   //the trainer
 			csvm_trainer.sparsify() = false;
+			csvm_trainer.setComputeBinaryDerivative(true);
 			if (mep_svmStoppingCondition != NULL) {
 				csvm_trainer.stoppingCondition() = *mep_svmStoppingCondition;
 			} else {

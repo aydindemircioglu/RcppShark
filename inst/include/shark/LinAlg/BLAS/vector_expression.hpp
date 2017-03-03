@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * \brief       expression templates for vector valued math
@@ -26,692 +27,265 @@
  * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SHARK_LINALG_BLAS_VECTOR_EXPRESSION_HPP
-#define SHARK_LINALG_BLAS_VECTOR_EXPRESSION_HPP
+#ifndef REMORA_VECTOR_EXPRESSION_HPP
+#define REMORA_VECTOR_EXPRESSION_HPP
 
-#include "vector_proxy.hpp"
+#include "detail/expression_optimizers.hpp"
 #include "kernels/dot.hpp"
+#include "kernels/vector_fold.hpp"
+#include "kernels/vector_max.hpp"
 #include <boost/utility/enable_if.hpp>
 
-namespace shark {
-namespace blas {
-	
-///\brief Implements multiplications of a vector by a scalar
-template<class E>
-class vector_scalar_multiply:
-	public vector_expression<vector_scalar_multiply <E> > {
-	typedef vector_scalar_multiply<E> self_type;
-public:
-	typedef typename E::const_closure_type expression_closure_type;
-	typedef typename E::size_type size_type;
-	typedef typename E::difference_type difference_type;
-	typedef typename E::value_type value_type;
-	typedef typename E::scalar_type scalar_type;
-	typedef value_type const_reference;
-	typedef value_type reference;
-	typedef value_type const * const_pointer;
-	typedef value_type const*  pointer;
+namespace remora{
 
-	typedef typename E::index_type index_type;
-	typedef typename E::const_index_pointer const_index_pointer;
-	typedef typename index_pointer<E>::type index_pointer;
-
-	typedef self_type const_closure_type;
-	typedef self_type closure_type;
-	typedef unknown_storage_tag storage_category;
-	typedef typename E::evaluation_category evaluation_category;
-
-	// Construction and destruction
-	// May be used as mutable expression.
-	vector_scalar_multiply(expression_closure_type const& e, scalar_type scalar):
-		m_expression(e), m_scalar(scalar) {}
-
-	// Accessors
-	size_type size() const {
-		return m_expression.size();
-	}
-
-	// Expression accessors
-	expression_closure_type const &expression() const {
-		return m_expression;
-	}
-
-public:
-	// Element access
-	const_reference operator()(index_type i) const {
-		return m_scalar * m_expression(i);
-	}
-
-	const_reference operator[](index_type i) const {
-		return m_scalar * m_expression(i);
-	}
-	
-	
-	//computation kernels
-	template<class VecX>
-	void assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		m_expression.assign_to(x,alpha*m_scalar);
-	}
-	template<class VecX>
-	void plus_assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		m_expression.plus_assign_to(x,alpha*m_scalar);
-	}
-	
-	template<class VecX>
-	void minus_assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		m_expression.minus_assign_to(x,alpha*m_scalar);
-	}
-
-	
-	//iterators
-	typedef transform_iterator<typename E::const_iterator,scalar_multiply1<value_type, scalar_type> > const_iterator;
-	typedef const_iterator iterator;
-	
-	const_iterator begin() const {
-		return const_iterator(m_expression.begin(),scalar_multiply1<value_type, scalar_type>(m_scalar));
-	}
-	const_iterator end() const {
-		return const_iterator(m_expression.end(),scalar_multiply1<value_type, scalar_type>(m_scalar));
-	}
-private:
-	expression_closure_type m_expression;
-	scalar_type m_scalar;
-};
-
-
-template<class T, class E>
+template<class T, class VecV, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::scalar_type >,
-        vector_scalar_multiply<E>
+	std::is_convertible<T, typename VecV::value_type >,
+	vector_scalar_multiply<VecV>
 >::type
-operator* (vector_expression<E> const& e, T scalar){
-	typedef typename E::scalar_type scalar_type;
-	return vector_scalar_multiply<E>(e(), scalar_type(scalar));
+operator* (vector_expression<VecV, Device> const& v, T scalar){
+	typedef typename VecV::value_type value_type;
+	return vector_scalar_multiply<VecV>(v(), value_type(scalar));
 }
-template<class T, class E>
+template<class T, class VecV, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::scalar_type >,
-        vector_scalar_multiply<E>
+	std::is_convertible<T, typename VecV::value_type >,
+        vector_scalar_multiply<VecV>
 >::type
-operator* (T scalar, vector_expression<E> const& e){
-	typedef typename E::scalar_type scalar_type;
-	return vector_scalar_multiply<E>(e(), scalar_type(scalar));//explicit cast prevents warning, alternative would be to template vector_scalar_multiply on T as well
+operator* (T scalar, vector_expression<VecV, Device> const& v){
+	typedef typename VecV::value_type value_type;
+	return vector_scalar_multiply<VecV>(v(), value_type(scalar));//explicit cast prevents warning, alternative would be to template functors::scalar_multiply on T as well
 }
 
-template<class E>
-vector_scalar_multiply<E> operator-(vector_expression<E> const& e){
-	typedef typename E::scalar_type scalar_type;
-	return vector_scalar_multiply<E>(e(), scalar_type(-1));//explicit cast prevents warning, alternative would be to template vector_scalar_multiply on T as well
+template<class VecV, class Device>
+vector_scalar_multiply<VecV> operator-(vector_expression<VecV, Device> const& v){
+	typedef typename VecV::value_type value_type;
+	return vector_scalar_multiply<VecV>(v(), value_type(-1));//explicit cast prevents warning, alternative would be to template functors::scalar_multiply on T as well
 }
-	
-/// \brief Vector expression representing a constant valued vector.
-template<class T>
-class scalar_vector:public vector_expression<scalar_vector<T> > {
-
-	typedef scalar_vector<T> self_type;
-public:
-	typedef std::size_t size_type;
-	typedef std::ptrdiff_t difference_type;
-	typedef T value_type;
-	typedef T scalar_type;
-	typedef const T& const_reference;
-	typedef const_reference reference;
-	typedef T const* const_pointer;
-	typedef const_pointer pointer;
-	
-
-	typedef std::size_t index_type;
-	typedef index_type const* const_index_pointer;
-	typedef index_type index_pointer;
-
-	typedef self_type const_closure_type;
-	typedef self_type closure_type;
-	typedef unknown_storage_tag storage_category;
-	typedef elementwise_tag evaluation_category;
-
-	// Construction and destruction
-	scalar_vector()
-	:m_size(0), m_value() {}
-	explicit scalar_vector(size_type size, value_type value)
-	:m_size(size), m_value(value) {}
-	scalar_vector(const scalar_vector& v)
-	:m_size(v.m_size), m_value(v.m_value) {}
-
-	// Accessors
-	size_type size() const {
-		return m_size;
-	}
-
-	// Element access
-	const_reference operator()(index_type /*i*/) const {
-		return m_value;
-	}
-
-	const_reference operator [](index_type /*i*/) const {
-		return m_value;
-	}
-
-public:
-	typedef constant_iterator<T> iterator;
-	typedef constant_iterator<T> const_iterator;
-
-	const_iterator begin() const {
-		return const_iterator(0,m_value);
-	}
-	const_iterator end() const {
-		return const_iterator(m_size,m_value);
-	}
-
-private:
-	size_type m_size;
-	value_type m_value;
-};
 
 ///\brief Creates a vector having a constant value.
 ///
 ///@param scalar the value which is repeated
 ///@param elements the size of the resulting vector
 template<class T>
-typename boost::enable_if<std::is_arithmetic<T>, scalar_vector<T> >::type
+typename boost::enable_if<std::is_arithmetic<T>, scalar_vector<T, cpu_tag> >::type
 repeat(T scalar, std::size_t elements){
-	return scalar_vector<T>(elements,scalar);
+	return scalar_vector<T, cpu_tag>(elements,scalar);
 }
 
 
-///\brief Class implementing vector transformation expressions.
-///
-///transforms a vector Expression e of type E using a Function f of type F as an elementwise transformation f(e(i))
-///This transformation needs f to be constant, meaning that applying f(x), f(y), f(z) yields the same results independent of the
-///order of application. Also F must provide a type F::result_type indicating the result type of the functor.
-template<class E, class F>
-class vector_unary:
-	public vector_expression<vector_unary<E, F> > {
-	typedef vector_unary<E, F> self_type;
-public:
-	typedef F functor_type;
-	typedef typename E::const_closure_type expression_closure_type;
-	typedef typename E::size_type size_type;
-	typedef typename E::difference_type difference_type;
-	typedef typename F::result_type value_type;
-	typedef value_type scalar_type;
-	typedef value_type const_reference;
-	typedef value_type reference;
-	typedef value_type const * const_pointer;
-	typedef value_type const*  pointer;
-
-	typedef typename E::index_type index_type;
-	typedef typename E::const_index_pointer const_index_pointer;
-	typedef typename index_pointer<E>::type index_pointer;
-
-	typedef self_type const_closure_type;
-	typedef self_type closure_type;
-	typedef unknown_storage_tag storage_category;
-	typedef typename E::evaluation_category evaluation_category;
-
-	// Construction and destruction
-	// May be used as mutable expression.
-	vector_unary(vector_expression<E> const &e, F const &functor):
-		m_expression(e()), m_functor(functor) {}
-
-	// Accessors
-	size_type size() const {
-		return m_expression.size();
-	}
-
-	// Expression accessors
-	expression_closure_type const &expression() const {
-		return m_expression;
-	}
-	
-	//computation kernels
-	template<class VecX>
-	void assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		//compute this by first assigning the result of the argument and then applying
-		//the function to every element
-		assign(x,m_expression);
-		typename VecX::iterator end=x().end();
-		for(typename VecX::iterator pos =x().begin(); pos != end; ++pos){
-			*pos= alpha * m_functor(*pos);
-		}
-	}
-	template<class VecX>
-	void plus_assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		//First assign result of this expression to a temporary and then perform plus_assignment to x
-		typename vector_temporary<self_type>::type temporary(size());
-		assign_to(temporary,alpha);
-		plus_assign_to(x,temporary);
-	}
-	
-	template<class VecX>
-	void minus_assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		//First assign result of this expression to a temporary and then perform minus_assignment to x
-		typename vector_temporary<self_type>::type temporary(size());
-		assign_to(temporary,alpha);
-		minus_assign_to(x,temporary);
-	}
-
-public:
-	// Element access
-	const_reference operator()(index_type i) const {
-		return m_functor(m_expression(i));
-	}
-
-	const_reference operator[](index_type i) const {
-		return m_functor(m_expression[i]);
-	}
-
-	typedef transform_iterator<typename E::const_iterator,functor_type> const_iterator;
-	typedef const_iterator iterator;
-
-	// Element lookup
-	const_iterator begin() const {
-		return const_iterator(m_expression.begin(),m_functor);
-	}
-	const_iterator end() const {
-		return const_iterator(m_expression.end(),m_functor);
-	}
-private:
-	expression_closure_type m_expression;
-	F m_functor;
-};
-
-
-
-#define SHARK_UNARY_VECTOR_TRANSFORMATION(name, F)\
-template<class E>\
-vector_unary<E,F<typename E::value_type> >\
-name(vector_expression<E> const& e){\
-	typedef F<typename E::value_type> functor_type;\
-	return vector_unary<E, functor_type>(e, functor_type());\
+#define REMORA_UNARY_VECTOR_TRANSFORMATION(name, F)\
+template<class VecV, class Device>\
+vector_unary<VecV,typename device_traits<Device>:: template F<typename VecV::value_type> >\
+name(vector_expression<VecV, Device> const& v){\
+	typedef typename device_traits<Device>:: template F<typename VecV::value_type> functor_type;\
+	return vector_unary<VecV, functor_type >(v(), functor_type());\
 }
-SHARK_UNARY_VECTOR_TRANSFORMATION(abs, scalar_abs)
-SHARK_UNARY_VECTOR_TRANSFORMATION(log, scalar_log)
-SHARK_UNARY_VECTOR_TRANSFORMATION(exp, scalar_exp)
-SHARK_UNARY_VECTOR_TRANSFORMATION(cos, scalar_cos)
-SHARK_UNARY_VECTOR_TRANSFORMATION(sin, scalar_sin)
-SHARK_UNARY_VECTOR_TRANSFORMATION(tanh,scalar_tanh)
-SHARK_UNARY_VECTOR_TRANSFORMATION(atanh,scalar_atanh)
-SHARK_UNARY_VECTOR_TRANSFORMATION(sqr, scalar_sqr)
-SHARK_UNARY_VECTOR_TRANSFORMATION(abs_sqr, scalar_abs_sqr)
-SHARK_UNARY_VECTOR_TRANSFORMATION(sqrt, scalar_sqrt)
-SHARK_UNARY_VECTOR_TRANSFORMATION(sigmoid, scalar_sigmoid)
-SHARK_UNARY_VECTOR_TRANSFORMATION(softPlus, scalar_soft_plus)
-SHARK_UNARY_VECTOR_TRANSFORMATION(elem_inv, scalar_inverse)
-#undef SHARK_UNARY_VECTOR_TRANSFORMATION
-
-
-//operations of the form op(v,t)[i] = op(v[i],t)
-#define SHARK_VECTOR_SCALAR_TRANSFORMATION(name, F)\
-template<class T, class E> \
-typename boost::enable_if< \
-	std::is_convertible<T, typename E::value_type >,\
-        vector_unary<E,F<typename E::value_type,T> > \
->::type \
-name (vector_expression<E> const& e, T scalar){ \
-	typedef F<typename E::value_type,T> functor_type; \
-	return vector_unary<E, functor_type>(e, functor_type(scalar)); \
-}
-SHARK_VECTOR_SCALAR_TRANSFORMATION(operator/, scalar_divide)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(operator<, scalar_less_than)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(operator<=, scalar_less_equal_than)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(operator>, scalar_bigger_than)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(operator>=, scalar_bigger_equal_than)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(operator==, scalar_equal)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(operator!=, scalar_not_equal)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(min, scalar_min)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(max, scalar_max)
-SHARK_VECTOR_SCALAR_TRANSFORMATION(pow, scalar_pow)
-#undef SHARK_VECTOR_SCALAR_TRANSFORMATION
-
-// operations of the form op(t,v)[i] = op(t,v[i])
-#define SHARK_VECTOR_SCALAR_TRANSFORMATION_2(name, F)\
-template<class T, class E> \
-typename boost::enable_if< \
-	std::is_convertible<T, typename E::value_type >,\
-        vector_unary<E,F<typename E::value_type,T> > \
->::type \
-name (T scalar, vector_expression<E> const& e){ \
-	typedef F<typename E::value_type,T> functor_type; \
-	return vector_unary<E, functor_type>(e, functor_type(scalar)); \
-}
-SHARK_VECTOR_SCALAR_TRANSFORMATION_2(min, scalar_min)
-SHARK_VECTOR_SCALAR_TRANSFORMATION_2(max, scalar_max)
-#undef SHARK_VECTOR_SCALAR_TRANSFORMATION_2
-
-template<class E1, class E2>
-class vector_addition: public vector_expression<vector_addition<E1,E2> > {
-private:
-	typedef scalar_binary_plus<
-		typename E1::value_type,
-		typename E2::value_type
-	> functor_type;
-public:
-	typedef std::size_t size_type;
-	typedef std::ptrdiff_t difference_type;
-	typedef typename functor_type::result_type value_type;
-	typedef value_type scalar_type;
-	typedef value_type const_reference;
-	typedef value_type reference;
-	typedef value_type const * const_pointer;
-	typedef value_type const*  pointer;
-
-	typedef typename E1::index_type index_type;
-	typedef typename E1::const_index_pointer const_index_pointer;
-	typedef typename index_pointer<E1>::type index_pointer;
-
-	typedef typename E1::const_closure_type expression_closure1_type;
-	typedef typename E2::const_closure_type expression_closure2_type;
-	
-	typedef vector_addition const_closure_type;
-	typedef vector_addition closure_type;
-	typedef unknown_storage_tag storage_category;
-	typedef typename evaluation_restrict_traits<E1,E2>::type evaluation_category;
-
-	// Construction and destruction
-	explicit vector_addition (
-		expression_closure1_type e1, 
-		expression_closure2_type e2
-	):m_expression1(e1),m_expression2(e2){
-		SIZE_CHECK(e1.size() == e2.size());
-	}
-
-	// Accessors
-	size_type size() const {
-		return m_expression1.size();
-	}
-
-	// Expression accessors
-	expression_closure1_type const& expression1() const {
-		return m_expression1;
-	}
-	expression_closure2_type const& expression2() const {
-		return m_expression2;
-	}
-
-	// Element access
-	const_reference operator() (index_type i) const {
-		SIZE_CHECK(i < size());
-		return m_expression1(i) + m_expression2(i);
-	}
-
-	const_reference operator[] (index_type i) const {
-		SIZE_CHECK(i < size());
-		return m_expression1(i) + m_expression2(i);
-	}
-	
-	//computation kernels
-	template<class VecX>
-	void assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		assign(x,alpha*m_expression1);
-		plus_assign(x,alpha*m_expression2);
-	}
-	template<class VecX>
-	void plus_assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		plus_assign(x,alpha*m_expression1);
-		plus_assign(x,alpha*m_expression2);
-	}
-	
-	template<class VecX>
-	void minus_assign_to(vector_expression<VecX>& x, scalar_type alpha = scalar_type(1) )const{
-		minus_assign(x,alpha*m_expression1);
-		minus_assign(x,alpha*m_expression2);
-	}
-
-	// Iterator types
-	typedef binary_transform_iterator<
-		typename E1::const_iterator,
-		typename E2::const_iterator,
-		functor_type
-	> const_iterator;
-	typedef const_iterator iterator;
-
-	const_iterator begin () const {
-		return const_iterator(functor_type(),
-			m_expression1.begin(),m_expression1.end(),
-			m_expression2.begin(),m_expression2.end()
-		);
-	}
-	const_iterator end() const {
-		return const_iterator(functor_type(),
-			m_expression1.end(),m_expression1.end(),
-			m_expression2.end(),m_expression2.end()
-		);
-	}
-
-private:
-	expression_closure1_type m_expression1;
-	expression_closure2_type m_expression2;
-};
+REMORA_UNARY_VECTOR_TRANSFORMATION(abs, abs)
+REMORA_UNARY_VECTOR_TRANSFORMATION(log, log)
+REMORA_UNARY_VECTOR_TRANSFORMATION(exp, exp)
+REMORA_UNARY_VECTOR_TRANSFORMATION(tanh,tanh)
+REMORA_UNARY_VECTOR_TRANSFORMATION(sqr, sqr)
+REMORA_UNARY_VECTOR_TRANSFORMATION(sqrt, sqrt)
+REMORA_UNARY_VECTOR_TRANSFORMATION(sigmoid, sigmoid)
+REMORA_UNARY_VECTOR_TRANSFORMATION(softPlus, soft_plus)
+REMORA_UNARY_VECTOR_TRANSFORMATION(elem_inv, inv)
+#undef REMORA_UNARY_VECTOR_TRANSFORMATION
 
 ///\brief Adds two vectors
-template<class E1, class E2>
-vector_addition<E1, E2 > operator+ (
-	vector_expression<E1> const& e1,
-	vector_expression<E2> const& e2
+template<class VecV1, class VecV2, class Device>
+vector_addition<VecV1, VecV2 > operator+ (
+	vector_expression<VecV1, Device> const& v1,
+	vector_expression<VecV2, Device> const& v2
 ){
-	return vector_addition<E1, E2>(e1(),e2());
+	SIZE_CHECK(v1().size() == v2().size());
+	return vector_addition<VecV1, VecV2>(v1(),v2());
 }
 ///\brief Subtracts two vectors
-template<class E1, class E2>
-vector_addition<E1, vector_scalar_multiply<E2> > operator- (
-	vector_expression<E1> const& e1,
-	vector_expression<E2> const& e2
+template<class VecV1, class VecV2, class Device>
+vector_addition<VecV1, vector_scalar_multiply<VecV2> > operator- (
+	vector_expression<VecV1, Device> const& v1,
+	vector_expression<VecV2, Device> const& v2
 ){
-	return vector_addition<E1, vector_scalar_multiply<E2> >(e1(),-e2());
-}
-
-///\brief Adds a vector plus a scalr which is interpreted as a constant vector
-template<class E, class T>
-typename boost::enable_if<
-	std::is_convertible<T, typename E::value_type>, 
-	vector_addition<E, scalar_vector<T> >
->::type operator+ (
-	vector_expression<E> const& e,
-	T t
-){
-	return e + scalar_vector<T>(e().size(),t);
+	SIZE_CHECK(v1().size() == v2().size());
+	return vector_addition<VecV1, vector_scalar_multiply<VecV2> >(v1(),-v2());
 }
 
 ///\brief Adds a vector plus a scalar which is interpreted as a constant vector
-template<class T, class E>
+template<class VecV, class T, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::value_type>,
-	vector_addition<E, scalar_vector<T> >
+	std::is_convertible<T, typename VecV::value_type>, 
+	vector_addition<VecV, scalar_vector<T, Device> >
 >::type operator+ (
-	T t,
-	vector_expression<E> const& e
-){
-	return e + scalar_vector<T>(e().size(),t);
-}
-
-///\brief Subtracts a scalar which is interpreted as a constant vector from a vector.
-template<class E, class T>
-typename boost::enable_if<
-	std::is_convertible<T, typename E::value_type> ,
-	vector_addition<E, vector_scalar_multiply<scalar_vector<T> > >
->::type operator- (
-	vector_expression<E> const& e,
+	vector_expression<VecV, Device> const& v,
 	T t
 ){
-	return e - scalar_vector<T>(e().size(),t);
+	return v + scalar_vector<T, Device>(v().size(),t);
+}
+
+///\brief Adds a vector plus a scalar which is interpreted as a constant vector
+template<class T, class VecV, class Device>
+typename boost::enable_if<
+	std::is_convertible<T, typename VecV::value_type>,
+	vector_addition<VecV, scalar_vector<T, Device> >
+>::type operator+ (
+	T t,
+	vector_expression<VecV, Device> const& v
+){
+	return v + scalar_vector<T, Device>(v().size(),t);
+}
+
+///\brief Subtracts a scalar which is interpreted as a constant vector.
+template<class VecV, class T, class Device>
+typename boost::enable_if<
+	std::is_convertible<T, typename VecV::value_type> ,
+	vector_addition<VecV, vector_scalar_multiply<scalar_vector<T, Device> > >
+>::type operator- (
+	vector_expression<VecV, Device> const& v,
+	T t
+){
+	return v - scalar_vector<T, Device>(v().size(),t);
 }
 
 ///\brief Subtracts a vector from a scalar which is interpreted as a constant vector
-template<class E, class T>
+template<class VecV, class T, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::value_type>,
-	vector_addition<scalar_vector<T>, vector_scalar_multiply<E> >
+	std::is_convertible<T, typename VecV::value_type>,
+	vector_addition<scalar_vector<T, Device>, vector_scalar_multiply<VecV> >
 >::type operator- (
 	T t,
-	vector_expression<E> const& e
+	vector_expression<VecV, Device> const& v
 ){
-	return scalar_vector<T>(e().size(),t) - e;
+	return scalar_vector<T, Device>(v().size(),t) - v;
 }
 
-
-template<class E1, class E2, class F>
-class vector_binary:
-	public vector_expression<vector_binary<E1,E2, F> > {
-	typedef vector_binary<E1,E2, F> self_type;
-	typedef E1 const expression1_type;
-	typedef E2 const expression2_type;
-public:
-	typedef std::size_t size_type;
-	typedef std::ptrdiff_t difference_type;
-	typedef typename F::result_type value_type;
-	typedef value_type scalar_type;
-	typedef value_type const_reference;
-	typedef value_type reference;
-	typedef value_type const * const_pointer;
-	typedef value_type const*  pointer;
-
-	typedef typename E1::index_type index_type;
-	typedef typename E1::const_index_pointer const_index_pointer;
-	typedef typename index_pointer<E1>::type index_pointer;
-
-	typedef F functor_type;
-	typedef typename E1::const_closure_type expression_closure1_type;
-	typedef typename E2::const_closure_type expression_closure2_type;
-	
-	typedef self_type const_closure_type;
-	typedef self_type closure_type;
-	typedef unknown_storage_tag storage_category;
-	typedef typename evaluation_restrict_traits<E1,E2>::type evaluation_category;
-
-	// Construction and destruction
-	explicit vector_binary (
-		expression_closure1_type e1, 
-		expression_closure2_type e2,
-		F functor
-	):m_expression1(e1),m_expression2(e2), m_functor(functor) {
-		SIZE_CHECK(e1.size() == e2.size());
-	}
-
-	// Accessors
-	size_type size() const {
-		return m_expression1.size ();
-	}
-
-	// Expression accessors
-	expression_closure1_type const& expression1() const {
-		return m_expression1;
-	}
-	expression_closure2_type const& expression2() const {
-		return m_expression2;
-	}
-
-	// Element access
-	const_reference operator() (index_type i) const {
-		SIZE_CHECK(i < size());
-		return m_functor(m_expression1(i),m_expression2(i));
-	}
-
-	const_reference operator[] (index_type i) const {
-		SIZE_CHECK(i < size());
-		return m_functor(m_expression1(i),m_expression2(i));
-	}
-
-	// Iterator types
-	
-	// Iterator enhances the iterator of the referenced expressions
-	// with the unary functor.
-	typedef binary_transform_iterator<
-		typename E1::const_iterator,
-		typename E2::const_iterator,
-		functor_type
-	> const_iterator;
-	typedef const_iterator iterator;
-
-	const_iterator begin () const {
-		return const_iterator (m_functor,
-			m_expression1.begin(),m_expression1.end(),
-			m_expression2.begin(),m_expression2.end()
-		);
-	}
-	const_iterator end() const {
-		return const_iterator (m_functor,
-			m_expression1.end(),m_expression1.end(),
-			m_expression2.end(),m_expression2.end()
-		);
-	}
-
-private:
-	expression_closure1_type m_expression1;
-	expression_closure2_type m_expression2;
-	F m_functor;
-};
-
-#define SHARK_BINARY_VECTOR_EXPRESSION(name, F)\
-template<class E1, class E2>\
-vector_binary<E1, E2, F<typename E1::value_type, typename E2::value_type> >\
-name(vector_expression<E1> const& e1, vector_expression<E2> const& e2){\
-	typedef F<typename E1::value_type, typename E2::value_type> functor_type;\
-	return vector_binary<E1, E2, functor_type>(e1(),e2(), functor_type());\
+#define REMORA_BINARY_VECTOR_EXPRESSION(name, F)\
+template<class VecV1, class VecV2, class Device>\
+vector_binary<VecV1, VecV2, typename device_traits<Device>:: template F<typename common_value_type<VecV1,VecV2>::type> >\
+name(vector_expression<VecV1, Device> const& v1, vector_expression<VecV2, Device> const& v2){\
+	SIZE_CHECK(v1().size() == v2().size());\
+	typedef typename common_value_type<VecV1,VecV2>::type type;\
+	typedef typename device_traits<Device>:: template F<type> functor_type;\
+	return vector_binary<VecV1, VecV2, functor_type >(v1(),v2(), functor_type());\
 }
-SHARK_BINARY_VECTOR_EXPRESSION(operator*, scalar_binary_multiply)
-SHARK_BINARY_VECTOR_EXPRESSION(element_prod, scalar_binary_multiply)
-SHARK_BINARY_VECTOR_EXPRESSION(operator/, scalar_binary_divide)
-SHARK_BINARY_VECTOR_EXPRESSION(element_div, scalar_binary_divide)
-SHARK_BINARY_VECTOR_EXPRESSION(min, scalar_binary_min)
-SHARK_BINARY_VECTOR_EXPRESSION(max, scalar_binary_max)
-#undef SHARK_BINARY_VECTOR_EXPRESSION
+REMORA_BINARY_VECTOR_EXPRESSION(operator*, multiply)
+REMORA_BINARY_VECTOR_EXPRESSION(element_prod, multiply)
+REMORA_BINARY_VECTOR_EXPRESSION(operator/, divide)
+REMORA_BINARY_VECTOR_EXPRESSION(element_div, divide)
+REMORA_BINARY_VECTOR_EXPRESSION(pow, pow)
+REMORA_BINARY_VECTOR_EXPRESSION(min, min)
+REMORA_BINARY_VECTOR_EXPRESSION(max, max)
+#undef REMORA_BINARY_VECTOR_EXPRESSION
 
-template<class E1, class E2>
-vector_binary<E1, E2, 
-	scalar_binary_safe_divide<typename E1::value_type, typename E2::value_type> 
+
+//operations of the form op(v,t)[i] = op(v[i],t)
+#define REMORA_VECTOR_SCALAR_TRANSFORMATION(name, F)\
+template<class T, class VecV, class Device> \
+typename boost::enable_if< \
+	std::is_convertible<T, typename VecV::value_type >,\
+        vector_binary<VecV, scalar_vector<typename VecV::value_type, Device>, \
+	typename device_traits<Device>:: template F<typename VecV::value_type> > \
+>::type \
+name (vector_expression<VecV, Device> const& v, T t){ \
+	typedef typename VecV::value_type type;\
+	typedef typename device_traits<Device>:: template F<type> functor_type;\
+	return  vector_binary<VecV, scalar_vector<type, Device>, functor_type >(v(), scalar_vector<type, Device>(v().size(),(type)t), functor_type()); \
+}
+REMORA_VECTOR_SCALAR_TRANSFORMATION(operator/, divide)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(operator<, less_than)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(operator<=, less_equal_than)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(operator>, bigger_than)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(operator>=, bigger_equal_than)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(operator==, equal)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(operator!=, not_equal)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(min, min)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(max, max)
+REMORA_VECTOR_SCALAR_TRANSFORMATION(pow, pow)
+#undef REMORA_VECTOR_SCALAR_TRANSFORMATION
+
+// operations of the form op(t,v)[i] = op(t,v[i])
+#define REMORA_VECTOR_SCALAR_TRANSFORMATION_2(name, F)\
+template<class T, class VecV, class Device> \
+typename boost::enable_if< \
+	std::is_convertible<T, typename VecV::value_type >,\
+	vector_binary<scalar_vector<typename VecV::value_type, Device>, VecV, typename device_traits<Device>:: template F<typename VecV::value_type> > \
+>::type \
+name (T t, vector_expression<VecV, Device> const& v){ \
+	typedef typename VecV::value_type type;\
+	typedef typename device_traits<Device>:: template F<type> functor_type;\
+	return  vector_binary<scalar_vector<T, Device>, VecV, functor_type >(scalar_vector<T, Device>(v().size(),t), v() ,functor_type()); \
+}
+REMORA_VECTOR_SCALAR_TRANSFORMATION_2(min, min)
+REMORA_VECTOR_SCALAR_TRANSFORMATION_2(max, max)
+#undef REMORA_VECTOR_SCALAR_TRANSFORMATION_2
+
+template<class VecV1, class VecV2, class Device>
+vector_binary<VecV1, VecV2, 
+	typename device_traits<Device>:: template safe_divide<typename common_value_type<VecV1,VecV2>::type > 
 >
 safe_div(
-	vector_expression<E1> const& e1, 
-	vector_expression<E2> const& e2, 
-	decltype(
-		typename E1::value_type() * typename E2::value_type()
-	) defaultValue
+	vector_expression<VecV1, Device> const& v1, 
+	vector_expression<VecV2, Device> const& v2, 
+	typename common_value_type<VecV1,VecV2>::type defaultValue
 ){
-	typedef scalar_binary_safe_divide<typename E1::value_type, typename E2::value_type> functor_type;
-	return vector_binary<E1, E2, functor_type>(e1(),e2(), functor_type(defaultValue));
+	SIZE_CHECK(v1().size() == v2().size());
+	typedef typename common_value_type<VecV1,VecV2>::type result_type;
+	
+	typedef typename device_traits<Device>:: template safe_divide<result_type> functor_type;
+	return vector_binary<VecV1, VecV2, functor_type>(v1(),v2(), functor_type(defaultValue));
 }
 
 /////VECTOR REDUCTIONS
 
 /// \brief sum v = sum_i v_i
-template<class E>
-typename E::value_type
-sum(const vector_expression<E> &e) {
-	typedef typename E::value_type value_type;
-	vector_fold<scalar_binary_plus<value_type, value_type> > kernel;
-	return kernel(e,value_type());
+template<class VecV, class Device>
+typename VecV::value_type
+sum(vector_expression<VecV, Device> const& v) {
+	typedef typename VecV::value_type value_type;
+	typedef typename device_traits<Device>:: template add<value_type> functor_type;
+	auto const& elem_result = eval_block(v);
+	value_type result = 0;
+	kernels::vector_fold<functor_type>(elem_result,result);
+	return result;
 }
 
 /// \brief max v = max_i v_i
-template<class E>
-typename E::value_type
-max(const vector_expression<E> &e) {
-	typedef typename E::value_type value_type;
-	vector_fold<scalar_binary_max<value_type, value_type> > kernel;
-	return kernel(e,e()(0));
+template<class VecV, class Device>
+typename VecV::value_type
+max(vector_expression<VecV, Device> const& v) {
+	typedef typename VecV::value_type value_type;
+	typedef typename device_traits<Device>:: template max<value_type> functor_type;
+	auto const& elem_result = eval_block(v);
+	value_type result = std::numeric_limits<value_type>::lowest();
+	kernels::vector_fold<functor_type>(elem_result,result);
+	return result;
 }
 
 /// \brief min v = min_i v_i
-template<class E>
-typename E::value_type
-min(const vector_expression<E> &e) {
-	typedef typename E::value_type value_type;
-	vector_fold<scalar_binary_min<value_type, value_type> > kernel;
-	return kernel(e,e()(0));
+template<class VecV, class Device>
+typename VecV::value_type
+min(vector_expression<VecV, Device> const& v) {
+	typedef typename VecV::value_type value_type;
+	typedef typename device_traits<Device>:: template min<value_type> functor_type;
+	auto const& elem_result = eval_block(v);
+	value_type result = std::numeric_limits<value_type>::max();
+	kernels::vector_fold<functor_type>(elem_result,result);
+	return result;
 }
 
 /// \brief arg_max v = arg max_i v_i
-template<class E>
-std::size_t arg_max(const vector_expression<E> &e) {
-	SIZE_CHECK(e().size() > 0);
-	return std::max_element(e().begin(),e().end()).index();
+template<class VecV, class Device>
+std::size_t arg_max(vector_expression<VecV, Device> const& v) {
+	SIZE_CHECK(v().size() > 0);
+	auto const& elem_result = eval_block(v);
+	return kernels::vector_max(elem_result);
 }
 
 /// \brief arg_min v = arg min_i v_i
-template<class E>
-std::size_t arg_min(const vector_expression<E> &e) {
-	SIZE_CHECK(e().size() > 0);
-	return arg_max(-e);
+template<class VecV, class Device>
+std::size_t arg_min(vector_expression<VecV, Device> const& v) {
+	SIZE_CHECK(v().size() > 0);
+	return arg_max(-v);
 }
 
 /// \brief soft_max v = ln(sum(exp(v)))
@@ -721,68 +295,111 @@ std::size_t arg_min(const vector_expression<E> &e) {
 /// The function is computed in an numerically stable way to prevent that too high values of v_i produce inf or nan.
 /// The name of the function comes from the fact that it behaves like a continuous version of max in the respect that soft_max v <= v.size()*max(v)
 /// max is reached in the limit as the gap between the biggest value and the rest grows to infinity.
-template<class E>
-typename E::value_type
-soft_max(const vector_expression<E> &e) {
-	typename E::value_type maximum = max(e);
-	return std::log(sum(exp(e - maximum))) + maximum;
+template<class VecV, class Device>
+typename VecV::value_type
+soft_max(vector_expression<VecV, Device> const& v) {
+	typename VecV::value_type maximum = max(v);
+	using std::log;
+	return log(sum(exp(v - maximum))) + maximum;
 }
 
 
 ////implement all the norms based on sum!
 
 /// \brief norm_1 v = sum_i |v_i|
-template<class E>
-typename real_traits<typename E::value_type >::type
-norm_1(const vector_expression<E> &e) {
-	return sum(abs(eval_block(e)));
+template<class VecV, class Device>
+typename real_traits<typename VecV::value_type >::type
+norm_1(vector_expression<VecV, Device> const& v) {
+	return sum(abs(eval_block(v)));
 }
 
 /// \brief norm_2 v = sum_i |v_i|^2
-template<class E>
-typename real_traits<typename E::value_type >::type
-norm_sqr(const vector_expression<E> &e) {
-	return sum(abs_sqr(eval_block(e)));
+template<class VecV, class Device>
+typename real_traits<typename VecV::value_type >::type
+norm_sqr(vector_expression<VecV, Device> const& v) {
+	return sum(sqr(eval_block(v)));
 }
 
 /// \brief norm_2 v = sqrt (sum_i |v_i|^2 )
-template<class E>
-typename real_traits<typename E::value_type >::type
-norm_2(const vector_expression<E> &e) {
+template<class VecV, class Device>
+typename real_traits<typename VecV::value_type >::type
+norm_2(vector_expression<VecV, Device> const& v) {
 	using std::sqrt;
-	return sqrt(norm_sqr(e));
+	return sqrt(norm_sqr(v));
 }
 
 /// \brief norm_inf v = max_i |v_i|
-template<class E>
-typename real_traits<typename E::value_type >::type
-norm_inf(vector_expression<E> const &e){
-	return max(abs(eval_block(e)));
+template<class VecV, class Device>
+typename real_traits<typename VecV::value_type >::type
+norm_inf(vector_expression<VecV, Device> const& v){
+	return max(abs(eval_block(v)));
 }
 
 /// \brief index_norm_inf v = arg max_i |v_i|
-template<class E>
-std::size_t index_norm_inf(vector_expression<E> const &e){
-	return arg_max(abs(eval_block(e)));
+template<class VecV, class Device>
+std::size_t index_norm_inf(vector_expression<VecV, Device> const& v){
+	return arg_max(abs(eval_block(v)));
 }
 
 // inner_prod (v1, v2) = sum_i v1_i * v2_i
-template<class E1, class E2>
+template<class VecV1, class VecV2, class Device>
 decltype(
-	typename E1::value_type() * typename E2::value_type()
+	typename VecV1::value_type() * typename VecV2::value_type()
 )
 inner_prod(
-	vector_expression<E1> const& e1,
-	vector_expression<E2> const& e2
+	vector_expression<VecV1, Device> const& v1,
+	vector_expression<VecV2, Device> const& v2
 ) {
+	SIZE_CHECK(v1().size() == v2().size());
 	typedef decltype(
-		typename E1::value_type() * typename E2::value_type()
+		typename VecV1::value_type() * typename VecV2::value_type()
 	) value_type;
 	value_type result = value_type();
-	kernels::dot(eval_block(e1),eval_block(e2),result);
+	kernels::dot(eval_block(v1),eval_block(v2),result);
 	return result;
 }
 
+
+// Vector Concatenation
+
+
+///\brief Concatenates two vectors
+///
+/// Given two vectors v and w, forms the vector (v,w). 
+template<class VecV1, class VecV2, class Device>
+vector_concat<VecV1,VecV2> operator|(
+	vector_expression<VecV1, Device> const& v1,
+	vector_expression<VecV2, Device> const& v2
+){
+	return vector_concat<VecV1,VecV2>(v1(),v2());
+}
+
+///\brief Concatenates a vector with a scalar
+///
+/// Given a vector v and a scalar t, forms the vector (v,t)
+template<class VecV, class T, class Device>
+typename boost::enable_if<
+	std::is_convertible<T, typename VecV::value_type>, 
+	vector_concat<VecV, scalar_vector<T, Device> >
+>::type operator| (
+	vector_expression<VecV, Device> const& v,
+	T t
+){
+	return v | scalar_vector<T, Device>(1,t);
+}
+
+///\brief Concatenates a vector with a scalar
+///
+/// Given a vector v and a scalar t, forms the vector (v,t)
+template<class T, class VecV, class Device>
+typename boost::enable_if<
+	std::is_convertible<T, typename VecV::value_type>,
+	vector_concat<scalar_vector<T, Device>,VecV >
+>::type operator| (
+	T t,
+	vector_expression<VecV, Device> const& v
+){
+	return scalar_vector<T, Device>(1,t) | v;
 }
 
 }

@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -29,14 +30,14 @@
  *
  */
 
-#ifndef SHARK_LINALG_BLAS_KERNELS_CBLAS_TRSM_HPP
-#define SHARK_LINALG_BLAS_KERNELS_CBLAS_TRSM_HPP
+#ifndef REMORA_KERNELS_CBLAS_TRSM_HPP
+#define REMORA_KERNELS_CBLAS_TRSM_HPP
 
 #include "cblas_inc.hpp"
-
+#include "../../detail/matrix_proxy_classes.hpp"
 ///solves systems of triangular matrices
 
-namespace shark {namespace blas {namespace bindings {
+namespace remora{namespace bindings {
 inline void trsm(
 	CBLAS_ORDER order, CBLAS_UPLO uplo,CBLAS_TRANSPOSE transA, 
 	CBLAS_SIDE side, CBLAS_DIAG unit,
@@ -81,12 +82,12 @@ inline void trsm(
 }
 
 // trsm(): solves A system of linear equations A * X = B
-//             when A is A triangular matrix
-template <bool upper, bool unit,typename TriangularA, typename MatB>
-void trsm(
-	matrix_expression<TriangularA> const &A,
-	matrix_expression<MatB> &B,
-	boost::mpl::true_
+//             when A is a triangular matrix
+template <class Triangular, typename MatA, typename MatB>
+void trsm_impl(
+	matrix_expression<MatA, cpu_tag> const &A,
+	matrix_expression<MatB, cpu_tag> &B,
+	boost::mpl::true_, left
 ){
 	SIZE_CHECK(A().size1() == A().size2());
 	SIZE_CHECK(A().size1() == B().size1());
@@ -94,23 +95,42 @@ void trsm(
 	//orientation is defined by the second argument
 	CBLAS_ORDER const storOrd = (CBLAS_ORDER)storage_order<typename MatB::orientation>::value;
 	//if orientations do not match, wecan interpret this as transposing A
-	bool transposeA =  !traits::same_orientation(A,B);
+	bool transposeA =  !std::is_same<typename MatA::orientation,typename MatB::orientation>::value;
 	
-	CBLAS_DIAG cblasUnit = unit?CblasUnit:CblasNonUnit;
-	CBLAS_UPLO cblasUplo = (upper != transposeA)?CblasUpper:CblasLower;
-	
-	
+	CBLAS_DIAG cblasUnit = Triangular::is_unit?CblasUnit:CblasNonUnit;
+	CBLAS_UPLO cblasUplo = (Triangular::is_upper != transposeA)?CblasUpper:CblasLower;
 	CBLAS_TRANSPOSE transA = transposeA?CblasTrans:CblasNoTrans;
 	
 	int m = B().size1();
 	int nrhs = B().size2();
-	
+	auto storageA = A().raw_storage();
+	auto storageB = B().raw_storage();
 	trsm(storOrd, cblasUplo, transA, CblasLeft,cblasUnit, m, nrhs,
-		traits::storage(A),
-		traits::leading_dimension(A),
-		traits::storage(B),
-		traits::leading_dimension(B)
+		storageA.values,
+	        storageA.leading_dimension,
+		storageB.values,
+	        storageB.leading_dimension
 	);
+}
+
+template <class Triangular, typename MatA, typename MatB>
+void trsm_impl(
+	matrix_expression<MatA, cpu_tag> const &A,
+	matrix_expression<MatB, cpu_tag> &B,
+	boost::mpl::true_, right
+){
+	matrix_transpose<typename const_expression<MatA>::type> transA(A());
+	matrix_transpose<MatB> transB(B());
+	trsm_impl<typename Triangular::transposed_orientation>(transA, transB, boost::mpl::true_(),  left());
+}
+
+template <class Triangular, class Side, typename MatA, typename MatB>
+void trsm(
+	matrix_expression<MatA, cpu_tag> const &A,
+	matrix_expression<MatB, cpu_tag> &B,
+	boost::mpl::true_
+){
+	trsm_impl<Triangular>(A,B, boost::mpl::true_(),  Side());
 }
 
 template<class Storage1, class Storage2, class T1, class T2>
@@ -150,12 +170,12 @@ struct optimized_trsm_detail<
 template<class M1, class M2>
 struct  has_optimized_trsm
 : public optimized_trsm_detail<
-	typename M1::storage_category,
-	typename M2::storage_category,
+	typename M1::storage_type::storage_tag,
+	typename M2::storage_type::storage_tag,
 	typename M1::value_type,
 	typename M2::value_type
 >{};
 
-}}}
+}}
 #endif
 

@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -11,11 +12,11 @@
  * \date        2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -88,7 +89,7 @@ public:
                 for (std::size_t i=0; i<m_binary.size(); i++)
                 {
                         std::size_t n = m_binary[i]->numberOfParameters();
-                        RealVectorRange(ret, Range(used, used + n)) = m_binary[i]->parameterVector();
+                        noalias(subrange(ret, used, used + n)) = m_binary[i]->parameterVector();
                         used += n;
                 }
                 return ret;
@@ -100,7 +101,7 @@ public:
                 for (std::size_t i=0; i<m_binary.size(); i++)
                 {
                         std::size_t n = m_binary[i]->numberOfParameters();
-                        m_binary[i]->setParameterVector(ConstRealVectorRange(newParameters, Range(used, used + n)));
+                        m_binary[i]->setParameterVector(subrange(newParameters, used, used + n));
                         used += n;
                 }
                 SHARK_CHECK(used == newParameters.size(),
@@ -133,7 +134,7 @@ public:
                 SHARK_ASSERT(class_zero < class_one);
                 SHARK_ASSERT(class_one < m_classes);
                 unsigned int index = class_one * (class_zero - 1) / 2 + class_zero;
-                return m_binary[index];
+                return *m_binary[index];
         }
 
         /// \brief Add binary classifiers for one more class to the model.

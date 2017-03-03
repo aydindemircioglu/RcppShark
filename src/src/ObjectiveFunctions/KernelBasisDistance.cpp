@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -7,11 +8,11 @@
  * \date        2014
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -29,7 +30,6 @@
  */
 #define SHARK_COMPILE_DLL
 #include <shark/ObjectiveFunctions/KernelBasisDistance.h>
-#include <shark/LinAlg/solveSystem.h>
 #include <shark/Rng/GlobalRng.h>
 
 using namespace shark;
@@ -91,8 +91,7 @@ void KernelBasisDistance::setupAndSolve(RealMatrix& beta, RealVector const& inpu
 	}
 
 	//solve for the optimal combination of kernel vectors beta
-	beta = linear;
-	solveSymmSemiDefiniteSystemInPlace<SolveAXB>(Kz,beta);
+	beta = solve(Kz,linear,blas::symm_pos_def(), blas::left());
 }
 
 double KernelBasisDistance::errorOfSolution(RealMatrix const& beta, RealMatrix const& Kz, RealMatrix const& linear)const{
@@ -149,8 +148,7 @@ KernelBasisDistance::ResultType KernelBasisDistance::evalDerivative( const Searc
 	}
 
 	//solve for the optimal combination of kernel vectors beta
-	RealMatrix beta = linear;
-	solveSymmSemiDefiniteSystemInPlace<SolveAXB>(Kz,beta);
+	RealMatrix beta = solve(Kz,linear,blas::symm_pos_def(), blas::left());
 
 	//compute derivative
 	// the derivative for z_l is given by

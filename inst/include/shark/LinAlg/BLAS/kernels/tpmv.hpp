@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -29,40 +30,40 @@
  *
  */
 
-#ifndef SHARK_LINALG_BLAS_KERNELS_TPMV_HPP
-#define SHARK_LINALG_BLAS_KERNELS_TPMV_HPP
+#ifndef REMORA_KERNELS_TPMV_HPP
+#define REMORA_KERNELS_TPMV_HPP
 
-#ifdef SHARK_USE_CBLAS
+#ifdef REMORA_USE_CBLAS
 #include "cblas/tpmv.hpp"
 #else
 // if no bindings are included, we have to provide the default has_optimized_gemv 
 // otherwise the binding will take care of this
-namespace shark { namespace blas { namespace bindings{
+namespace remora{ namespace bindings{
 template<class M1, class M2>
 struct  has_optimized_tpmv
 : public boost::mpl::false_{};
-}}}
+}}
 #endif
 
 #include "default/tpmv.hpp"
 
-namespace shark { namespace blas {namespace kernels{
+namespace remora{namespace kernels{
 	
 ///\brief Implements the Tringular Packed Matrix-Vector multiplication(TPMV)
 ///
 /// It computes b=A*b where A is a lower or upper packed triangular matrix.
-template <typename TriangularA, typename VecB>
+template <typename MatA, typename VecB>
 void tpmv(
-	matrix_expression<TriangularA> const &A, 
-	vector_expression<VecB>& b
+	matrix_expression<MatA, cpu_tag> const &A, 
+	vector_expression<VecB, cpu_tag>& b
 ){
 	SIZE_CHECK(A().size1() == A().size2());
 	SIZE_CHECK(A().size1() == b().size());
 	
-	bindings::tpmv(A,b,typename bindings::has_optimized_tpmv<TriangularA, VecB>::type());
+	bindings::tpmv(A,b,typename bindings::has_optimized_tpmv<MatA, VecB>::type());
 }
 
-}}}
+}}
 
 #endif
 

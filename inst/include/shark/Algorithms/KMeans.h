@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -11,11 +12,11 @@
  * \date        2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -54,7 +55,7 @@ namespace shark{
 ///
 /// \par
 /// The k-means algorithm takes vector-valued data
-/// \f$ \{x_1, \dots, x_\ell\} \subset \mathbb R^d \f$
+/// \f$ \{x_1, \dots, x_n\} \subset \mathbb R^d \f$
 /// and splits it into k clusters, based on centroids
 /// \f$ \{c_1, \dots, c_k\} \f$.
 /// The result is stored in a Centroids object that can be used to
@@ -84,7 +85,7 @@ SHARK_EXPORT_SYMBOL std::size_t kMeans(Data<RealVector> const& data, std::size_t
 ///
 /// \par
 /// The k-means algorithm takes vector-valued data
-/// \f$ \{x_1, \dots, x_\ell\} \subset \mathbb R^d \f$
+/// \f$ \{x_1, \dots, x_n\} \subset \mathbb R^d \f$
 /// and splits it into k clusters, based on centroids
 /// \f$ \{c_1, \dots, c_k\} \f$.
 /// The result is stored in a RBFLayer object that can be used to
@@ -92,7 +93,7 @@ SHARK_EXPORT_SYMBOL std::size_t kMeans(Data<RealVector> const& data, std::size_t
 ///
 /// \par
 /// This is just an alternative frontend to the version using Centroids. it creates a centroid object,
-///  with as many clusters as are outputs in the RBFLayer and copis the result into the model.
+///  with as many clusters as are outputs in the RBFLayer and copies the result into the model.
 ///
 /// \par
 /// Note that the data set needs to include at least k data points
@@ -106,24 +107,57 @@ SHARK_EXPORT_SYMBOL std::size_t kMeans(Data<RealVector> const& data, std::size_t
 ///
 SHARK_EXPORT_SYMBOL std::size_t kMeans(Data<RealVector> const& data, RBFLayer& model, std::size_t maxIterations = 0);
 
+///
+/// \brief The kernel k-means clustering algorithm
+///
+/// \par
+/// The kernel k-means algorithm takes data
+/// \f$ \{x_1, \dots, x_n\} \f$
+/// and splits it into k clusters, based on centroids
+/// \f$ \{c_1, \dots, c_k\} \f$.
+/// The centroids are elements of the reproducing kernel Hilbert space
+/// (RHKS) induced by the kernel function. They are functions, represented
+/// as the components of a KernelExpansion object. I.e., given a data point
+/// x, the kernel expansion returns a k-dimensional vector f(x), which is
+/// the evaluation of the centroid functions on x. The value of the
+/// centroid function represents the inner product of the centroid with
+/// the kernel-induced feature vector of x (embedding of x into the RKHS).
+/// The distance of x from the centroid \f$ c_i \f$ is computes as the
+/// kernel-induced distance
+/// \f$ \sqrt{ kernel(x, x) + kernel(c_i, c_i) - 2 kernel(x, c_i) } \f$.
+/// For the Gaussian kernel (and other normalized kernels) is simplifies to
+/// \f$ \sqrt{ 2 - 2 kernel(x, c_i) } \f$. Hence, larger function values
+/// indicate smaller distance to the centroid.
+///
+/// \par
+/// Note that the data set needs to include at least k data points
+/// for k-means to work. This is because the current implementation
+/// does not allow for empty clusters.
+///
+/// \param data           vector-valued data to be clustered
+/// \param k              number of clusters
+/// \param kernel         kernel function object
+/// \param maxIterations  maximum number of k-means iterations; 0: unlimited
+/// \return               centroids (represented as functions, see description)
+///
 template<class InputType>
 KernelExpansion<InputType> kMeans(Data<InputType> const& dataset, std::size_t k, AbstractKernelFunction<InputType>& kernel, std::size_t maxIterations = 0){
 	if(!maxIterations)
 		maxIterations = std::numeric_limits<std::size_t>::max();
 	
-	std::size_t ell = dataset.numberOfElements();
+	std::size_t n = dataset.numberOfElements();
 	RealMatrix kernelMatrix = calculateRegularizedKernelMatrix(kernel,dataset,0);
-	UIntVector clusterMembership(ell);
+	UIntVector clusterMembership(n);
 	UIntVector clusterSizes(k,0);
 	RealVector ckck(k,0);
 	
 	//init cluster assignments
-	for(unsigned int i = 0; i != ell; ++i){
+	for(unsigned int i = 0; i != n; ++i){
 		clusterMembership(i) = i % k;
 	}
 	DiscreteUniform<Rng::rng_type> uni(Rng::globalRng,0,k-1);
 	std::random_shuffle(clusterMembership.begin(),clusterMembership.end(),uni);
-	for(std::size_t i = 0; i != ell; ++i){
+	for(std::size_t i = 0; i != n; ++i){
 		++clusterSizes(clusterMembership(i));
 	}
 	
@@ -136,23 +170,23 @@ KernelExpansion<InputType> kMeans(Data<InputType> const& dataset, std::size_t k,
 		//d^2(c_k,x_i) = <c_k,c_k> -2 < c_k,x_i> + <x_i,x_i> for the i-th point.
 		//thus we precompute <c_k,c_k>= sum_ij k(x_i,x_j)/(n_k)^2 for all x_i,x_j points of cluster k
 		ckck.clear();
-		for(std::size_t i = 0; i != ell; ++i){
+		for(std::size_t i = 0; i != n; ++i){
 			std::size_t c1 = clusterMembership(i);
-			for(std::size_t j = 0; j != ell; ++j){
+			for(std::size_t j = 0; j != n; ++j){
 				std::size_t c2 = clusterMembership(j);
 				if(c1 != c2) continue;
 				ckck(c1) += kernelMatrix(i,j);
 			}
 		}
 		noalias(ckck) = safe_div(ckck,sqr(clusterSizes),0);
-		
-		UIntVector newClusterMembership(kernelMatrix.size1());
+
+		UIntVector newClusterMembership(n);
 		RealVector currentDistances(k);
-		for(std::size_t i = 0; i != ell; ++i){
+		for(std::size_t i = 0; i != n; ++i){
 			//compute squared distances between the i-th point and the centers
-			 //we skip <x_i,x_i> as it is always the same for all elements and we don't need it for comparison
+			//we skip <x_i,x_i> as it is always the same for all elements and we don't need it for comparison
 			noalias(currentDistances) = ckck;
-			for(std::size_t j = 0; j != ell; ++j){
+			for(std::size_t j = 0; j != n; ++j){
 				std::size_t c = clusterMembership(j);
 				currentDistances(c) -= 2* kernelMatrix(i,j)/clusterSizes(c);
 			}
@@ -166,14 +200,14 @@ KernelExpansion<InputType> kMeans(Data<InputType> const& dataset, std::size_t k,
 		noalias(clusterMembership) = newClusterMembership;
 		//compute new sizes of clusters
 		clusterSizes.clear();
-		for(std::size_t i = 0; i != ell; ++i){
+		for(std::size_t i = 0; i != n; ++i){
 			++clusterSizes(clusterMembership(i));
 		}
-		
-		//if a cluster has size , assign a random point to it
+
+		//if a cluster is empty then assign a random point to it
 		for(unsigned int i = 0; i != k; ++i){
 			if(clusterSizes(i) == 0){
-				std::size_t elem = uni(ell-1);
+				std::size_t elem = uni(n-1);
 				--clusterSizes(clusterMembership(elem));
 				clusterMembership(elem)=i;
 				clusterSizes(i) = 1;
@@ -186,13 +220,14 @@ KernelExpansion<InputType> kMeans(Data<InputType> const& dataset, std::size_t k,
 	expansion.setStructure(&kernel,dataset,true,k);
 	expansion.offset() = -ckck;
 	expansion.alpha().clear();
-	for(std::size_t i = 0; i != ell; ++i){
+	for(std::size_t i = 0; i != n; ++i){
 		std::size_t c = clusterMembership(i);
 		expansion.alpha()(i,c) = 2.0 / clusterSizes(c);
 	}
 
 	return expansion;
 }
-}
+
+} // namespace shark
 #endif
 

@@ -30,6 +30,7 @@
 #
 
 import os
+import sys
 import hashlib
 import shutil
 import argparse
@@ -49,6 +50,8 @@ print "\nShark preparation tool v0.1\n\n"
 #parser = argparse.ArgumentParser (description='Replace headers.')
 #parser.add_argument('path', metavar='path', type=str, nargs='+', help='path')
 #args = parser.parse_args()
+
+# for now: user can specify one file for debugging purposes.
 
 # parse working directory
 originalDir = os.path.abspath( os.path.expanduser ("~/Shark")) #os.path.abspath(args.path[0])
@@ -95,7 +98,17 @@ for  includeDir in includeDirs:
 					print filepath
 			else:
 				continue
+	
+			# check for debugging files
+			if len(sys.argv)>1:
+				processFile = 0
+				for arg in sys.argv[1:]:
+					if arg.lower() in filepath.lower():
+						processFile = 1
 
+				if processFile == 0:
+					continue
+			
 #			if "Shark.h" not in filepath:
 #				continue
 
@@ -120,7 +133,7 @@ for  includeDir in includeDirs:
 						
 						try:
 							matchS = enclosed.parseString (data)
-							data = (matchS['pre'][0] + matchS['post'])
+							data = (matchS['pre'] + matchS['post'])
 						except:
 							pass
 
@@ -131,7 +144,7 @@ for  includeDir in includeDirs:
 
 						try:
 							matchS = enclosed.parseString (data)
-							data = (matchS['pre'][0] + matchS['post'])
+							data = (matchS['pre'] + matchS['post'])
 						except:
 							pass
 
@@ -141,7 +154,7 @@ for  includeDir in includeDirs:
 						
 						try:
 							matchS = enclosed.parseString (data)
-							data = (matchS['pre'][0] + matchS['post'])
+							data = (matchS['pre'] + matchS['post'])
 						except:
 							pass
 
@@ -152,18 +165,18 @@ for  includeDir in includeDirs:
 
 						try:
 							matchS = enclosed.parseString (data)
-							data = (matchS['pre'][0] + matchS['post'])
+							data = (matchS['pre'] + matchS['post'])
 						except:
 							pass
 
+					
 					for i in range (5):
 						enclosed = Forward()
 						nestedBrackets = SkipTo ("virtual void read", include = True)("pre") + nestedExpr( '(',  ')' ) + ZeroOrMore(nestedExpr( '{',  '}' ) ) + SkipTo (StringEnd(), include = True)("post")
 						enclosed << ( nestedBrackets )
-						
 						try:
 							matchS = enclosed.parseString (data)
-							data = (matchS['pre'][0] + matchS['post'])
+							data = (matchS['pre'] + matchS['post'])
 						except:
 							pass
 
@@ -175,11 +188,10 @@ for  includeDir in includeDirs:
 						
 						try:
 							matchS = enclosed.parseString (data)
-							data = (matchS['pre'][0] + matchS['post'])
+							data = (matchS['pre'] + matchS['post'])
 						except:
 							pass
 					
-
 
 					# just do it multiple times..
 					for i in range(4):
@@ -189,7 +201,7 @@ for  includeDir in includeDirs:
 						
 						try:
 							matchS = enclosed.parseString (data)
-							data = (matchS['pre'][0] + matchS['post'])
+							data = (matchS['pre'] + matchS['post'])
 						except:
 							pass
 
@@ -201,7 +213,7 @@ for  includeDir in includeDirs:
 						
 						try:
 							matchS = enclosed.parseString (data)
-							data = (matchS['pre'][0] + matchS['post'])
+							data = (matchS['pre'] + matchS['post'])
 						except:
 							pass
 					
@@ -229,19 +241,7 @@ for  includeDir in includeDirs:
 						except:
 							pass
 
-
-
-#namespace boost {
-#namespace serialization {
-
-#template< typename T >
-#struct tracking_level< shark::TypedFlags<T> > {
-    #typedef mpl::integral_c_tag tag;
-    #BOOST_STATIC_CONSTANT( int, value = track_always );
-#};
-
-#}
-#}
+	
 
 
 					enclosed = Forward()
@@ -250,22 +250,10 @@ for  includeDir in includeDirs:
 					
 					try:
 						matchS = enclosed.parseString (data)
-						data = (matchS['pre'][0] + matchS['post'])
+						data = (matchS['pre'] + matchS['post'])
 					except:
 						pass
 
-
-        #template<class Archive>
-        #void serialize(Archive &ar, const unsigned int file_version) {
-                #boost::serialization::collection_size_type count(size());
-                #ar & count;
-                #if(!Archive::is_saving::value){
-                        #resize(count);
-                #}
-                #if (!empty())
-                        #ar & boost::serialization::make_array(storage(),size());
-                #(void) file_version;//prevent warning
-        #}
 
 
 					for i in range(4):
@@ -282,7 +270,7 @@ for  includeDir in includeDirs:
 
 					# fix for 		shark::blas::diag(covariance) = blas::repeat(1.0,dim); 
 					# probably only in DataDistribution.h. not really, we have one more in  CrossEntropyLoss
-					data = re.sub(r'(?i)([^>][\s]*)diag([\s]*\([^>]+\))', r'\1shark::blas::diag \2', data)
+					data = re.sub(r'(?i)([^>][\s]*)diag([\s]*\([^>]+\))', r'\1remora::diag \2', data)
 					
 					# ?					noalias(shark::blas::diag(hessian)) += gradient;
 					# data = re.sub(r'(?i)([\s]*)diag[\s]*\(', r'\1shark::blas::diag (', data)
@@ -292,8 +280,6 @@ for  includeDir in includeDirs:
 					data = re.sub(r'(?ims)SHARK_EXPORT_SYMBOL[\s]*;', r'', data)
 
 					data = re.sub(r'(?i).include.*?serialization.*?[\n]', r'', data)
-
-
 
 					
 					# 1. remove  #include <shark/Core/ISerializable.h>
@@ -321,7 +307,7 @@ for  includeDir in includeDirs:
 
 					# add BH headers if any boost exists
 					if len(re.findall("boost", data)) > 0:
-						data = re.sub(r'(?i)(.*?)\n', r'// [[Rcpp::depends(BH)]]\n\1\n', data, 1)
+						data = re.sub(r'(?i)(.*?)\n', r'// [[Rcpp::plugins(cpp11)]]\n// [[Rcpp::depends(BH)]]\n\1\n', data, 1)
 
 
 					if len(re.findall("rand[\s]*\(", data)) > 0:
@@ -369,6 +355,13 @@ for  includeDir in includeDirs:
 					data = re.sub(r'(?i)(.include..boost.property_tree.json_parser.hpp.)', r'// \1 ', data)
 
 					data = re.sub(r'(?ism)(template.typename Stream.*?static void info..Stream.*?\).*?)\{.*?\}', r'\1{}', data)
+
+					# too long path renamings
+					if len(re.findall("is_alignment_constant.hpp", data)) > 0:
+						data = re.sub(r'(?s)is_alignment_constant.hpp', r'is_alignment_c.hpp', data)
+					if len(re.findall("aligned_alloc_android.hpp", data)) > 0:
+						data = re.sub(r'(?s)aligned_alloc_android.hpp', r'aligned_alloc_a.hpp', data)
+
 						
 					try:
 						matchS = enclosed.parseString (data)
@@ -413,8 +406,18 @@ os.remove("../src/shark/Core/ISerializable.h")
 shutil.rmtree("../src/include")
 
 # moreover we need some renamings
-shutil.move(os.path.abspath("../src/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeContributionApproximator.h"),
-			os.path.abspath("../src/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVContrApproximator.h") )
+renamings = {"../src/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeContributionApproximator.h":
+							"../src/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVContrApproximator.h",
+					"../src/shark/LinAlg/BLAS/kernels/default/boost_align/detail/is_alignment_constant.hpp":
+							"../src/shark/LinAlg/BLAS/kernels/default/boost_align/detail/is_alignment_c.hpp",
+					"../src/shark/LinAlg/BLAS/kernels/default/boost_align/detail/aligned_alloc_android.hpp":
+							"../src/shark/LinAlg/BLAS/kernels/default/boost_align/detail/aligned_alloc_a.hpp"
+}
+
+for key in renamings:
+	print "Moving file", key, "to", renamings[key]
+	shutil.move(os.path.abspath(key), os.path.abspath(renamings[key]) )
+
 
 print "\nProcessed", count, "files.\n\n"
 

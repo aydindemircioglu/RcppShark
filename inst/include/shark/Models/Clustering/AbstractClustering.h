@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -11,11 +12,11 @@
  * \date        2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -140,7 +141,7 @@ public:
                 SHARK_ASSERT(f.size1() == numPatterns);
                 BatchOutputType outputs(numPatterns);
                 for(std::size_t i = 0; i != numPatterns;++i){
-                        RealMatrixRow membership(f,i);
+                        auto membership = row(f,i);
                         outputs(i) = (unsigned int)(std::max_element(membership.begin(),membership.end())-membership.begin());
                 }
                 return outputs;

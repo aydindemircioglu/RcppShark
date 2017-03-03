@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -28,24 +29,26 @@
  * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SHARK_LINALG_BLAS_KERNELS_GEMV_HPP
-#define SHARK_LINALG_BLAS_KERNELS_GEMV_HPP
+#ifndef REMORA_KERNELS_GEMV_HPP
+#define REMORA_KERNELS_GEMV_HPP
 
 #include "default/gemv.hpp"
 
-#ifdef SHARK_USE_CBLAS
+#ifdef REMORA_USE_CBLAS
 #include "cblas/gemv.hpp"
 #else
 // if no bindings are included, we have to provide the default has_optimized_gemv 
 // otherwise the binding will take care of this
-namespace shark { namespace blas { namespace bindings{
+namespace remora{ namespace bindings{
 template<class M1, class M2, class M3>
 struct  has_optimized_gemv
 : public boost::mpl::false_{};
-}}}
+}}
 #endif
+
+#include <cassert>
 	
-namespace shark { namespace blas {namespace kernels{
+namespace remora{namespace kernels{
 	
 ///\brief Well known GEneral Matrix-Vector product kernel M+=alpha*E1*e2.
 ///
@@ -53,16 +56,16 @@ namespace shark { namespace blas {namespace kernels{
 /// to be applied, the binding is called automatically from {binding}/gemv.h
 /// otherwise default/gemv.h is used which is fully implemented for all dense/sparse combinations.
 /// if a combination is optimized, bindings::has_optimized_gemv<M,E1,E2>::type evaluates to boost::mpl::true_
-/// The kernels themselves are implemented in blas::bindings::gemv.
+/// The kernels themselves are implemented in bindings::gemv.
 template<class M, class E1, class E2>
 void gemv(
-	matrix_expression<E1> const& e1,
-	vector_expression<E2> const& e2,
-	vector_expression<M>& m,
+	matrix_expression<E1, cpu_tag> const& e1,
+	vector_expression<E2, cpu_tag> const& e2,
+	vector_expression<M, cpu_tag>& m,
 	typename M::value_type alpha
 ) {
-	SIZE_CHECK(m().size() == e1().size1());
-	SIZE_CHECK(e1().size2() == e2().size());
+	assert(m().size() == e1().size1());
+	assert(e1().size2() == e2().size());
 	
 	bindings::gemv(
 		e1, e2, m,alpha,
@@ -70,5 +73,10 @@ void gemv(
 	);
 }
 
-}}}
+}}
+
+#ifdef REMORA_USE_GPU
+#include "gpu/gemv.hpp"
+#endif
+
 #endif

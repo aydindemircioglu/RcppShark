@@ -10,11 +10,11 @@
  * \date        2010-2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -32,7 +32,6 @@
  */
 //===========================================================================
 #define SHARK_COMPILE_DLL
-#include <shark/LinAlg/solveSystem.h>
 #include <shark/Algorithms/Trainers/LinearRegression.h>
 
 using namespace shark;
@@ -65,14 +64,14 @@ void LinearRegression::train(LinearModel<>& model, LabeledData<RealVector, RealV
 	row(Ablocks.lowerLeft(),0) = column(Ablocks.upperRight(),0);
 	matA(inputDim,inputDim) = numInputs;
 	//X^TX+=lambda* I
-	shark::blas::diag (Ablocks.upperLeft()) += m_regularization;
+	remora::diag (Ablocks.upperLeft()) += m_regularization;
 	
 	
 	//we also need to compute X^T L= (P^TL, 1^T L) where L is the matrix of labels 
 	RealMatrix XTL(inputDim + 1,outputDim,0.0);
 	for (std::size_t b=0; b != numBatches; b++){
 		BatchRef batch = dataset.batch(b);
-		RealSubMatrix PTL = subrange(XTL,0,inputDim,0,outputDim);
+		auto PTL = subrange(XTL,0,inputDim,0,outputDim);
 		noalias(PTL) += prod(trans(batch.input),batch.label);
 		noalias(row(XTL,inputDim))+=sum_rows(batch.label);
 	}	
@@ -81,9 +80,8 @@ void LinearRegression::train(LinearModel<>& model, LabeledData<RealVector, RealV
 	//usually this is solved via the moore penrose inverse:
 	//Beta = A^-1 T
 	//but it is faster und numerically more stable, if we solve it as a symmetric system
-	//w can use in-place solve
-	RealMatrix&  beta = XTL;
-	blas::solveSymmSemiDefiniteSystemInPlace<blas::SolveAXB>(matA,beta);
+	//taking into account that it might be rank efficient
+	RealMatrix beta = solve(matA,XTL,blas::symm_semi_pos_def(),blas::left());
 	
 	RealMatrix matrix = subrange(trans(beta), 0, outputDim, 0, inputDim);
 	RealVector offset = row(beta,inputDim);

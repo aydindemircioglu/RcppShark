@@ -30,4 +30,3 @@ Currently works only for binary classification. Uses only RBF kernel.
 	results = SharkBSGDPredict (x, model)
 	cat ("BSGD training error is ", sum(abs(y - results$predictions))/length(y), "\\n")
 }
-

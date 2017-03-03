@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -29,40 +30,44 @@
  *
  */
 
-#ifndef SHARK_LINALG_BLAS_KERNELS_TRMM_HPP
-#define SHARK_LINALG_BLAS_KERNELS_TRMM_HPP
+#ifndef REMORA_KERNELS_TRMM_HPP
+#define REMORA_KERNELS_TRMM_HPP
 
-#ifdef SHARK_USE_CBLAS
+#ifdef REMORA_USE_CBLAS
 #include "cblas/trmm.hpp"
 #else
 // if no bindings are included, we have to provide the default has_optimized_gemv 
 // otherwise the binding will take care of this
-namespace shark { namespace blas { namespace bindings{
+namespace remora{ namespace bindings{
 template<class M1, class M2>
 struct  has_optimized_trmm
 : public boost::mpl::false_{};
-}}}
+}}
 #endif
 
 #include "default/trmm.hpp"
 
-namespace shark { namespace blas {namespace kernels{
+namespace remora{namespace kernels{
 	
 ///\brief Implements the TRiangular Matrix Matrix multiply.
 ///
 /// It computes B=A*B in place, where A is a triangular matrix and B a dense matrix
-template <bool Upper,bool Unit,typename TriangularA, typename MatB>
+template <bool Upper,bool Unit,typename MatA, typename MatB>
 void trmm(
-	matrix_expression<TriangularA> const &A, 
-	matrix_expression<MatB>& B
+	matrix_expression<MatA, cpu_tag> const &A, 
+	matrix_expression<MatB, cpu_tag>& B
 ){
 	SIZE_CHECK(A().size1() == A().size2());
 	SIZE_CHECK(A().size1() == B().size1());
 	
-	bindings::trmm<Upper,Unit>(A,B,typename bindings::has_optimized_trmm<TriangularA, MatB>::type());
+	bindings::trmm<Upper,Unit>(A,B,typename bindings::has_optimized_trmm<MatA, MatB>::type());
 }
 
-}}}
+}}
+
+#ifdef REMORA_USE_GPU
+#include "gpu/trmm.hpp"
+#endif
 
 #endif
 

@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -30,15 +31,13 @@
  *
  */
 //===========================================================================
-#ifndef SHARK_LINALG_BLAS_KERNELS_CBLAS_TRMV_HPP
-#define SHARK_LINALG_BLAS_KERNELS_CBLAS_TRMV_HPP
+#ifndef REMORA_KERNELS_CBLAS_TRMV_HPP
+#define REMORA_KERNELS_CBLAS_TRMV_HPP
 
 #include "cblas_inc.hpp"
-#include "../../matrix_proxy.hpp"
-#include "../../vector_expression.hpp"
 #include <boost/mpl/bool.hpp>
 
-namespace shark {namespace blas {namespace bindings {
+namespace remora{namespace bindings {
 
 inline void trmv(
 	CBLAS_ORDER const Order,
@@ -101,10 +100,10 @@ inline void trmv(
 	);
 }
 
-template <bool upper, bool unit, typename MatrA, typename VectorX>
+template <bool upper, bool unit, typename MatA, typename VectorX>
 void trmv(
-	matrix_expression<MatrA> const& A,
-	vector_expression<VectorX> &x,
+	matrix_expression<MatA, cpu_tag> const& A,
+	vector_expression<VectorX, cpu_tag> &x,
 	boost::mpl::true_
 ){
 	SIZE_CHECK(x().size() == A().size2());
@@ -112,13 +111,15 @@ void trmv(
 	std::size_t n = A().size1();
 	CBLAS_DIAG cblasUnit = unit?CblasUnit:CblasNonUnit;
 	CBLAS_UPLO cblasUplo = upper?CblasUpper:CblasLower;
-	CBLAS_ORDER stor_ord= (CBLAS_ORDER)storage_order<typename MatrA::orientation>::value;
+	CBLAS_ORDER stor_ord= (CBLAS_ORDER)storage_order<typename MatA::orientation>::value;
 	
+	auto storageA = A().raw_storage();
+	auto storagex = x().raw_storage();
 	trmv(stor_ord, cblasUplo, CblasNoTrans, cblasUnit, (int)n,
-	        traits::storage(A),
-		traits::leading_dimension(A),
-	        traits::storage(x),
-	        traits::stride(x)
+		storageA.values,
+	        storageA.leading_dimension,
+		storagex.values,
+	        storagex.stride
 	);
 }
 
@@ -159,12 +160,12 @@ struct optimized_trmv_detail<
 template<class M1, class M2>
 struct  has_optimized_trmv
 : public optimized_trmv_detail<
-	typename M1::storage_category,
-	typename M2::storage_category,
+	typename M1::storage_type::storage_tag,
+	typename M2::storage_type::storage_tag,
 	typename M1::value_type,
 	typename M2::value_type
 >{};
 
-}}}
+}}
 #endif
 

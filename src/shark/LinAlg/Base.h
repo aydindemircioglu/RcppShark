@@ -9,11 +9,11 @@
  * \date        2010-2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -42,7 +42,8 @@
 */
 
 //for debug error handling of linear algebra
-#include <shark/LinAlg/BLAS/blas.h>
+#include <shark/Core/Shark.h>
+#include <shark/LinAlg/BLAS/remora.hpp>
 #include <shark/Core/Exception.h>
 #include <shark/LinAlg/Initialize.h>
 #include <shark/LinAlg/Tools.h>
@@ -52,32 +53,14 @@
 
 namespace shark{
 
+namespace blas{
+using namespace remora;
+}
 #define SHARK_VECTOR_MATRIX_TYPEDEFS(basetype, prefix) \
 	typedef blas::vector< basetype > prefix##Vector; \
-	typedef blas::vector< const basetype > Const##prefix##Vector; \
 	typedef blas::matrix< basetype, blas::row_major > prefix##Matrix; \
-	typedef blas::identity_matrix< basetype > prefix##Identity; \
-	typedef blas::identity_matrix< basetype > prefix##IdentityMatrix; \
-	typedef blas::scalar_matrix< basetype > prefix##ScalarMatrix; \
-	typedef blas::vector_range< prefix##Vector > prefix##VectorRange; \
-	typedef blas::vector_range< const prefix##Vector > Const##prefix##VectorRange; \
-	typedef blas::matrix_row< prefix##Matrix > prefix##MatrixRow; \
-	typedef blas::matrix_row< const prefix##Matrix > Const##prefix##MatrixRow; \
-	typedef blas::matrix_column< prefix##Matrix > prefix##MatrixColumn; \
-	typedef blas::matrix_column< const prefix##Matrix > Const##prefix##MatrixColumn; \
-	typedef blas::matrix_range< prefix##Matrix > prefix##SubMatrix; \
-	typedef blas::matrix_range< const prefix##Matrix > Const##prefix##SubMatrix; \
 	typedef blas::compressed_vector< basetype > Compressed##prefix##Vector; \
-	typedef blas::vector_range< Compressed##prefix##Vector > Compressed##prefix##VectorRange; \
-	typedef blas::vector_range< const Compressed##prefix##Vector > ConstCompressed##prefix##VectorRange; \
-	typedef blas::compressed_matrix< basetype > Compressed##prefix##Matrix; \
-	typedef blas::matrix_row< Compressed##prefix##Matrix > Compressed##prefix##MatrixRow; \
-	typedef blas::matrix_row< const Compressed##prefix##Matrix > ConstCompressed##prefix##MatrixRow; \
-	typedef blas::matrix_column< Compressed##prefix##Matrix > Compressed##prefix##MatrixColumn; \
-	typedef blas::matrix_column< const Compressed##prefix##Matrix > ConstCompressed##prefix##MatrixColumn; \
-	typedef blas::matrix_range< Compressed##prefix##Matrix > Compressed##prefix##SubMatrix; \
-	typedef blas::matrix_range< const Compressed##prefix##Matrix > ConstCompressed##prefix##SubMatrix;\
-	typedef blas::diagonal_matrix<blas::vector< basetype > > prefix##DiagonalMatrix;
+	typedef blas::compressed_matrix< basetype > Compressed##prefix##Matrix;
 
 	SHARK_VECTOR_MATRIX_TYPEDEFS(long double, BigReal);
 	SHARK_VECTOR_MATRIX_TYPEDEFS(double, Real)
@@ -88,7 +71,6 @@ namespace shark{
         SHARK_VECTOR_MATRIX_TYPEDEFS(bool, Bool);
 #undef SHARK_VECTOR_MATRIX_TYPEDEFS
 
-typedef blas::range Range;
 typedef blas::permutation_matrix PermutationMatrix;
 
 ///Type of Data sequences.

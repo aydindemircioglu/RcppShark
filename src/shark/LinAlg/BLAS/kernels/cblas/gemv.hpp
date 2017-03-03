@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -30,12 +31,12 @@
  *
  */
 //===========================================================================
-#ifndef SHARK_LINALG_BLAS_KERNELS_CBLAS_GEMV_HPP
-#define SHARK_LINALG_BLAS_KERNELS_CBLAS_GEMV_HPP
+#ifndef REMORA_KERNELS_CBLAS_GEMV_HPP
+#define REMORA_KERNELS_CBLAS_GEMV_HPP
 
 #include "cblas_inc.hpp"
 
-namespace shark {namespace blas {namespace bindings {
+namespace remora{namespace bindings {
 
 inline void gemv(CBLAS_ORDER const Order,
         CBLAS_TRANSPOSE const TransA, int const M, int const N,
@@ -98,11 +99,11 @@ inline void gemv(CBLAS_ORDER const Order,
 
 // y <- alpha * op (A) * x + beta * y
 // op (A) == A || A^T || A^H
-template <typename MatrA, typename VectorX, typename VectorY>
+template <typename MatA, typename VectorX, typename VectorY>
 void gemv(
-	 matrix_expression<MatrA> const &A,
-	vector_expression<VectorX> const &x,
-        vector_expression<VectorY> &y,
+	matrix_expression<MatA, cpu_tag> const &A,
+	vector_expression<VectorX, cpu_tag> const &x,
+        vector_expression<VectorY, cpu_tag> &y,
 	typename VectorY::value_type alpha,
 	boost::mpl::true_
 ){
@@ -112,16 +113,19 @@ void gemv(
 	SIZE_CHECK(x().size() == A().size2());
 	SIZE_CHECK(y().size() == A().size1());
 
-	CBLAS_ORDER const stor_ord= (CBLAS_ORDER)storage_order<typename MatrA::orientation>::value;
+	CBLAS_ORDER const stor_ord= (CBLAS_ORDER)storage_order<typename MatA::orientation>::value;
 	
+	auto storageA = A().raw_storage();
+	auto storagex = x().raw_storage();
+	auto storagey = y().raw_storage();
 	gemv(stor_ord, CblasNoTrans, (int)m, (int)n, alpha,
-	        traits::storage(A),
-		traits::leading_dimension(A),
-	        traits::storage(x),
-	        traits::stride(x),
+		storageA.values,
+	        storageA.leading_dimension,
+		storagex.values,
+	        storagex.stride,
 	        typename VectorY::value_type(1),
-	        traits::storage(y),
-	        traits::stride(y)
+		storagey.values,
+	        storagey.stride
 	);
 }
 
@@ -162,14 +166,14 @@ struct optimized_gemv_detail<
 template<class M1, class M2, class M3>
 struct  has_optimized_gemv
 : public optimized_gemv_detail<
-	typename M1::storage_category,
-	typename M2::storage_category,
-	typename M3::storage_category,
+	typename M1::storage_type::storage_tag,
+	typename M2::storage_type::storage_tag,
+	typename M3::storage_type::storage_tag,
 	typename M1::value_type,
 	typename M2::value_type,
 	typename M3::value_type
 >{};
 
-}}}
+}}
 #endif
 

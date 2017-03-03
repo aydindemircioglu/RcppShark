@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * \brief       Input and output of vectors and matrices
@@ -26,8 +27,8 @@
  * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SHARK_LINALG_BLAS_IO_HPP
-#define SHARK_LINALG_BLAS_IO_HPP
+#ifndef REMORA_IO_HPP
+#define REMORA_IO_HPP
 
 // Only forward definition required to define stream operations
 #include <iosfwd>
@@ -35,7 +36,7 @@
 #include "expression_types.hpp"
 
 
-namespace shark{ namespace blas{
+namespace remora{
 
     /** \brief output stream operator for vector expressions
      *
@@ -56,24 +57,25 @@ namespace shark{ namespace blas{
      * \endcode
      *
      * \param os is a standard basic output stream
-     * \param v is a vector expression
+     * \param vec is a vector expression
      * \return a reference to the resulting output stream
      */
     template<class E, class T, class VE>
     //  This function seems to be big. So we do not let the compiler inline it.
     std::basic_ostream<E, T> &operator << (std::basic_ostream<E, T> &os,
-                                           const vector_expression<VE> &v) {
+                                           const vector_expression<VE, cpu_tag> &vec) {
+	auto&& v = eval_block(vec);
         typedef typename VE::size_type size_type;
-        size_type size = v ().size ();
+        size_type size = v.size ();
         std::basic_ostringstream<E, T, std::allocator<E> > s;
         s.flags (os.flags ());
         s.imbue (os.getloc ());
         s.precision (os.precision ());
         s << '[' << size << "](";
         if (size > 0)
-            s << v () (0);
+            s << v(0);
         for (size_type i = 1; i < size; ++ i)
-            s << ',' << v () (i);
+            s << ',' << v(i);
         s << ')';
         return os << s.str ().c_str ();
     }
@@ -98,16 +100,17 @@ namespace shark{ namespace blas{
      * \f[ \left( \begin{array}{ccc} 1 & 1 & 1\\ 1 & 1 & 1\\ 1 & 1 & 1 \end{array} \right) - \left( \begin{array}{ccc} 1 & 0 & 0\\ 0 & 1 & 0\\ 0 & 0 & 1 \end{array} \right) = \left( \begin{array}{ccc} 0 & 1 & 1\\ 1 & 0 & 1\\ 1 & 1 & 0 \end{array} \right) \f]
      *
      * \param os is a standard basic output stream
-     * \param m is a matrix expression
+     * \param mat is a matrix expression
      * \return a reference to the resulting output stream
      */
     template<class E, class T, class ME>
     //  This function seems to be big. So we do not let the compiler inline it.
     std::basic_ostream<E, T> &operator << (std::basic_ostream<E, T> &os,
-                                           const matrix_expression<ME> &m) {
-        typedef typename ME::size_type size_type;
-        size_type size1 = m ().size1 ();
-        size_type size2 = m ().size2 ();
+                                           const matrix_expression<ME, cpu_tag> &mat) {
+        auto&& m=eval_block(mat);
+	typedef typename ME::size_type size_type;
+        size_type size1 = m.size1 ();
+        size_type size2 = m.size2 ();
         std::basic_ostringstream<E, T, std::allocator<E> > s;
         s.flags (os.flags ());
         s.imbue (os.getloc ());
@@ -116,23 +119,23 @@ namespace shark{ namespace blas{
         if (size1 > 0) {
             s << '(' ;
             if (size2 > 0)
-                s << m () (0, 0);
+                s << m(0, 0);
             for (size_type j = 1; j < size2; ++ j)
-                s << ',' << m () (0, j);
+                s << ',' << m(0, j);
             s << ')';
         }
         for (size_type i = 1; i < size1; ++ i) {
             s << ",(" ;
             if (size2 > 0)
-                s << m () (i, 0);
+                s << m(i, 0);
             for (size_type j = 1; j < size2; ++ j)
-                s << ',' << m () (i, j);
+                s << ',' << m(i, j);
             s << ')';
         }
         s << ')';
-        return os << s.str ().c_str ();
+        return os << s.str().c_str ();
     }
-}}
+}
 
 #endif
 

@@ -10,11 +10,11 @@
  * \date        2010-2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -56,7 +56,7 @@ void PCA::setData(UnlabeledData<RealVector> const& inputs) {
 		meanvar(inputs,m_mean,S);
 		m_eigenvalues.resize(m_n);
 		m_eigenvectors.resize(m_n, m_n);
-		eigensymm(S, m_eigenvectors, m_eigenvalues);
+		blas::eigensymm(S, m_eigenvectors, m_eigenvalues);
 	} else {
 		//let X0 be the design matrix having all inputs as rows
 		//we want to avoid to form it directly but us it's batch represntation in the dataset
@@ -77,14 +77,14 @@ void PCA::setData(UnlabeledData<RealVector> const& inputs) {
 			for(std::size_t b2 = 0; b2 != b1; ++b2){
 				std::size_t batchSize2 = inputs.batch(b2).size1();
 				RealMatrix X2 = inputs.batch(b2)-repeat(m_mean,batchSize2);
-				RealSubMatrix X1X2T= subrange(S,start1,start1+batchSize1,start2,start2+batchSize2);
-				RealSubMatrix X2X1T= subrange(S,start2,start2+batchSize2,start1,start1+batchSize1);
+				auto X1X2T= subrange(S,start1,start1+batchSize1,start2,start2+batchSize2);
+				auto X2X1T= subrange(S,start2,start2+batchSize2,start1,start1+batchSize1);
 				noalias(X1X2T) = prod(X1,trans(X2));// X1 X2^T
 				noalias(X2X1T) = trans(X1X2T);// X2 X1^T
 				start2+=batchSize2;
 			}
 			//diagonal block
-			RealSubMatrix X1X1T= subrange(S,start1,start1+batchSize1,start1,start1+batchSize1);
+			auto X1X1T= subrange(S,start1,start1+batchSize1,start1,start1+batchSize1);
 			noalias(X1X1T) = prod(X1,trans(X1));
 			start1+=batchSize1;
 		}
@@ -93,7 +93,7 @@ void PCA::setData(UnlabeledData<RealVector> const& inputs) {
 		m_eigenvectors.resize(m_n,m_l);
 		m_eigenvectors.clear();
 		RealMatrix U(m_l, m_l);
-		eigensymm(S, U, m_eigenvalues);
+		blas::eigensymm(S, U, m_eigenvalues);
 		// compute true eigenvectors
 		//eigenv=X0^T U
 		std::size_t batchStart  = 0;

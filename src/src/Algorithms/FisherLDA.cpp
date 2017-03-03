@@ -10,11 +10,11 @@
  * \date        2010-2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -34,7 +34,6 @@
 #define SHARK_COMPILE_DLL
 #include <shark/Algorithms/Trainers/FisherLDA.h>
 #include <shark/LinAlg/eigenvalues.h>
-#include <shark/LinAlg/solveSystem.h>
 using namespace shark;
 
 
@@ -55,7 +54,7 @@ void FisherLDA::train(LinearModel<>& model, LabeledData<RealVector, unsigned int
 
 	RealMatrix eigenvectors(inputDim, inputDim);
 	RealVector eigenvalues(inputDim);
-	eigensymm(scatter, eigenvectors, eigenvalues);
+	blas::eigensymm(scatter, eigenvectors, eigenvalues);
 	if (m_whitening){
 		for(std::size_t i = 0; i != inputDim; ++i){
 			if(eigenvalues(i) <= 0) continue;
@@ -131,6 +130,6 @@ void FisherLDA::meanAndScatter(
 	}
 
 	// invert Sw
-	blas::solveSymmPosDefSystem<blas::SolveAXB>(Sw,scatter,Sb);
+	noalias(scatter) = solve(Sw,Sb, blas::symm_pos_def(), blas::left());
 }
 

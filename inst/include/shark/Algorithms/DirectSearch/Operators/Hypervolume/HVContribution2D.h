@@ -4,11 +4,11 @@
  * \date        2014-2016
  *
  *
- * \par Copyright 1995-2016 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -49,13 +49,13 @@ private:
 		, f2(f2)
 		, index(index)
 		{}
-			
+
 		bool operator<(Point const& rhs) const{//for lexicographic sorting
 			if (f1 < rhs.f1) return true;
 			if (f1 > rhs.f1) return false;
-			return (f2 < rhs.f1);
+			return (f2 < rhs.f2);
 		}
-		
+
 		double f1;
 		double f2;
 		std::size_t index;
@@ -165,3 +165,4 @@ public:
 
 }
 #endif
+

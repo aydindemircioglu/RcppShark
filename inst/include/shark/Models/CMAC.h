@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -8,11 +9,11 @@
  * \date        2010-01-01
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -73,7 +74,7 @@ protected:
         ///calculates the index in the parameter vector for the activated feature in the tiling
         SHARK_EXPORT_SYMBOL std::size_t getArrayIndexForTiling(std::size_t indexOfTiling,RealVector const& point)const;
         ///returns an index in the parameter array for each activated feature
-        SHARK_EXPORT_SYMBOL std::vector<std::size_t> getIndizes(ConstRealMatrixRow const& point)const;
+        SHARK_EXPORT_SYMBOL std::vector<std::size_t> getIndizes(blas::matrix_row<const RealMatrix> const& point)const;
 public:
         ///\brief construct the CMAC
         SHARK_EXPORT_SYMBOL CMACMap();

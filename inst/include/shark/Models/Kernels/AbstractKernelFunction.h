@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -11,11 +12,11 @@
  * \date        2010-2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -213,9 +214,9 @@ public:
 		std::size_t sizeX1=shark::size(batchX1);
 		std::size_t sizeX2=shark::size(batchX2);
 		RealMatrix result=(*this)(batchX1,batchX2);
-		result*=-2;
+		result *= -2.0;
 		if (isNormalized()){
-			noalias(result)+=RealScalarMatrix(sizeX1,sizeX2,2.0);
+			noalias(result) += 2.0;
 		} else {
 			//compute self-product
 			RealVector kx2(sizeX2);

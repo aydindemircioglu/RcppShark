@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -29,41 +30,45 @@
  *
  */
 
-#ifndef SHARK_LINALG_BLAS_KERNELS_TRMV_HPP
-#define SHARK_LINALG_BLAS_KERNELS_TRMV_HPP
+#ifndef REMORA_KERNELS_TRMV_HPP
+#define REMORA_KERNELS_TRMV_HPP
 
-#ifdef SHARK_USE_CBLAS
+#ifdef REMORA_USE_CBLAS
 #include "cblas/trmv.hpp"
 #else
 // if no bindings are included, we have to provide the default has_optimized_gemv 
 // otherwise the binding will take care of this
-namespace shark { namespace blas { namespace bindings{
+namespace remora{ namespace bindings{
 template<class M, class V>
 struct  has_optimized_trmv
 : public boost::mpl::false_{};
-}}}
+}}
 #endif
 
 #include "default/trmv.hpp"
 
-namespace shark { namespace blas {namespace kernels{
+namespace remora{namespace kernels{
 	
 ///\brief Implements the TRiangular Solver for Vectors.
 ///
 /// It solves Systems of the form Ax = b where A is a square lower or upper triangular matrix.
 /// It can optionally assume that the diagonal is 1 and won't access the diagonal elements.
-template <bool Upper,bool Unit,typename TriangularA, typename VecB>
+template <bool Upper,bool Unit,typename MatA, typename VecB>
 void trmv(
-	matrix_expression<TriangularA> const &A, 
-	vector_expression<VecB>& b
+	matrix_expression<MatA, cpu_tag> const &A, 
+	vector_expression<VecB, cpu_tag>& b
 ){
 	SIZE_CHECK(A().size1() == A().size2());
 	SIZE_CHECK(A().size1() == b().size());
 	
-	bindings::trmv<Upper,Unit>(A,b,typename bindings::has_optimized_trmv<TriangularA, VecB>::type());
+	bindings::trmv<Upper,Unit>(A,b,typename bindings::has_optimized_trmv<MatA, VecB>::type());
 }
 
-}}}
+}}
+
+#ifdef REMORA_USE_GPU
+#include "gpu/trmv.hpp"
+#endif
 
 #endif
 

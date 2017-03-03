@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -31,16 +32,15 @@
  */
 //===========================================================================
 
-#ifndef SHARK_LINALG_BLAS_KERNELS_ATLAS_POTRF_H
-#define SHARK_LINALG_BLAS_KERNELS_ATLAS_POTRF_H
+#ifndef REMORA_KERNELS_ATLAS_POTRF_H
+#define REMORA_KERNELS_ATLAS_POTRF_H
 
 #include "../cblas/cblas_inc.hpp"
 extern "C"{
 	#include <clapack.h>
 }
 
-namespace shark {
-namespace blas {
+namespace remora {
 namespace bindings {
 
 inline int potrf(
@@ -73,7 +73,7 @@ inline int potrf(
 
 template <typename Triangular, typename SymmA>
 inline int potrf(
-	matrix_container<SymmA>& A,
+	matrix_container<SymmA, cpu_tag>& A,
 	boost::mpl::true_
 ) {
 	CBLAS_UPLO const uplo = Triangular::is_upper ? CblasUpper : CblasLower;
@@ -83,10 +83,11 @@ inline int potrf(
 	std::size_t n = A().size1();
 	SIZE_CHECK(n == A().size2());
 
+	auto storageA = A().raw_storage();
 	return potrf(
 		stor_ord, uplo, (int)n,
-	        traits::storage(A()),
-	        traits::leading_dimension(A())
+		storageA.values,
+	        storageA.leading_dimension
 	);
 }
 
@@ -127,9 +128,9 @@ struct optimized_potrf_detail <
 template<class M>
 struct  has_optimized_potrf
 	: public optimized_potrf_detail <
-	  typename M::storage_category,
+	  typename M::storage_type::storage_tag,
 	  typename M::value_type
 	> {};
-}}}
+}}
 #endif
 

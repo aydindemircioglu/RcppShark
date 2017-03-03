@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -11,11 +12,11 @@
  * \date        2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -161,3 +162,4 @@ void Centroids::initFromData(const ClassificationDataset &data, std::size_t noCl
 void Centroids::initFromData(Data<RealVector> const& dataset, std::size_t noClusters) {
         setCentroids(toDataset(randomSubset(toView(dataset),noClusters)));
 }
+

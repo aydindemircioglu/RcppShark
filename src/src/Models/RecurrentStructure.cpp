@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -9,11 +10,11 @@
  * \date        -
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -107,7 +108,7 @@ void RecurrentStructure::setStructure(std::size_t in, std::size_t hidden, std::s
         // Calculate total number of neurons from the
         // number of neurons per layer:
         std::size_t n = in+hidden+out;
-        IntMatrix connections = IntScalarMatrix(hidden+out,n+1,1);
+        IntMatrix connections = blas::repeat(1,hidden+out,n+1);
 
         if(!bias){
                 column(connections,in).clear();

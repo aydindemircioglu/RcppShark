@@ -6,7 +6,9 @@
 \usage{
 RcppShark.package.skeleton(name = "anRpackage", list = character(),
   environment = .GlobalEnv, path = ".", force = FALSE,
-  code_files = character(), example_code = TRUE)
+  code_files = character(), example_code = TRUE, author = "Your Name",
+  maintainer = if (missing(author)) "Your Name" else author,
+  email = "your@email.com", license = "GPL (>= 2)")
 }
 \arguments{
 \item{name}{character string: the package name and directory name for your package.}
@@ -23,8 +25,15 @@ Usually, at most one of "list", "environment", or "code_files" will be supplied.
 \item{code_files}{a character vector with the paths to R code files to build the package around.  See "Details" of package.skeleton.}
 
 \item{example_code}{add example code to package?}
+
+\item{author}{author in the created DESCRIPTIONS file}
+
+\item{maintainer}{maintainer in the created DESCRIPTIONS file}
+
+\item{email}{email in the created DESCRIPTIONS file}
+
+\item{license}{licence in the created DESCRIPTIONS file}
 }
 \description{
 create a skeleton for a package using RcppShark
 }
-

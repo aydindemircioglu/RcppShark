@@ -11,11 +11,11 @@
  * \date        2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -90,6 +90,8 @@ public:
 	{
 		memset(&m_row[0], 0, height * sizeof(Row));
 	}
+	
+	QpSparseArray(){}
 
 	/// number of columns
 	inline std::size_t width() const
@@ -137,6 +139,15 @@ public:
 		m_data[m_used].value = value;
 		m_used++;
 		r.size++;
+	}
+	
+	void resize(std::size_t height,std::size_t width,std::size_t space){
+		m_width = width;
+		m_height = height;
+		m_used = 0;
+		m_data.resize(space);
+		m_row.resize(height);
+		memset(&m_row[0], 0, height * sizeof(Row));
 	}
 
 protected:

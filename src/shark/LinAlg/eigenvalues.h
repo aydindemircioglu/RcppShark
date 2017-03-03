@@ -10,11 +10,11 @@
  * \date        2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -61,9 +61,9 @@ namespace shark{ namespace blas{
 template<class MatrixT,class MatrixU,class VectorT>
 void eigensymm
 (
-	matrix_expression<MatrixT> const& A,
-	matrix_expression<MatrixU>& eigenVectors,
-	vector_expression<VectorT>& eigenValues
+	matrix_expression<MatrixT, cpu_tag> const& A,
+	matrix_expression<MatrixU, cpu_tag>& eigenVectors,
+	vector_expression<VectorT, cpu_tag>& eigenValues
 )
 {
 	SIZE_CHECK(A().size2() == A().size1());

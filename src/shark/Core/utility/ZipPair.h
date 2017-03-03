@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -11,11 +12,11 @@
  * \date        2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -143,7 +144,7 @@ boost::iterator_range<
 >
 zipPairRange(Iterator1 begin1, Iterator1 end1, Iterator2 begin2,Iterator2 end2){
 	typedef PairIterator<PairType,Iterator1,Iterator2> iterator;
-	return make_iterator_range(iterator(begin1,begin2),iterator(end1,end2));
+	return boost::make_iterator_range(iterator(begin1,begin2),iterator(end1,end2));
 }
 
 template<class PairType, class Range1, class Range2>

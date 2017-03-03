@@ -27,17 +27,17 @@
  * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SHARK_LINALG_BLAS_KERNELS_SYEV_HPP
-#define SHARK_LINALG_BLAS_KERNELS_SYEV_HPP
+#ifndef REMORA_KERNELS_SYEV_HPP
+#define REMORA_KERNELS_SYEV_HPP
 
 
-#ifdef SHARK_USE_LAPACK
+#ifdef REMORA_USE_LAPACK
 #include "lapack/syev.hpp"
 #else
 #include "default/syev.hpp"
 #endif
 	
-namespace shark { namespace blas {namespace kernels{
+namespace remora{ namespace kernels{
 	
 ///\brief Well known SYmmetric EigenValue function (SYEV).
 ///
@@ -48,14 +48,14 @@ namespace shark { namespace blas {namespace kernels{
 /// The wholee matrix will in the end contain the eigenvectors of A and thus
 /// A is replaced by Q. 
 /// Additionally the eigenvalues are stored in the second argument. 
-template <typename MatrA, typename VectorB>
+template <typename MatA, typename VectorB>
 void syev(
-	matrix_expression<MatrA>& matA,
-	vector_expression<VectorB>& eigenValues
+	matrix_expression<MatA, cpu_tag>& matA,
+	vector_expression<VectorB, cpu_tag>& eigenValues
 ) {
 	bindings::syev(matA,eigenValues);
 }
 
 
-}}}
+}}
 #endif

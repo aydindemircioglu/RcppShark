@@ -11,11 +11,11 @@
  * \date        2007-2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -125,7 +125,7 @@ public:
 	{
 		size_t kp = m_kernel->numberOfParameters();
 		RealVector ret(kp + 1);
-		RealVectorRange(ret, Range(0, kp)) = m_kernel->parameterVector();
+		noalias(subrange(ret, 0, kp)) = m_kernel->parameterVector();
 		ret(kp) = m_nu;
 		return ret;
 	}
@@ -135,7 +135,7 @@ public:
 	{
 		size_t kp = m_kernel->numberOfParameters();
 		SHARK_ASSERT(newParameters.size() == kp + 1);
-		m_kernel->setParameterVector(ConstRealVectorRange(newParameters, Range(0, kp)));
+		m_kernel->setParameterVector(subrange(newParameters, 0, kp));
 		setNu(newParameters(kp));
 	}
 

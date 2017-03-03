@@ -18,11 +18,11 @@
  * \date        2010-2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -43,7 +43,7 @@
 #define SHARK_LINALG_INITIALIZE_H
 
 #include "Impl/Initialize.h"
-namespace shark{ namespace blas{
+namespace remora{
 
 /**
  * \ingroup shark_globals
@@ -56,7 +56,7 @@ namespace shark{ namespace blas{
 ///Usage: init(vector)<<a,b,c where vector is a ublas vector or sub-vector and a,b,c are either scalars or vectors.
 ///In debug mode, it is checked that size(vector) == size(a,b,c)
 template<class Source>
-detail::ADLVector<Source&> init(vector_container<Source>& source){
+detail::ADLVector<Source&> init(vector_container<Source, cpu_tag>& source){
 	return detail::ADLVector<Source&>(source());
 }
 ///\brief Starting-point for the initialization sequence.
@@ -64,7 +64,7 @@ detail::ADLVector<Source&> init(vector_container<Source>& source){
 ///Usage: init(vector)<<a,b,c where vector is a ublas vector or sub-vector and a,b,c are either scalars or vectors.
 ///In debug mode, it is checked that size(vector) == size(a,b,c)
 template<class Source>
-detail::ADLVector<const Source&> init(const vector_container<Source>& source){
+detail::ADLVector<const Source&> init(vector_container<Source, cpu_tag> const& source){
 	return detail::ADLVector<const Source&>(source());
 }
 ///\brief Starting-point for the initialization sequence when used for splitting the vector.
@@ -90,23 +90,17 @@ detail::ADLVector<matrix_row<Source> >
 init(const matrix_row<Source>& source){
 	return detail::ADLVector<matrix_row<Source> >(source);
 }
-///\brief Specialization for matrix columns.
-template<class Source>
-detail::ADLVector<matrix_column<Source> > 
-init(const matrix_row<Source>& source){
-	return detail::ADLVector<matrix_column<Source> >(source);
-}
 
 //matrices as arguments
 
 ///\brief Linearizes a matrix as a set of row vectors and treats them as a set of vectors for initialization.
 template<class Matrix>
-detail::MatrixExpression<const Matrix> toVector(const matrix_expression<Matrix>& matrix){
+detail::MatrixExpression<const Matrix> toVector(const matrix_expression<Matrix, cpu_tag>& matrix){
 	return detail::MatrixExpression<const Matrix>(matrix());
 }
 ///\brief Linearizes a matrix as a set of row vectors and treats them as a set of vectors for initialization.
 template<class Matrix>
-detail::MatrixExpression<Matrix> toVector(matrix_expression<Matrix>& matrix){
+detail::MatrixExpression<Matrix> toVector(matrix_expression<Matrix, cpu_tag>& matrix){
 	return detail::MatrixExpression<Matrix>(matrix());
 }
 
@@ -211,6 +205,7 @@ parameterSet(T& range){
 }
 
 /** @} */
-}}
+}
 
 #endif
+

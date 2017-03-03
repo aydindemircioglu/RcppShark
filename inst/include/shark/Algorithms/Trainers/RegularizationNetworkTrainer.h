@@ -11,11 +11,11 @@
  * \date        2007-2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -40,7 +40,6 @@
 
 #include <shark/Algorithms/Trainers/AbstractSvmTrainer.h>
 #include <shark/Models/Kernels/KernelHelpers.h>
-#include <shark/LinAlg/solveSystem.h>
 
 
 namespace shark {
@@ -123,9 +122,8 @@ public:
 		// Setup the kernel matrix
 		RealMatrix M = calculateRegularizedKernelMatrix(*(this->m_kernel),dataset.inputs(), noiseVariance());
 		RealVector v = column(createBatch<RealVector>(dataset.labels().elements()),0);
-		//~ blas::approxsolveSymmPosDefSystemInPlace(M,v); //try this later instad the below
-		blas::solveSymmPosDefSystemInPlace<blas::SolveAXB>(M,v);
-		column(svm.alpha(),0) = v;
+		//try a cholesky solver instead
+		noalias(column(svm.alpha(),0)) = solve(M,v,blas::symm_semi_pos_def(),blas::left());
 	}
 };
 

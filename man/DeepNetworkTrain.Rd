@@ -46,4 +46,3 @@ For more information refer to the Shark tutorial at http://image.diku.dk/shark/s
 	errors = sum(abs(y - networkPrediction))/length(y)
 	cat("Network produced ", errors, "errors.\\n")
 }
-

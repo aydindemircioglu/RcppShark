@@ -10,11 +10,11 @@
  * \date        2010-2013
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -45,20 +45,20 @@
 namespace shark{
 	
 //! Calculates the mean and variance values of the input data
-template<class Vec1T,class Vec2T,class Vec3T>
+template<class Vec1T,class Vec2T,class Vec3T, class Device>
 void meanvar
 (
 	Data<Vec1T> const& data,
-	blas::vector_container<Vec2T>& mean,
-	blas::vector_container<Vec3T>& variance
+	blas::vector_container<Vec2T, Device>& mean,
+	blas::vector_container<Vec3T, Device>& variance
 );
 //! Calculates the mean, variance and covariance values of the input data
-template<class Vec1T,class Vec2T,class MatT>
+template<class Vec1T,class Vec2T,class MatT, class Device>
 void meanvar
 (
 	Data<Vec1T> const& data,
-	blas::vector_container<Vec2T>& mean,
-	blas::matrix_container<MatT>& variance
+	blas::vector_container<Vec2T, Device>& mean,
+	blas::matrix_container<MatT, Device>& variance
 );
 
 //! Calculates the mean vector of the input vectors.

@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /**
  * \mainpage Shark Machine Learning Library Ver. 3.0.0.
@@ -14,11 +15,11 @@
  *
  *  \date    2011
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -37,6 +38,7 @@
 #ifndef SHARK_CORE_SHARK_H
 #define SHARK_CORE_SHARK_H
 
+#include <boost/version.hpp>
 #include <boost/assign.hpp>
 #include <boost/config.hpp>
 // #include <boost/property_tree/ptree.hpp> 
@@ -96,9 +98,28 @@ struct DynamicLibraryTag{
 };
 
 /**
+ * \brief Tags whether SIMD has been enabled.
+ */
+/* #undef SHARK_USE_SIMD */
+
+#ifdef SHARK_USE_SIMD
+#define REMORA_USE_SIMD
+#endif
+/**
  * \brief Tags whether BLAS has been enabled.
  */
 /* #undef SHARK_USE_CBLAS */
+#ifdef SHARK_USE_CBLAS
+#define REMORA_USE_CBLAS
+#endif
+
+/**
+ * \brief Tags whether CLBLAS has been enabled.
+ */
+/* #undef SHARK_USE_CLBLAS */
+#ifdef SHARK_USE_CLBLAS
+#define REMORA_USE_GPU
+#endif
 
  /**
  * \brief Tags whether full LAPACK is available

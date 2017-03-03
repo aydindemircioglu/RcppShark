@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -10,11 +11,11 @@
  * \date        2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -297,24 +298,24 @@ struct range_const_iterator< shark::blas::compressed_matrix<T> >{
 };
 
 //matrix container
-template< class M >
-struct range_mutable_iterator< shark::blas::matrix_container<M> >{
+template< class M, class Device >
+struct range_mutable_iterator< shark::blas::matrix_container<M, Device> >{
 	typedef typename range_mutable_iterator<M>::type type;
 };
 
-template< class M >
-struct range_const_iterator< shark::blas::matrix_container<M> >{
+template< class M, class Device >
+struct range_const_iterator< shark::blas::matrix_container<M, Device> >{
 	typedef typename range_const_iterator<M>::type type;
 };
 
 //matrix expression
-template< class M >
-struct range_mutable_iterator< shark::blas::matrix_expression<M> >{
+template< class M, class Device>
+struct range_mutable_iterator< shark::blas::matrix_expression<M, Device> >{
 	typedef typename range_mutable_iterator<M>::type type;
 };
 
-template< class M >
-struct range_const_iterator< shark::blas::matrix_expression<M> >{
+template< class M, class Device >
+struct range_const_iterator< shark::blas::matrix_expression<M, Device> >{
 	typedef typename range_const_iterator<M>::type type;
 };
 
@@ -334,7 +335,7 @@ struct range_const_iterator< shark::blas::dense_matrix_adaptor<T> >{
 };
 }
 
-namespace shark{ namespace blas{ 
+namespace remora{ 
 
 //dense matrix
 template< class T >
@@ -399,55 +400,55 @@ range_end( compressed_matrix<T>& m )
 }
 
 //matrix_container
-template< class M >
+template< class M, class Device >
 typename boost::range_iterator<M const>::type
-range_begin( matrix_container<M> const& m )
+range_begin( matrix_container<M, Device> const& m )
 {
 	return range_begin(m());
 }
-template< class M >
+template< class M, class Device >
 typename boost::range_iterator<M>::type
-range_begin( matrix_container<M>& m )
+range_begin( matrix_container<M, Device>& m )
 {
 	return range_begin(m());
 }
 
-template< class M >
+template< class M, class Device >
 typename boost::range_iterator<M const>::type
-range_end( matrix_container<M> const& m )
+range_end( matrix_container<M, Device> const& m )
 {
 	return range_end(m());
 }
-template< class M >
+template< class M, class Device >
 typename boost::range_iterator<M>::type
-range_end( matrix_container<M>& m )
+range_end( matrix_container<M, Device>& m )
 {
 	return range_end(m());
 }
 
 //matrix_expression
-template< class M >
+template< class M, class Device >
 typename boost::range_iterator<M const>::type
-range_begin( matrix_expression<M> const& m )
+range_begin( matrix_expression<M, Device> const& m )
 {
 	return range_begin(m());
 }
-template< class M >
+template< class M, class Device >
 typename boost::range_iterator<M>::type
-range_begin( matrix_expression<M>& m )
+range_begin( matrix_expression<M, Device>& m )
 {
 	return range_begin(m());
 }
 
-template< class M >
+template< class M, class Device >
 typename boost::range_iterator<M const>::type
-range_end( matrix_expression<M> const& m )
+range_end( matrix_expression<M, Device> const& m )
 {
 	return range_end(m());
 }
-template< class M >
+template< class M, class Device >
 typename boost::range_iterator<M>::type
-range_end( matrix_expression<M>& m )
+range_end( matrix_expression<M, Device>& m )
 {
 	return range_end(m());
 }
@@ -485,7 +486,7 @@ range_end( shark::blas::dense_matrix_adaptor<T>& m )
 
 /// \endcond
 
-}}
+}
 
 #endif
 

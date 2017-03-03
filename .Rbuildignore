@@ -33,3 +33,4 @@ compile.R$
 RELEASE
 postInstallTest.R
 testInstall.sh
+testInstallDEV.sh

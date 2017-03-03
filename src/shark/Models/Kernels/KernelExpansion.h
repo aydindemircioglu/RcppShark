@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -16,11 +17,11 @@
  * \date        2007-2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -46,7 +47,6 @@
 #include <shark/Models/Kernels/AbstractKernelFunction.h>
 #include <shark/Data/Dataset.h>
 #include <shark/Data/DataView.h>
-
 
 namespace shark {
 
@@ -177,7 +177,7 @@ public:
                 std::size_t ic = m_basis.numberOfElements();
                 std::vector<std::size_t> svIndices;
                 for (std::size_t i=0; i != ic; ++i){
-                        if (blas::norm_1(RealMatrixRow(m_alpha, i)) > 0.0){
+                        if (blas::norm_1(row(m_alpha, i)) > 0.0){
                                 svIndices.push_back(i);
                         }
                 }
@@ -252,7 +252,7 @@ public:
                         RealMatrix kernelEvaluations = (*mep_kernel)(m_basis.batch(i),patterns);
                         
                         //get the part of the alpha matrix which is suitable for this batch
-                        ConstRealSubMatrix batchAlpha = subrange(m_alpha,batchStart,batchEnd,0,outputSize());
+                        auto batchAlpha = subrange(m_alpha,batchStart,batchEnd,0,outputSize());
                         noalias(output) += prod(trans(kernelEvaluations),batchAlpha);
                         batchStart = batchEnd;
                 }

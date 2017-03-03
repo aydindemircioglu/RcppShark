@@ -13,11 +13,11 @@
  * \date        2007-2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -112,7 +112,7 @@ public:
     /// \brief Computes the kernel-matrix
     template<class M>
     void matrix(
-        blas::matrix_expression<M> & storage
+        blas::matrix_expression<M, blas::cpu_tag> & storage
     ) const{
         m_matrix.matrix(storage);
         for(std::size_t i = 0; i != size(); ++i){

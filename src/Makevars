@@ -1,50 +1,52 @@
 
 SHARKOBJECTS=\
 utils.o \
-Csv.o\
-SparseData.o\
-Centroids.o\
-Converter.o\
-OnlineRNNet.o\
-LinearNorm.o\
-RNNet.o\
-CMAC.o\
-RBFLayer.o\
-Softmax.o\
-SigmoidModel.o\
-RecurrentStructure.o\
-RFTrainer.o\
 LinearRegression.o\
-SigmoidFit.o\
 PCA.o\
-FisherLDA.o\
 NormalizeComponentsWhitening.o\
-LDA.o\
-KMeans.o\
+FisherLDA.o\
+RFTrainer.o\
+SigmoidFit.o\
 CARTTrainer.o\
+CARTcommon.o\
+KMeans.o\
+LDA.o\
 BFGS.o\
-AbstractLineSearchOptimizer.o\
+CG.o\
+LBFGS.o\
 Rprop.o\
 TrustRegionNewton.o\
-LBFGS.o\
-CG.o\
-CMA.o\
+AbstractLineSearchOptimizer.o\
 CrossEntropyMethod.o\
 CMSA.o\
 ElitistCMA.o\
-DiscreteLoss.o\
+CMA.o\
+CMAC.o\
+SigmoidModel.o\
+Centroids.o\
+LinearNorm.o\
+OnlineRNNet.o\
+RBFLayer.o\
+RecurrentStructure.o\
+Softmax.o\
+RNNet.o\
+Converter.o\
 ROC.o\
-KernelBasisDistance.o
+DiscreteLoss.o\
+KernelBasisDistance.o\
+Csv.o\
+SparseData.o
 
 
 CXX_STD = CXX11
+PKG_CXX_STD=CXX11
 
-PKGOBJECTS = RcppExports.o BSGDWrapper.o DeepNetworkWrapper.o
+PKGOBJECTS = RcppExports.o BSGDWrapper.o DeepNetworkWrapper.o init.o
 
 OBJECTS= $(SHARKOBJECTS) $(PKGOBJECTS)
 
-PKG_CPPFLAGS= -I . $(CLINK_CPPFLAGS) -I $(R_INCLUDE_DIR)
-PKG_CXXFLAGS= $(CXXFLAGS) -D BOOST_DISABLE_ASSERTS  -I .  $(FPICFLAGS) -DNDEBUG
+PKG_CPPFLAGS= -I . $(CLINK_CPPFLAGS) -I $(R_INCLUDE_DIR) 
+PKG_CXXFLAGS= $(CXXFLAGS) -D BOOST_DISABLE_ASSERTS  -I .  $(FPICFLAGS) -DNDEBUG 
 PKG_LIBS= $(LDFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
 all: $(SHLIB) userLibrary 
@@ -72,74 +74,44 @@ $(USERLIBST): 	$(OBJECTS)
 utils.o:
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c ./utils.cpp
 
-Csv.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Data/Csv.cpp
-
-SparseData.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Data/SparseData.cpp
-
-Centroids.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/Centroids.cpp
-
-Converter.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/Converter.cpp
-
-OnlineRNNet.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/OnlineRNNet.cpp
-
-LinearNorm.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/LinearNorm.cpp
-
-RNNet.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/RNNet.cpp
-
-CMAC.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/CMAC.cpp
-
-RBFLayer.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/RBFLayer.cpp
-
-Softmax.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/Softmax.cpp
-
-SigmoidModel.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/SigmoidModel.cpp
-
-RecurrentStructure.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/RecurrentStructure.cpp
-
-RFTrainer.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/RFTrainer.cpp
-
 LinearRegression.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/LinearRegression.cpp
-
-SigmoidFit.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/SigmoidFit.cpp
 
 PCA.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/PCA.cpp
 
-FisherLDA.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/FisherLDA.cpp
-
 NormalizeComponentsWhitening.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/NormalizeComponentsWhitening.cpp
 
-LDA.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/LDA.cpp
+FisherLDA.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/FisherLDA.cpp
 
-KMeans.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/KMeans.cpp
+RFTrainer.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/RFTrainer.cpp
+
+SigmoidFit.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/SigmoidFit.cpp
 
 CARTTrainer.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/CARTTrainer.cpp
 
+CARTcommon.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/CARTcommon.cpp
+
+KMeans.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/KMeans.cpp
+
+LDA.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/LDA.cpp
+
 BFGS.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/BFGS.cpp
 
-AbstractLineSearchOptimizer.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/AbstractLineSearchOptimizer.cpp
+CG.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/CG.cpp
+
+LBFGS.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/LBFGS.cpp
 
 Rprop.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/Rprop.cpp
@@ -147,14 +119,8 @@ Rprop.o :
 TrustRegionNewton.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/TrustRegionNewton.cpp
 
-LBFGS.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/LBFGS.cpp
-
-CG.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/CG.cpp
-
-CMA.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/DirectSearch/CMA.cpp
+AbstractLineSearchOptimizer.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/GradientDescent/AbstractLineSearchOptimizer.cpp
 
 CrossEntropyMethod.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/DirectSearch/CrossEntropyMethod.cpp
@@ -165,14 +131,53 @@ CMSA.o :
 ElitistCMA.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/DirectSearch/ElitistCMA.cpp
 
-DiscreteLoss.o :
-		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/ObjectiveFunctions/DiscreteLoss.cpp
+CMA.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Algorithms/DirectSearch/CMA.cpp
+
+CMAC.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/CMAC.cpp
+
+SigmoidModel.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/SigmoidModel.cpp
+
+Centroids.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/Centroids.cpp
+
+LinearNorm.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/LinearNorm.cpp
+
+OnlineRNNet.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/OnlineRNNet.cpp
+
+RBFLayer.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/RBFLayer.cpp
+
+RecurrentStructure.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/RecurrentStructure.cpp
+
+Softmax.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/Softmax.cpp
+
+RNNet.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/RNNet.cpp
+
+Converter.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Models/Converter.cpp
 
 ROC.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/ObjectiveFunctions/ROC.cpp
 
+DiscreteLoss.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/ObjectiveFunctions/DiscreteLoss.cpp
+
 KernelBasisDistance.o :
 		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/ObjectiveFunctions/KernelBasisDistance.cpp
+
+Csv.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Data/Csv.cpp
+
+SparseData.o :
+		$(CXX) $(PKG_CPPFLAGS)  $(PKG_CXXFLAGS)   -c src/Data/SparseData.cpp
 
 		
 		

@@ -11,11 +11,11 @@
  * \date        2006-2013
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -410,7 +410,7 @@ public:
 	/// \brief Generates a simple distribution with 
 	NormalDistributedPoints(std::size_t dim): m_offset(dim,0){
 		RealMatrix covariance(dim,dim,0);
-		shark::blas::diag (covariance) = blas::repeat(1.0,dim);
+		remora::diag (covariance) = blas::repeat(1.0,dim);
 		m_dist.setCovarianceMatrix(covariance);
 	}
 	NormalDistributedPoints(RealMatrix const& covariance, RealVector const& offset)

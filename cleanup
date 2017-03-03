@@ -22,6 +22,9 @@ mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/Hypervolum
 mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeSubsetSelection2D.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVSubsetSelection2D.h
 mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/PartiallyMappedCrossover.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Recombination/PMXCrossover.h
 
+mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeCalculatorMDHOY.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVCalculatorMDHOY.h
+mv ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HypervolumeCalculatorMDWFG.h ./inst/include/shark/Algorithms/DirectSearch/Operators/Hypervolume/HVCalculatorMDWFG.h
+
 
 # copy over utils
 cp ./src/utils.h ./inst/skeleton

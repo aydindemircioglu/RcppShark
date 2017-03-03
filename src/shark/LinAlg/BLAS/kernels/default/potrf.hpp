@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  *
@@ -5,7 +6,7 @@
  * \brief       Implements the default implementation of the POTRF algorithm
  *
  * \author    O. Krause
- * \date        2014
+ * \date        2016
  *
  *
  * \par Copyright 1995-2014 Shark Development Team
@@ -28,23 +29,22 @@
  * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SHARK_LINALG_BLAS_KERNELS_DEFAULT_POTRF_HPP
-#define SHARK_LINALG_BLAS_KERNELS_DEFAULT_POTRF_HPP
+#ifndef REMORA_KERNELS_DEFAULT_POTRF_HPP
+#define REMORA_KERNELS_DEFAULT_POTRF_HPP
 
-#include "../../matrix_proxy.hpp"
-#include "../../vector_expression.hpp"
-#include <boost/mpl/bool.hpp>
+#include "simple_proxies.hpp"
+#include "../trsm.hpp" //trsm kernel
+#include "../syrk.hpp" //syrk kernel
+#include <boost/mpl/bool.hpp> //boost::mpl::false_ marker for unoptimized
 
-namespace shark {
-namespace blas {
-namespace bindings {
+namespace remora{namespace bindings {
 
-
+//diagonal block kernels
 //upper potrf(row-major)
 template<class MatA>
-std::size_t potrf_impl(
-    matrix_expression<MatA>& A,
-    row_major, lower
+std::size_t potrf_block(
+	matrix_expression<MatA, cpu_tag>& A,
+	row_major, lower
 ) {
 	std::size_t m = A().size1();
 	for(size_t j = 0; j < m; j++) {
@@ -55,7 +55,7 @@ std::size_t potrf_impl(
 			}
 			if(i == j) {
 				if(s <= 0)
-					return i;
+					return i+1;
 				A()(i, j) = std::sqrt(s);
 			} else {
 				A()(i, j) = s / A()(j , j);
@@ -67,18 +67,19 @@ std::size_t potrf_impl(
 
 //lower potrf(row-major)
 template<class MatA>
-std::size_t potrf_impl(
-    matrix_expression<MatA>& A,
-    row_major, upper
+std::size_t potrf_block(
+	matrix_expression<MatA, cpu_tag>& A,
+	row_major, upper
 ) {
 	std::size_t m = A().size1();
 	for(size_t i = 0; i < m; i++) {
 		double& Aii = A()(i, i);
 		if(Aii < 0)
-			return i;
+			return i+1;
 		using std::sqrt;
 		Aii = sqrt(Aii);
 		//update row
+		
 		for(std::size_t j = i + 1; j < m; ++j) {
 			A()(i, j) /= Aii;
 		}
@@ -95,26 +96,66 @@ std::size_t potrf_impl(
 
 //dispatcher for column major
 template<class MatA, class Triangular>
-std::size_t potrf_impl(
-    matrix_container<MatA>& A,
+std::size_t potrf_block(
+    matrix_expression<MatA, cpu_tag>& A,
     column_major, Triangular
 ) {
-	blas::matrix_transpose<MatA> transA(A());
-	return potrf_impl(transA, row_major(), typename Triangular::transposed_orientation());
+	auto Atrans = simple_trans(A);
+	return potrf_block(Atrans, row_major(), typename Triangular::transposed_orientation());
+}
+
+//main kernel for large matrices
+template <typename MatA>
+std::size_t potrf_recursive(
+	matrix_expression<MatA, cpu_tag>& Afull,
+	std::size_t start,
+	std::size_t end,
+	lower
+){
+	std::size_t block_size = 32;
+	auto A = simple_subrange(Afull,start,end,start,end);
+	std::size_t size = A.size1();
+	//if the matrix is small enough call the computation kernel directly for the block
+	if(size <= block_size){
+		return potrf_block(A,typename MatA::orientation(), lower());
+	}
+	std::size_t numBlocks = (A.size1()+block_size-1)/block_size;
+	std::size_t split = numBlocks/2*block_size;
+	
+	
+	//otherwise run the kernel recursively
+	std::size_t result = potrf_recursive(Afull,start,start+split,lower());
+	if(result) return result;
+	
+	auto Aul = simple_subrange(A,0,split,0,split);
+	auto All = simple_subrange(A,split,size,0,split);
+	auto Alr = simple_subrange(A,split,size,split,size);
+	kernels::trsm<upper,right>(simple_trans(Aul), All );
+	kernels::syrk<false>(All,Alr, -1.0);
+	return potrf_recursive(Afull,start+split,end,lower());
+}
+
+template <typename MatA>
+std::size_t potrf_recursive(
+	matrix_expression<MatA, cpu_tag>& A,
+	std::size_t start,
+	std::size_t end,
+	upper
+){
+	auto Atrans = simple_trans(A);
+	return potrf_recursive(Atrans,start,end,lower());
 }
 
 //dispatcher
-
 template <class Triangular, typename MatA>
 std::size_t potrf(
-    matrix_container<MatA>& A,
-    boost::mpl::false_//unoptimized
-) {
-	return potrf_impl(A, typename MatA::orientation(), Triangular());
+	matrix_container<MatA, cpu_tag>& A,
+	boost::mpl::false_//unoptimized
+){
+	SIZE_CHECK(A().size1() == A().size2());
+	return potrf_recursive(A,0,A().size1(), Triangular());
 }
 
-}
-}
-}
+}}
 #endif
 

@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -30,16 +31,16 @@
  *
  */
 //===========================================================================
-#ifndef SHARK_LINALG_BLAS_KERNELS_LAPACK_SYEV_HPP
-#define SHARK_LINALG_BLAS_KERNELS_LAPACK_SYEV_HPP
+#ifndef REMORA_KERNELS_LAPACK_SYEV_HPP
+#define REMORA_KERNELS_LAPACK_SYEV_HPP
 
 #include "fortran.hpp"
-#include "../traits.hpp"
+#include "../../detail/traits.hpp"
 
-#define SHARK_LAPACK_DSYEV FORTRAN_ID(dsyev)
+#define REMORA_LAPACK_DSYEV FORTRAN_ID(dsyev)
 
 extern "C"{
-void SHARK_LAPACK_DSYEV( 
+void REMORA_LAPACK_DSYEV( 
 	const char* jobz, const char* uplo, const int *n,
 	double* a, const int * lda, double* w,
 	double* work, const int * lwork, int* info
@@ -48,7 +49,7 @@ void SHARK_LAPACK_DSYEV(
 
 
 
-namespace shark { namespace blas { namespace bindings {
+namespace remora {namespace bindings {
 
 inline void syev(
 	int n, bool upper,
@@ -61,34 +62,36 @@ inline void syev(
 	int info;
 	char job = 'V';
 	char uplo = upper?'U':'L';
-	SHARK_LAPACK_DSYEV(&job, &uplo, &n, A, &lda,eigenvalues,work,&lwork,&info);
+	REMORA_LAPACK_DSYEV(&job, &uplo, &n, A, &lda,eigenvalues,work,&lwork,&info);
 	delete[] work;
 	
 }
 
 
-template <typename MatrA, typename VectorB>
+template <typename MatA, typename VectorB>
 void syev(
-	matrix_expression<MatrA>& matA,
-	vector_expression<VectorB>& eigenValues
+	matrix_expression<MatA, cpu_tag>& A,
+	vector_expression<VectorB, cpu_tag>& eigenValues
 ) {
-	SIZE_CHECK(matA().size1() == matA().size2());
-	SIZE_CHECK(matA().size1() == eigenValues().size());
+	SIZE_CHECK(A().size1() == A().size2());
+	SIZE_CHECK(A().size1() == eigenValues().size());
 	
-	std::size_t n = matA().size1();
+	std::size_t n = A().size1();
 	bool upper = false;
 	//lapack is column major storage.
-	if(boost::is_same<typename MatrA::orientation, blas::row_major>::value){
+	if(boost::is_same<typename MatA::orientation, row_major>::value){
 		upper = !upper;
 	}
+	auto storageA = A().raw_storage();
+	auto storageEig = eigenValues().raw_storage();
 	syev(
 		n, upper,
-		traits::storage(matA()),
-		traits::leading_dimension(matA()),
-		traits::storage(eigenValues())
+		storageA.values,
+	        storageA.leading_dimension,
+		storageEig.values
 	);
 	
-	matA() = trans(matA);
+	A() = trans(A);
 	
 	//reverse eigenvectors and eigenvalues
 	for (int i = 0; i < (int)n-i-1; i++)
@@ -100,14 +103,14 @@ void syev(
 		for (int i = 0; i < (int)n-i-1; i++)
 		{
 			int l =  n-i-1;
-			std::swap(matA()( j , l ), matA()( j , i ));
+			std::swap(A()( j , l ), A()( j , i ));
 		}
 	}
 }
 
-}}}
+}}
 
-#undef SHARK_LAPACK_DSYEV
+#undef REMORA_LAPACK_DSYEV
 
 #endif
 

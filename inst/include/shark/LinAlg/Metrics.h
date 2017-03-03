@@ -9,11 +9,11 @@
  * \date        2010-2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -32,9 +32,9 @@
 #ifndef SHARK_LINALG_METRICS_H
 #define SHARK_LINALG_METRICS_H
 
-#include <shark/LinAlg/BLAS/blas.h>
+#include <shark/LinAlg/BLAS/remora.hpp>
 #include <shark/Core/Math.h>
-namespace shark{ namespace blas{
+namespace remora{
 	
 ///////////////////////////////////////NORMS////////////////////////////////////////
 
@@ -45,10 +45,10 @@ namespace shark{ namespace blas{
 * \f$ n^2(v) = \sum_i w_i v_i^2 \f$
 * nb: the weights themselves are not squared, but multiplied onto the squared components
 */
-template<class VectorT, class WeightT>
+template<class VectorT, class WeightT, class Device>
 typename VectorT::value_type diagonalMahalanobisNormSqr(
-	vector_expression<VectorT> const& vector, 
-	vector_expression<WeightT> const& weights
+	vector_expression<VectorT, Device> const& vector, 
+	vector_expression<WeightT, Device> const& weights
 ) {
 	SIZE_CHECK( vector().size() == weights().size() );
 	return inner_prod(weights(),sqr(vector()));
@@ -61,10 +61,10 @@ typename VectorT::value_type diagonalMahalanobisNormSqr(
 * \f$ n^2(v) = \sqrt{\sum_i w_i v_i^2} \f$
 * nb: the weights themselves are not squared, but multiplied onto the squared components
 */
-template<class VectorT, class WeightT>
+template<class VectorT, class WeightT, class Device>
 typename VectorT::value_type diagonalMahalanobisNorm(
-	vector_expression<VectorT> const& vector, 
-	vector_expression<WeightT> const& weights
+	vector_expression<VectorT, Device> const& vector, 
+	vector_expression<WeightT, Device> const& weights
 ) {
 	SIZE_CHECK( vector().size() == weights().size() );
 	return std::sqrt(diagonalMahalanobisNormSqr(vector,weights));
@@ -86,8 +86,8 @@ namespace detail{
 		VectorT const& op1,
 		VectorU const& op2,
 		WeightT const& weights,
-		sparse_bidirectional_iterator_tag, 
-		sparse_bidirectional_iterator_tag
+		sparse_tag, 
+		sparse_tag
 	){
 		using shark::sqr;
 		typename VectorT::value_type sum=0;
@@ -138,8 +138,8 @@ namespace detail{
 		VectorT const& op1,
 		VectorU const& op2,
 		WeightT const& weights,
-		sparse_bidirectional_iterator_tag, 
-		dense_random_access_iterator_tag
+		sparse_tag, 
+		dense_tag
 	){
 		using shark::sqr;
 		typename VectorT::const_iterator iter=op1.begin();
@@ -166,8 +166,8 @@ namespace detail{
 		VectorT const& op1,
 		VectorU const& op2,
 		WeightT const& weights,
-		dense_random_access_iterator_tag arg1tag,
-		sparse_bidirectional_iterator_tag arg2tag
+		dense_tag arg1tag,
+		sparse_tag arg2tag
 	){
 		return diagonalMahalanobisDistanceSqr(op2,op1,weights,arg2tag,arg1tag);
 	}
@@ -177,8 +177,8 @@ namespace detail{
 		VectorT const& op1,
 		VectorU const& op2,
 		WeightT const& weights,
-		dense_random_access_iterator_tag,
-		dense_random_access_iterator_tag
+		dense_tag,
+		dense_tag
 	){
 		return inner_prod(op1-op2,(op1-op2)*weights);
 	}
@@ -191,12 +191,12 @@ namespace detail{
 		Result& result
 	){
 		typedef typename Result::value_type value_type;
-		scalar_vector< value_type > one(op2.size(),static_cast<value_type>(1.0));
+		scalar_vector< value_type, cpu_tag > one(op2.size(),static_cast<value_type>(1.0));
 		for(std::size_t i = 0; i != operands.size1(); ++i){
 			result(i) = diagonalMahalanobisDistanceSqr(
 				row(operands,i),op2,one,
-				typename major_iterator<MatrixT>::type::iterator_category(),
-				typename VectorU::iterator::iterator_category()
+				typename MatrixT::evaluation_category::tag(),
+				typename VectorU::evaluation_category::tag()
 			);
 		}
 	}
@@ -219,7 +219,7 @@ namespace detail{
 			}
 		}else{
 			for(std::size_t i = 0; i != sizeY; ++i){
-				matrix_column<Result> distanceCol = column(distances,i);
+				auto distanceCol = column(distances,i);
 				distanceSqrBlockVector(
 					X,row(Y,i),distanceCol
 				);
@@ -233,8 +233,8 @@ namespace detail{
 		MatrixX const& X,
 		MatrixY const& Y,
 		Result& distances,
-		dense_random_access_iterator_tag,
-		dense_random_access_iterator_tag
+		dense_tag,
+		dense_tag
 	){
 		typedef typename Result::value_type value_type;
 		std::size_t sizeX=X.size1();
@@ -264,8 +264,8 @@ namespace detail{
 		MatrixX const& X,
 		MatrixY const& Y,
 		Result& distances,
-		sparse_bidirectional_iterator_tag,
-		sparse_bidirectional_iterator_tag
+		sparse_tag,
+		sparse_tag
 	){
 		distanceSqrBlockBlockRowWise(X,Y,distances);
 	}
@@ -283,33 +283,33 @@ namespace detail{
 *
 * NOTE: The weights themselves are not squared, but multiplied onto the squared components.
 */
-template<class VectorT, class VectorU, class WeightT>
+template<class VectorT, class VectorU, class WeightT, class Device>
 typename VectorT::value_type diagonalMahalanobisDistanceSqr(
-	vector_expression<VectorT> const& op1,
-	vector_expression<VectorU> const& op2, 
-	vector_expression<WeightT> const& weights
+	vector_expression<VectorT, Device> const& op1,
+	vector_expression<VectorU, Device> const& op2, 
+	vector_expression<WeightT, Device> const& weights
 ){
 	SIZE_CHECK(op1().size()==op2().size());
 	SIZE_CHECK(op1().size()==weights().size());
 	//dispatch given the types of the argument
 	return detail::diagonalMahalanobisDistanceSqr(
 		op1(), op2(), weights(),
-		typename VectorT::iterator::iterator_category(),
-		typename VectorU::iterator::iterator_category()
+		typename VectorT::evaluation_category::tag(),
+		typename VectorU::evaluation_category::tag()
 	);
 }
 
 /**
 * \brief Squared distance between two vectors.
 */
-template<class VectorT,class VectorU>
+template<class VectorT,class VectorU, class Device>
 typename VectorT::value_type distanceSqr(
-	vector_expression<VectorT> const& op1,
-	vector_expression<VectorU> const& op2
+	vector_expression<VectorT, Device> const& op1,
+	vector_expression<VectorU, Device> const& op2
 ){
 	SIZE_CHECK(op1().size()==op2().size());
 	typedef typename VectorT::value_type value_type;
-	scalar_vector< value_type > one(op1().size(),static_cast<value_type>(1.0));
+	scalar_vector< value_type, cpu_tag > one(op1().size(),static_cast<value_type>(1.0));
 	return diagonalMahalanobisDistanceSqr(op1,op2,one);
 }
 
@@ -319,11 +319,11 @@ typename VectorT::value_type distanceSqr(
 * The squared distance between the vector and every row-vector of the matrix is calculated.
 * This can be implemented much more efficiently.
 */
-template<class MatrixT,class VectorU, class VectorR>
+template<class MatrixT,class VectorU, class VectorR, class Device>
 void distanceSqr(
-	matrix_expression<MatrixT> const& operands,
-	vector_expression<VectorU> const& op2,
-	vector_expression<VectorR>& distances
+	matrix_expression<MatrixT, Device> const& operands,
+	vector_expression<VectorU, Device> const& op2,
+	vector_expression<VectorR, Device>& distances
 ){
 	SIZE_CHECK(operands().size2()==op2().size());
 	ensure_size(distances,operands().size1());
@@ -338,10 +338,10 @@ void distanceSqr(
 * The squared distance between the vector and every row-vector of the matrix is calculated.
 * This can be implemented much more efficiently.
 */
-template<class MatrixT,class VectorU>
+template<class MatrixT,class VectorU, class Device>
 vector<typename MatrixT::value_type> distanceSqr(
-	matrix_expression<MatrixT> const& operands,
-	vector_expression<VectorU> const& op2
+	matrix_expression<MatrixT, Device> const& operands,
+	vector_expression<VectorU, Device> const& op2
 ){
 	SIZE_CHECK(operands().size2()==op2().size());
 	vector<typename MatrixT::value_type> distances(operands().size1());
@@ -355,10 +355,10 @@ vector<typename MatrixT::value_type> distanceSqr(
 * The squared distance between the vector and every row-vector of the matrix is calculated.
 * This can be implemented much more efficiently.
 */
-template<class MatrixT,class VectorU>
+template<class MatrixT,class VectorU, class Device>
 vector<typename MatrixT::value_type> distanceSqr(
-	vector_expression<VectorU> const& op1,
-	matrix_expression<MatrixT> const& operands
+	vector_expression<VectorU, Device> const& op1,
+	matrix_expression<MatrixT, Device> const& operands
 ){
 	SIZE_CHECK(operands().size2()==op1().size());
 	vector<typename MatrixT::value_type> distances(operands().size1());
@@ -375,10 +375,10 @@ vector<typename MatrixT::value_type> distanceSqr(
 * The results are returned as a matrix, where the element in the i-th 
 * row and the j-th column is distanceSqr(x_i,y_j).
 */
-template<class MatrixT,class MatrixU>
+template<class MatrixT,class MatrixU, class Device>
 matrix<typename MatrixT::value_type> distanceSqr(
-	matrix_expression<MatrixT> const& X,
-	matrix_expression<MatrixU> const& Y
+	matrix_expression<MatrixT, Device> const& X,
+	matrix_expression<MatrixU, Device> const& Y
 ){
 	typedef matrix<typename MatrixT::value_type> Matrix;
 	SIZE_CHECK(X().size2()==Y().size2());
@@ -387,8 +387,8 @@ matrix<typename MatrixT::value_type> distanceSqr(
 	Matrix distances(sizeX, sizeY);
 	detail::distanceSqrBlockBlock(
 		X(),Y(),distances,
-		typename major_iterator<MatrixT>::type::iterator_category(),
-		typename major_iterator<MatrixU>::type::iterator_category()
+		typename MatrixT::evaluation_category::tag(),
+		typename MatrixU::evaluation_category::tag()
 	);
 	return distances;
 	
@@ -398,10 +398,10 @@ matrix<typename MatrixT::value_type> distanceSqr(
 /**
 * \brief Calculates distance between two vectors.
 */
-template<class VectorT,class VectorU>
+template<class VectorT,class VectorU, class Device>
 typename VectorT::value_type distance(
-	vector_expression<VectorT> const& op1,
-	vector_expression<VectorU> const& op2
+	vector_expression<VectorT, Device> const& op1,
+	vector_expression<VectorU, Device> const& op2
 ){
 	SIZE_CHECK(op1().size()==op2().size());
 	return std::sqrt(distanceSqr(op1,op2));
@@ -414,18 +414,18 @@ typename VectorT::value_type distance(
 * \f$ d(v) = \left( \sum_i w_i (x_i-z_i)^2 \right)^{1/2} \f$
 * nb: the weights themselves are not squared, but multiplied onto the squared components
 */
-template<class VectorT, class VectorU, class WeightT>
+template<class VectorT, class VectorU, class WeightT, class Device>
 typename VectorT::value_type diagonalMahalanobisDistance(
-	vector_expression<VectorT> const& op1,
-	vector_expression<VectorU> const& op2, 
-	vector_expression<WeightT> const& weights
+	vector_expression<VectorT, Device> const& op1,
+	vector_expression<VectorU, Device> const& op2, 
+	vector_expression<WeightT, Device> const& weights
 ){
 	SIZE_CHECK(op1().size()==op2().size());
 	SIZE_CHECK(op1().size()==weights().size());
 	return std::sqrt(diagonalMahalanobisDistanceSqr(op1(), op2(), weights));
 }
 /** @}*/
-}}
+}
 
 #endif
 

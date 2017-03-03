@@ -4,8 +4,10 @@
 
 	packageName = "testPackage"
 	oldDir = getwd ()
-	setwd ("./tmp")
-	unlink (packageName)
+	tmpfolder = tempdir()
+	tmpfolder = "/tmp"
+	setwd (tmpfolder)
+	unlink (packageName, recursive=TRUE)
 	RcppShark.package.skeleton (packageName)
 	
 	library(devtools)

@@ -2,7 +2,7 @@
 
 Goal of this package is to allow users to use the 
 [Shark C++ machine learning library](http://image.diku.dk/shark/sphinx_pages/build/html/index.html)
-in their own R projects. Actually the github version from 19th februrary 2017 is used.
+in their own R projects. Currently the github version from 19th februrary 2017 is used.
 
 
 
@@ -70,8 +70,9 @@ The source code of Shark is largly unchanged. Apart from removing asserts (via -
 1. Download Shark into ~/Shark
 2. Compile shark via cmake .
 3. Call ./prepareShark.py in ./tools
-4. Call ./testInstall.py in ./
-5. Call ./postTestInstall.py in ./
+4. Call ./generateMakevars.py in ./tools
+5. Call ./testInstall.py in ./
+6. Call ./postTestInstall.py in ./
 
 
 ### Authors

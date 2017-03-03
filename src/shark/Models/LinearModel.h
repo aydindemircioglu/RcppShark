@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -10,11 +11,11 @@
  * \date        2010-2011
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -66,7 +67,9 @@ public:
         /// CDefault Constructor; use setStructure later
         LinearModel(){
                 base_type::m_features |= base_type::HAS_FIRST_PARAMETER_DERIVATIVE;
-                base_type::m_features |= base_type::HAS_FIRST_INPUT_DERIVATIVE;
+                if(std::is_same<typename InputType::storage_type::storage_tag, blas::dense_tag>::value){
+                        base_type::m_features |= base_type::HAS_FIRST_INPUT_DERIVATIVE;
+                }
         }
         /// Constructor creating a model with given dimnsionalities and optional offset term.
         LinearModel(std::size_t inputs, std::size_t outputs = 1, bool offset = false)
@@ -200,7 +203,7 @@ public:
                 std::size_t outputs = outputSize();
                 gradient.clear();
 
-                blas::dense_matrix_adaptor<double> weightGradient = blas::adapt_matrix(outputs,inputs,gradient.storage());
+                auto weightGradient = blas::to_matrix(gradient, outputs,inputs);
                 //sum_i coefficients(output,i)*pattern(i))
                 noalias(weightGradient) = prod(trans(coefficients),patterns);
 
@@ -211,7 +214,7 @@ public:
         }
         ///\brief Calculates the first derivative w.r.t the inputs and summs them up over all patterns of the last computed batch 
         void weightedInputDerivative(
-                BatchInputType const & patterns,
+                RealMatrix const & patterns,
                 BatchOutputType const & coefficients,
                 State const& state,
                 BatchInputType& derivative

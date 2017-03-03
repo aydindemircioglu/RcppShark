@@ -17,4 +17,3 @@ DeepNetworkPredict(x, model, verbose = FALSE)
 This will do prediction using a trained simple 'deep' neural network with two hidden layers.
 For more information refer to the Shark tutorial at http://image.diku.dk/shark/sphinx_pages/build/html/rest_sources/tutorials/algorithms/deep_denoising_autoencoder_network.html
 }
-

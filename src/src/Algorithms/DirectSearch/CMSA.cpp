@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * 
@@ -16,11 +17,11 @@
  * \date        -
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -80,8 +81,7 @@ void CMSA::init(
                 initialSigma
         );
         if(initialCovarianceMatrix){
-                m_mutationDistribution.covarianceMatrix() = *initialCovarianceMatrix;
-                m_mutationDistribution.update();
+                m_mutationDistribution.setCovarianceMatrix(*initialCovarianceMatrix);
         }
 }
 
@@ -90,7 +90,7 @@ void CMSA::doInit(
         std::vector<ResultType> const& initialValues,
         std::size_t lambda,
         std::size_t mu,
-        double sima
+        double sigma
 ) {
         SIZE_CHECK(initialSearchPoints.size() > 0);
         m_numberOfVariables = initialSearchPoints[0].size();
@@ -99,7 +99,7 @@ void CMSA::doInit(
         m_mu = mu;
 
         m_mutationDistribution.resize( m_numberOfVariables );
-        m_sigma =  (m_initSigma == 0)? 1.0/std::sqrt(double(m_numberOfVariables)): m_initSigma;
+        m_sigma =  sigma;
         m_cSigma = 1./::sqrt( 2. * m_numberOfVariables );
         m_cC = 1. + (m_numberOfVariables*(m_numberOfVariables + 1.))/(2.*m_mu);
         
@@ -137,17 +137,10 @@ void CMSA::updatePopulation(std::vector< IndividualType > const& offspring ) {
                 noalias(xPrimeNew) += ind.searchPoint() / m_mu;
         
         // Covariance Matrix Update
-        RealMatrix Znew( m_numberOfVariables, m_numberOfVariables,0.0 );
-        RealMatrix& C = m_mutationDistribution.covarianceMatrix();
-        // Rank-mu-Update
+        m_mutationDistribution.rankOneUpdate(1. - 1./m_cC,0,RealVector());
         for( std::size_t i = 0; i < m_mu; i++ ) {
-                noalias(Znew) += 1./m_mu * blas::outer_prod( 
-                        selectedOffspring[i].chromosome().step,
-                        selectedOffspring[i].chromosome().step
-                );
+                m_mutationDistribution.rankOneUpdate(1.0,1.0/m_mu*1./m_cC, selectedOffspring[i].chromosome().step);
         }
-        noalias(C) = (1. - 1./m_cC) * C + 1./m_cC * Znew;
-        m_mutationDistribution.update();
 
         // Step size update
         double sigmaNew = 0.;

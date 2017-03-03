@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * \brief       Expression templates for expressions involving matrices
@@ -26,28 +27,30 @@
  * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SHARK_LINALG_BLAS_MATRIX_EXPRESSION_HPP
-#define SHARK_LINALG_BLAS_MATRIX_EXPRESSION_HPP
+#ifndef REMORA_MATRIX_EXPRESSION_HPP
+#define REMORA_MATRIX_EXPRESSION_HPP
 
-#include "detail/matrix_expression_classes.hpp"
+#include "detail/expression_optimizers.hpp"
 #include <boost/utility/enable_if.hpp>
+#include "kernels/matrix_fold.hpp"
+#include "matrix_proxy.hpp"
+#include "vector_proxy.hpp"
+#include "vector_expression.hpp"
 
-
-namespace shark {
-namespace blas {
+namespace remora{
 
 
 ///\brief Computes the outer product of two vectors.
 ///
 /// The outer product of two vectors v1 and v2 is defined as the matrix
 /// (outer_prod (v1, v2))_ij [i] [j] = v1[i] * v2 [j]
-template<class E1, class E2>
-outer_product<E1, E2 >
+template<class VecA, class VecB, class Device>
+outer_product<VecA, VecB >
 outer_prod(
-	vector_expression<E1> const& e1,
-        vector_expression<E2> const& e2
+	vector_expression<VecA, Device> const& v1,
+        vector_expression<VecB, Device> const& v2
 ) {
-	return outer_product<E1, E2>(e1(), e2());
+	return outer_product<VecA, VecB>(v1(), v2());
 }
 
 
@@ -61,208 +64,216 @@ outer_prod(
 ///(1,2,3)
 ///@param vector the vector which is to be repeated as the rows of the resulting matrix
 ///@param rows the number of rows of the matrix
-template<class Vector>
-vector_repeater<Vector> repeat(vector_expression<Vector> const& vector, std::size_t rows){
-	return vector_repeater<Vector>(vector(),rows);
+template<class VecV, class Device>
+vector_repeater<VecV> repeat(vector_expression<VecV, Device> const& vector, std::size_t rows){
+	return vector_repeater<VecV>(vector(),rows);
 }
 
 /// \brief Repeats a single element to form a matrix  of size rows x columns.
 ///
+///TODO: cpu only!
 ///@param scalar the value which is repeated
 ///@param rows the number of rows of the resulting vector
 ///@param columns the number of columns of the resulting vector
 template<class T>
-typename boost::enable_if<std::is_arithmetic<T>, scalar_matrix<T> >::type
+typename boost::enable_if<std::is_arithmetic<T>, scalar_matrix<T,cpu_tag> >::type
 repeat(T scalar, std::size_t rows, std::size_t columns){
-	return scalar_matrix<T>(rows, columns, scalar);
+	return scalar_matrix<T,cpu_tag>(rows, columns, scalar);
 }
 
 
-/// \brief Computes the multiplication of a matrix-expression e with a scalar t.
+/// \brief Computes the multiplication of a matrix-expression A with a scalar t.
 ///
-/// \f$ (e*t)_{ij} = e_{ij}*t \f$
-template<class E, class T>
+/// \f$ (A*t)_{ij} = e_{ij}*t \f$
+template<class MatA, class T, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::scalar_type >,
-        matrix_scalar_multiply<E> 
+	std::is_convertible<T, typename MatA::value_type >,
+        matrix_scalar_multiply<MatA> 
 >::type
-operator* (matrix_expression<E> const& e, T scalar){
-	return matrix_scalar_multiply<E>(e(), typename E::scalar_type(scalar));
+operator* (matrix_expression<MatA, Device> const& A, T scalar){
+	return matrix_scalar_multiply<MatA>(A(), typename MatA::value_type(scalar));
 }
 
-/// \brief Computes the multiplication of a matrix-expression e with a scalar t.
+/// \brief Computes the multiplication of a matrix-expression A with a scalar t.
 ///
-/// \f$ (t*e)_{ij} = t*e_{ij} \f$
-template<class T, class E>
+/// \f$ (t*A)_{ij} = t*e_{ij} \f$
+template<class T, class MatA, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::scalar_type >,
-        matrix_scalar_multiply<E> 
+	std::is_convertible<T, typename MatA::value_type >,
+        matrix_scalar_multiply<MatA> 
 >::type
-operator* (T scalar, matrix_expression<E> const& e){
-	return matrix_scalar_multiply<E>(e(), typename E::scalar_type(scalar));
+operator* (T scalar, matrix_expression<MatA, Device> const& A){
+	return matrix_scalar_multiply<MatA>(A(), typename MatA::value_type(scalar));
 }
 
-/// \brief Negates the matrix-expression e.
+/// \brief Negates the matrix-expression A.
 ///
-/// \f$ (-e)_{ij} = - e_{ij} \f$
-template<class E>
-matrix_scalar_multiply<E> operator-(matrix_expression<E> const& e){
-	return matrix_scalar_multiply<E>(e(), typename E::scalar_type(-1));
+/// \f$ (-A)_{ij} = - e_{ij} \f$
+template<class MatA, class Device>
+matrix_scalar_multiply<MatA> operator-(matrix_expression<MatA, Device> const& A){
+	return matrix_scalar_multiply<MatA>(A(), typename MatA::value_type(-1));
 }
 
-#define SHARK_UNARY_MATRIX_TRANSFORMATION(name, F)\
-template<class E>\
-matrix_unary<E,F<typename E::value_type> >\
-name(matrix_expression<E> const& e){\
-	typedef F<typename E::value_type> functor_type;\
-	return matrix_unary<E, functor_type>(e, functor_type());\
+#define REMORA_UNARY_MATRIX_TRANSFORMATION(name, F)\
+template<class MatA, class Device>\
+matrix_unary<MatA,typename device_traits<Device>:: template F<typename MatA::value_type> >\
+name(matrix_expression<MatA, Device> const& v){\
+	typedef typename device_traits<Device>:: template F<typename MatA::value_type> functor_type;\
+	return matrix_unary<MatA, functor_type >(v(), functor_type());\
 }
-SHARK_UNARY_MATRIX_TRANSFORMATION(conj, scalar_conj)
-SHARK_UNARY_MATRIX_TRANSFORMATION(real, scalar_real)
-SHARK_UNARY_MATRIX_TRANSFORMATION(imag, scalar_imag)
-SHARK_UNARY_MATRIX_TRANSFORMATION(abs, scalar_abs)
-SHARK_UNARY_MATRIX_TRANSFORMATION(log, scalar_log)
-SHARK_UNARY_MATRIX_TRANSFORMATION(exp, scalar_exp)
-SHARK_UNARY_MATRIX_TRANSFORMATION(sin, scalar_sin)
-SHARK_UNARY_MATRIX_TRANSFORMATION(cos, scalar_cos)
-SHARK_UNARY_MATRIX_TRANSFORMATION(tanh,scalar_tanh)
-SHARK_UNARY_MATRIX_TRANSFORMATION(atanh,scalar_atanh)
-SHARK_UNARY_MATRIX_TRANSFORMATION(sqr, scalar_sqr)
-SHARK_UNARY_MATRIX_TRANSFORMATION(abs_sqr, scalar_abs_sqr)
-SHARK_UNARY_MATRIX_TRANSFORMATION(sqrt, scalar_sqrt)
-SHARK_UNARY_MATRIX_TRANSFORMATION(sigmoid, scalar_sigmoid)
-SHARK_UNARY_MATRIX_TRANSFORMATION(softPlus, scalar_soft_plus)
-SHARK_UNARY_MATRIX_TRANSFORMATION(elem_inv, scalar_inverse)
-#undef SHARK_UNARY_MATRIX_TRANSFORMATION
-
-#define SHARK_MATRIX_SCALAR_TRANSFORMATION(name, F)\
-template<class E, class T> \
-typename boost::enable_if< \
-	std::is_convertible<T, typename E::value_type >,\
-        matrix_unary<E,F<typename E::value_type,T> > \
->::type \
-name (matrix_expression<E> const& e, T scalar){ \
-	typedef F<typename E::value_type, T> functor_type; \
-	return matrix_unary<E, functor_type>(e, functor_type(scalar)); \
-}
-SHARK_MATRIX_SCALAR_TRANSFORMATION(operator/, scalar_divide)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(operator<, scalar_less_than)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(operator<=, scalar_less_equal_than)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(operator>, scalar_bigger_than)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(operator>=, scalar_bigger_equal_than)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(operator==, scalar_equal)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(operator!=, scalar_not_equal)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(min, scalar_min)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(max, scalar_max)
-SHARK_MATRIX_SCALAR_TRANSFORMATION(pow, scalar_pow)
-#undef SHARK_MATRIX_SCALAR_TRANSFORMATION
-
-// operations of the form op(t,v)[i,j] = op(t,v[i,j])
-#define SHARK_MATRIX_SCALAR_TRANSFORMATION_2(name, F)\
-template<class T, class E> \
-typename boost::enable_if< \
-	std::is_convertible<T, typename E::value_type >,\
-        matrix_unary<E,F<typename E::value_type,T> > \
->::type \
-name (T scalar, matrix_expression<E> const& e){ \
-	typedef F<typename E::value_type, T> functor_type; \
-	return matrix_unary<E, functor_type>(e, functor_type(scalar)); \
-}
-SHARK_MATRIX_SCALAR_TRANSFORMATION_2(min, scalar_min)
-SHARK_MATRIX_SCALAR_TRANSFORMATION_2(max, scalar_max)
-#undef SHARK_MATRIX_SCALAR_TRANSFORMATION_2
+REMORA_UNARY_MATRIX_TRANSFORMATION(abs, abs)
+REMORA_UNARY_MATRIX_TRANSFORMATION(log, log)
+REMORA_UNARY_MATRIX_TRANSFORMATION(exp, exp)
+REMORA_UNARY_MATRIX_TRANSFORMATION(tanh,tanh)
+REMORA_UNARY_MATRIX_TRANSFORMATION(sqr, sqr)
+REMORA_UNARY_MATRIX_TRANSFORMATION(sqrt, sqrt)
+REMORA_UNARY_MATRIX_TRANSFORMATION(sigmoid, sigmoid)
+REMORA_UNARY_MATRIX_TRANSFORMATION(softPlus, soft_plus)
+REMORA_UNARY_MATRIX_TRANSFORMATION(elem_inv, inv)
+#undef REMORA_UNARY_MATRIX_TRANSFORMATION
 
 ///\brief Adds two Matrices
-template<class E1, class E2>
-matrix_addition<E1, E2 > operator+ (
-	matrix_expression<E1> const& e1,
-	matrix_expression<E2> const& e2
+template<class MatA, class MatB, class Device>
+matrix_addition<MatA, MatB > operator+ (
+	matrix_expression<MatA, Device> const& A,
+	matrix_expression<MatB, Device> const& B
 ){
-	return matrix_addition<E1, E2>(e1(),e2());
+	SIZE_CHECK(A().size1() == B().size1());
+	SIZE_CHECK(A().size2() == B().size2());
+	return matrix_addition<MatA, MatB>(A(),B());
 }
 
 ///\brief Subtracts two Matrices
-template<class E1, class E2>
-matrix_addition<E1, matrix_scalar_multiply<E2> > operator- (
-	matrix_expression<E1> const& e1,
-	matrix_expression<E2> const& e2
+template<class MatA, class MatB, class Device>
+matrix_addition<MatA, matrix_scalar_multiply<MatB> > operator- (
+	matrix_expression<MatA, Device> const& A,
+	matrix_expression<MatB, Device> const& B
 ){
-	return matrix_addition<E1, matrix_scalar_multiply<E2> >(e1(),-e2());
+	SIZE_CHECK(A().size1() == B().size1());
+	SIZE_CHECK(A().size2() == B().size2());
+	return matrix_addition<MatA, matrix_scalar_multiply<MatB> >(A(),-B());
 }
 
 ///\brief Adds a matrix plus a scalar which is interpreted as a constant matrix
-template<class E, class T>
+template<class MatA, class T, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::value_type>, 
-	matrix_addition<E, scalar_matrix<T> >
+	std::is_convertible<T, typename MatA::value_type>, 
+	matrix_addition<MatA, scalar_matrix<T,Device> >
 >::type operator+ (
-	matrix_expression<E> const& e,
+	matrix_expression<MatA, Device> const& A,
 	T t
 ){
-	return e + scalar_matrix<T>(e().size1(),e().size2(),t);
+	return A + scalar_matrix<T,Device>(A().size1(),A().size2(),t);
 }
 
 ///\brief Adds a matrix plus a scalar which is interpreted as a constant matrix
-template<class T, class E>
+template<class T, class MatA, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::value_type>,
-	matrix_addition<E, scalar_matrix<T> >
+	std::is_convertible<T, typename MatA::value_type>,
+	matrix_addition<MatA, scalar_matrix<T,Device> >
 >::type operator+ (
 	T t,
-	matrix_expression<E> const& e
+	matrix_expression<MatA, Device> const& A
 ){
-	return e + scalar_matrix<T>(e().size1(),e().size2(),t);
+	return A + scalar_matrix<T,Device>(A().size1(),A().size2(),t);
 }
 
 ///\brief Subtracts a scalar which is interpreted as a constant matrix from a matrix.
-template<class E, class T>
+template<class MatA, class T, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::value_type> ,
-	matrix_addition<E, matrix_scalar_multiply<scalar_matrix<T> > >
+	std::is_convertible<T, typename MatA::value_type> ,
+	matrix_addition<MatA, matrix_scalar_multiply<scalar_matrix<T,Device> > >
 >::type operator- (
-	matrix_expression<E> const& e,
+	matrix_expression<MatA, Device> const& A,
 	T t
 ){
-	return e - scalar_matrix<T>(e().size1(),e().size2(),t);
+	return A - scalar_matrix<T,Device>(A().size1(),A().size2(),t);
 }
 
 ///\brief Subtracts a matrix from a scalar which is interpreted as a constant matrix
-template<class E, class T>
+template<class MatA, class T, class Device>
 typename boost::enable_if<
-	std::is_convertible<T, typename E::value_type>,
-	matrix_addition<scalar_matrix<T>, matrix_scalar_multiply<E> >
+	std::is_convertible<T, typename MatA::value_type>,
+	matrix_addition<scalar_matrix<T,Device>, matrix_scalar_multiply<MatA> >
 >::type operator- (
 	T t,
-	matrix_expression<E> const& e
+	matrix_expression<MatA, Device> const& A
 ){
-	return scalar_matrix<T>(e().size1(),e().size2(),t) - e;
+	return scalar_matrix<T,Device>(A().size1(),A().size2(),t) - A;
 }
 
-#define SHARK_BINARY_MATRIX_EXPRESSION(name, F)\
-template<class E1, class E2>\
-matrix_binary<E1, E2, F<typename E1::value_type, typename E2::value_type> >\
-name(matrix_expression<E1> const& e1, matrix_expression<E2> const& e2){\
-	typedef F<typename E1::value_type, typename E2::value_type> functor_type;\
-	return matrix_binary<E1, E2, functor_type>(e1,e2, functor_type());\
+#define REMORA_BINARY_MATRIX_EXPRESSION(name, F)\
+template<class MatA, class MatB, class Device>\
+matrix_binary<MatA, MatB, typename device_traits<Device>:: template F<typename common_value_type<MatA,MatB>::type> >\
+name(matrix_expression<MatA, Device> const& m1, matrix_expression<MatB, Device> const& m2){\
+	SIZE_CHECK(m1().size1() == m2().size1());\
+	SIZE_CHECK(m1().size2() == m2().size2());\
+	typedef typename common_value_type<MatA,MatB>::type type;\
+	typedef typename device_traits<Device>:: template F<type> functor_type;\
+	return matrix_binary<MatA, MatB, functor_type >(m1(),m2(), functor_type());\
 }
-SHARK_BINARY_MATRIX_EXPRESSION(operator*, scalar_binary_multiply)
-SHARK_BINARY_MATRIX_EXPRESSION(element_prod, scalar_binary_multiply)
-SHARK_BINARY_MATRIX_EXPRESSION(operator/, scalar_binary_divide)
-SHARK_BINARY_MATRIX_EXPRESSION(pow,scalar_binary_pow)
-SHARK_BINARY_MATRIX_EXPRESSION(element_div, scalar_binary_divide)
-#undef SHARK_BINARY_MATRIX_EXPRESSION
+REMORA_BINARY_MATRIX_EXPRESSION(operator*, multiply)
+REMORA_BINARY_MATRIX_EXPRESSION(element_prod, multiply)
+REMORA_BINARY_MATRIX_EXPRESSION(operator/, divide)
+REMORA_BINARY_MATRIX_EXPRESSION(element_div, divide)
+REMORA_BINARY_MATRIX_EXPRESSION(pow,pow)
+REMORA_BINARY_MATRIX_EXPRESSION(min,min)
+REMORA_BINARY_MATRIX_EXPRESSION(max,max)
+#undef REMORA_BINARY_MATRIX_EXPRESSION
 
-template<class E1, class E2>
-matrix_binary<E1, E2, 
-	scalar_binary_safe_divide<typename E1::value_type, typename E2::value_type> 
+#define REMORA_MATRIX_SCALAR_TRANSFORMATION(name, F)\
+template<class T, class MatA, class Device> \
+typename boost::enable_if< \
+	std::is_convertible<T, typename MatA::value_type >,\
+        matrix_binary<MatA, scalar_matrix<typename MatA::value_type,Device>,typename device_traits<Device>:: template  F<typename MatA::value_type> > \
+>::type \
+name (matrix_expression<MatA, Device> const& m, T t){ \
+	typedef typename MatA::value_type type;\
+	typedef typename device_traits<Device>:: template F<type> functor_type;\
+	return matrix_binary<MatA, scalar_matrix<type,Device>, functor_type >(m(), scalar_matrix<type,Device>(m().size1(), m().size2(), t) ,functor_type()); \
+}
+REMORA_MATRIX_SCALAR_TRANSFORMATION(operator/, divide)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(operator<, less_than)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(operator<=, less_equal_than)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(operator>, bigger_than)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(operator>=, bigger_equal_than)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(operator==, equal)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(operator!=, not_equal)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(min, min)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(max, max)
+REMORA_MATRIX_SCALAR_TRANSFORMATION(pow, pow)
+#undef REMORA_MATRIX_SCALAR_TRANSFORMATION
+
+// operations of the form op(t,v)[i,j] = op(t,v[i,j])
+#define REMORA_MATRIX_SCALAR_TRANSFORMATION_2(name, F)\
+template<class T, class MatA, class Device> \
+typename boost::enable_if< \
+	std::is_convertible<T, typename MatA::value_type >,\
+	matrix_binary<scalar_matrix< typename MatA::value_type,Device>, MatA, typename device_traits<Device>:: template F< typename MatA::value_type> > \
+>::type \
+name (T t, matrix_expression<MatA, Device> const& m){ \
+	typedef typename MatA::value_type type;\
+	typedef typename device_traits<Device>:: template F<type> functor_type;\
+	return  matrix_binary<scalar_matrix<type,Device>, MatA, functor_type >(scalar_matrix<type,Device>(m().size1(), m().size2(), t), m(), functor_type()); \
+}
+REMORA_MATRIX_SCALAR_TRANSFORMATION_2(min, min)
+REMORA_MATRIX_SCALAR_TRANSFORMATION_2(max, max)
+#undef REMORA_MATRIX_SCALAR_TRANSFORMATION_2
+
+template<class MatA, class MatB, class Device>
+matrix_binary<MatA, MatB, 
+	typename device_traits<Device>:: template  safe_divide<typename common_value_type<MatA,MatB>::type> 
 >
 safe_div(
-	matrix_expression<E1> const& e1, 
-	matrix_expression<E2> const& e2, 
-	decltype(typename E1::value_type()/typename E2::value_type()) defaultValue
+	matrix_expression<MatA, Device> const& A, 
+	matrix_expression<MatB, Device> const& B, 
+	typename common_value_type<MatA,MatB>::type defaultValue
 ){
-	typedef scalar_binary_safe_divide<typename E1::value_type, typename E2::value_type> functor_type;
-	return matrix_binary<E1, E2, functor_type>(e1,e2, functor_type(defaultValue));
+	SIZE_CHECK(A().size1() == B().size1());
+	SIZE_CHECK(A().size2() == B().size2());
+	typedef typename common_value_type<MatA,MatB>::type result_type;
+	typedef typename device_traits<Device>:: template safe_divide<result_type> functor_type;
+	return matrix_binary<MatA, MatB, functor_type>(A(),B(), functor_type(defaultValue));
 }
 
 
@@ -271,8 +282,11 @@ safe_div(
 /// The call to prod does not compute the product itself but instead, as all other expressions,
 /// it returns an expression-object which can compute it. In contrast to other expression,
 /// this expression is optimized to make use of well known mathematical identities to reduce run time of the algorithm.
-template<class MatA, class VecV>
-typename detail::matrix_vector_prod_optimizer<MatA,VecV>::type prod(matrix_expression<MatA> const& A,vector_expression<VecV> const& v) {
+template<class MatA, class VecV, class Device>
+typename detail::matrix_vector_prod_optimizer<MatA,VecV>::type prod(
+	matrix_expression<MatA, Device> const& A,vector_expression<VecV, Device> const& v
+) {
+	SIZE_CHECK(A().size2() == v().size());
 	return detail::matrix_vector_prod_optimizer<MatA,VecV>::create(A(),v());
 }
 
@@ -283,10 +297,28 @@ typename detail::matrix_vector_prod_optimizer<MatA,VecV>::type prod(matrix_expre
 /// The call to prod does not compute the product itself but instead, as all other expressions,
 /// it returns an expression-object which can compute it. In contrast to other expression,
 /// this expression is optimized to make use of well known mathematical identities to reduce run time of the algorithm.
-template<class MatA, class VecV>
-typename detail::matrix_vector_prod_optimizer<matrix_transpose<MatA>,VecV>::type prod(vector_expression<VecV> const& v,matrix_expression<MatA> const& A) {
-	typedef typename matrix_transpose<MatA>::const_closure_type closure;
-	return detail::matrix_vector_prod_optimizer<matrix_transpose<MatA>,VecV>::create(closure(A()),v());
+template<class MatA, class VecV, class Device>
+auto prod(vector_expression<VecV, Device> const& v,matrix_expression<MatA, Device> const& A) -> decltype(prod(trans(A),v)){
+	SIZE_CHECK(A().size1() == v().size());
+	return prod(trans(A),v);
+}
+
+/// \brief Operator syntax for computes the matrix-vector product
+///
+/// v%A= prod(v,A).
+template<class MatA, class VecV, class Device>
+auto operator%(vector_expression<VecV, Device> const& v,matrix_expression<MatA, Device> const& A) -> decltype(prod(trans(A),v)){
+	SIZE_CHECK(A().size1() == v().size());
+	return prod(trans(A),v);
+}
+
+/// \brief Operator syntax for computes the matrix-vector product
+///
+/// A%v = prod(A,v).
+template<class MatA, class VecV, class Device>
+auto operator%(matrix_expression<MatA, Device> const& A,vector_expression<VecV, Device> const& v) -> decltype(prod(A,v)){
+	SIZE_CHECK(A().size2() == v().size());
+	return prod(A,v);
 }
 
 /// \brief Computes the matrix-vector product x+= alpha * Av or x= alpha * Av
@@ -296,24 +328,38 @@ typename detail::matrix_vector_prod_optimizer<matrix_transpose<MatA>,VecV>::type
 /// of triangular matrix: lower, upper, unit_lower and unit_upper.
 ///
 ///Example: x += triangular_prod<lower>(A,v);
-template<class TriangularType, class MatA, class VecV>
+template<class TriangularType, class MatA, class VecV, class Device>
 matrix_vector_prod<detail::dense_triangular_proxy<MatA const,TriangularType> ,VecV> triangular_prod(
-	matrix_expression<MatA> const& A,
-	vector_expression<VecV>& v
+	matrix_expression<MatA, Device> const& A,
+	vector_expression<VecV, Device>& v
 ) {
+	SIZE_CHECK(A().size2() == v().size());
 	typedef detail::dense_triangular_proxy<MatA const,TriangularType> Wrapper;
 	return matrix_vector_prod<Wrapper ,VecV>(Wrapper(A()), v());
 }
 
 /// \brief computes the matrix-matrix product X+=AB
-template<class MatA, class MatB>
-matrix_matrix_prod<MatA,MatB> prod(
-	matrix_expression<MatA> const& A,
-	matrix_expression<MatB> const& B
+template<class MatA, class MatB, class Device>
+typename detail::matrix_matrix_prod_optimizer<MatA,MatB>::type prod(
+	matrix_expression<MatA, Device> const& A,
+	matrix_expression<MatB, Device> const& B
 ) {
+	SIZE_CHECK(A().size2() == B().size1());
 	static_assert(std::is_base_of<linear_structure, typename MatA::orientation>::value, "A must be linearly stored");
 	static_assert(std::is_base_of<linear_structure, typename MatB::orientation>::value, "B must be linearly stored");
-	return matrix_matrix_prod<MatA,MatB>(A(),B());
+	return detail::matrix_matrix_prod_optimizer<MatA,MatB>::create(A(),B());
+}
+
+/// \brief Operator syntax for computes the matrix-matrix product
+///
+/// A%B= prod(A,B).
+template<class MatA, class MatB, class Device>
+auto operator%(
+	matrix_expression<MatA, Device> const& A,
+	matrix_expression<MatB, Device> const& B
+) -> decltype(prod(A,B)){
+	SIZE_CHECK(A().size2() == B().size1());
+	return prod(A,B);
 }
 
 /// \brief Computes the matrix-vector product x+= alpha * AB or x= alpha * AB
@@ -324,405 +370,249 @@ matrix_matrix_prod<MatA,MatB> prod(
 /// B is interpreted as dense matrix.
 ///
 ///Example: x += triangular_prod<lower>(A,v);
-template<class TriangularType, class MatA, class MatB>
-matrix_matrix_prod<detail::dense_triangular_proxy<MatA const,TriangularType> ,MatB>
+template<class TriangularType, class MatA, class MatB, class Device>
+matrix_matrix_prod<detail::dense_triangular_proxy<typename const_expression<MatA>::type,TriangularType> ,MatB>
 triangular_prod(
-	matrix_expression<MatA> const& A,
-	matrix_expression<MatB> const& B
+	matrix_expression<MatA, Device> const& A,
+	matrix_expression<MatB, Device> const& B
 ) {
+	SIZE_CHECK(A().size2() == B().size1());
 	static_assert(std::is_base_of<linear_structure, typename MatA::orientation>::value, "A must be linearly stored");
 	static_assert(std::is_base_of<linear_structure, typename MatB::orientation>::value, "B must be linearly stored");
-	typedef detail::dense_triangular_proxy<MatA const,TriangularType> Wrapper;
+	typedef detail::dense_triangular_proxy<typename const_expression<MatA>::type,TriangularType> Wrapper;
 	return matrix_matrix_prod<Wrapper ,MatB>(Wrapper(A()), B());
 }
 
-namespace detail{
-	
-template<class MatA,class VecB>
-void sum_rows_impl(MatA const& matA, VecB& vecB, column_major){
-	for(std::size_t i = 0; i != matA.size2(); ++i){ 
-		vecB(i)+=sum(column(matA,i));
-	}
+template<class MatA, class Device>
+sum_matrix_rows<MatA>
+sum_rows(matrix_expression<MatA, Device> const& A){
+	return sum_matrix_rows<MatA>(A());
 }
 
-template<class MatA,class VecB>
-void sum_rows_impl(MatA const& matA, VecB& vecB, row_major){
-	for(std::size_t i = 0; i != matA.size1(); ++i){ 
-		noalias(vecB) += row(matA,i);
-	}
-}
-
-template<class MatA,class VecB>
-void sum_rows_impl(MatA const& matA, VecB& vecB, unknown_orientation){
-	sum_rows_impl(matA,vecB,row_major());
-}
-
-//dispatcher for triangular matrix
-template<class MatA,class VecB,class Orientation,class Triangular>
-void sum_rows_impl(MatA const& matA, VecB& vecB, triangular<Orientation,Triangular>){
-	sum_rows_impl(matA,vecB,Orientation());
+template<class MatA, class Device>
+auto sum_columns(matrix_expression<MatA, Device> const& A)->decltype(sum_rows(trans(A))){
+	return sum_rows(trans(A));
 }
 
 
-//dispatcher 
-template<class MatA,class VecB>
-void sum_rows_impl(MatA const& matA, VecB& vecB){
-	sum_rows_impl(matA,vecB,typename MatA::orientation());
-}
-
-template<class MatA>
-typename MatA::value_type sum_impl(MatA const& matA, column_major){
-	typename MatA::value_type totalSum = 0;
-	for(std::size_t j = 0; j != matA.size2(); ++j){
-		totalSum += sum(column(matA,j));
-	}
-	return totalSum;
-}
-
-template<class MatA>
-typename MatA::value_type sum_impl(MatA const& matA, row_major){
-	typename MatA::value_type totalSum = 0;
-	for(std::size_t i = 0; i != matA.size1(); ++i){
-		totalSum += sum(row(matA,i));
-	}
-	return totalSum;
-}
-
-template<class MatA>
-typename MatA::value_type sum_impl(MatA const& matA, unknown_orientation){
-	return sum_impl(matA,row_major());
-}
-
-
-//dispatcher for triangular matrix
-template<class MatA,class Orientation,class Triangular>
-typename MatA::value_type sum_impl(MatA const& matA, triangular<Orientation,Triangular>){
-	return sum_impl(matA,Orientation());
-}
-
-//dispatcher
-template<class MatA>
-typename MatA::value_type sum_impl(MatA const& matA){
-	return sum_impl(matA,typename MatA::orientation());
-}
-
-template<class MatA>
-typename MatA::value_type max_impl(MatA const& matA, column_major){
-	typename MatA::value_type maximum = 0;
-	for(std::size_t j = 0; j != matA.size2(); ++j){
-		maximum = std::max(maximum, max(column(matA,j)));
-	}
-	return maximum;
-}
-
-template<class MatA>
-typename MatA::value_type max_impl(MatA const& matA, row_major){
-	typename MatA::value_type maximum = 0;
-	for(std::size_t i = 0; i != matA.size1(); ++i){
-		maximum= std::max(maximum, max(row(matA,i)));
-	}
-	return maximum;
-}
-
-template<class MatA>
-typename MatA::value_type max_impl(MatA const& matA, unknown_orientation){
-	return max_impl(matA,row_major());
-}
-
-//dispatcher for triangular matrix
-template<class MatA,class Orientation,class Triangular>
-typename MatA::value_type max_impl(MatA const& matA, triangular<Orientation, Triangular>){
-	return std::max(max_impl(matA,Orientation()),0.0);
-}
-
-//dispatcher
-template<class MatA>
-typename MatA::value_type max_impl(MatA const& matA){
-	return max_impl(matA,typename MatA::orientation());
-}
-
-template<class MatA>
-typename MatA::value_type min_impl(MatA const& matA, column_major){
-	typename MatA::value_type minimum = 0;
-	for(std::size_t j = 0; j != matA.size2(); ++j){
-		minimum= std::min(minimum, min(column(matA,j)));
-	}
-	return minimum;
-}
-
-template<class MatA>
-typename MatA::value_type min_impl(MatA const& matA, row_major){
-	typename MatA::value_type minimum = 0;
-	for(std::size_t i = 0; i != matA.size1(); ++i){
-		minimum= std::min(minimum, min(row(matA,i)));
-	}
-	return minimum;
-}
-
-template<class MatA>
-typename MatA::value_type min_impl(MatA const& matA, unknown_orientation){
-	return min_impl(matA,row_major());
-}
-
-//dispatcher for triangular matrix
-template<class MatA,class Orientation,class Triangular>
-typename MatA::value_type min_impl(MatA const& matA, triangular<Orientation,Triangular>){
-	return std::min(min_impl(matA,Orientation()),0.0);
-}
-
-//dispatcher
-template<class MatA>
-typename MatA::value_type min_impl(MatA const& matA){
-	return min_impl(matA,typename MatA::orientation());
-}
-
-}//end detail
-
-//dispatcher
-template<class MatA>
-typename vector_temporary_type<
-	typename MatA::value_type,
-	dense_random_access_iterator_tag
->::type
-sum_rows(matrix_expression<MatA> const& A){
-	typename vector_temporary_type<
-		typename MatA::value_type,
-		dense_random_access_iterator_tag
-	>::type result(A().size2(),0.0);
-	detail::sum_rows_impl(eval_block(A),result);
+template<class MatA, class Device>
+typename MatA::value_type sum(matrix_expression<MatA, Device> const& A){
+	typedef typename MatA::value_type value_type;
+	typedef typename device_traits<Device>:: template add<value_type> functor_type;
+	auto const& elem_result = eval_block(A);
+	value_type result = 0;
+	kernels::matrix_fold<functor_type>(elem_result,result);
 	return result;
 }
 
-template<class MatA>
-typename vector_temporary_type<
-	typename MatA::value_type,
-	dense_random_access_iterator_tag
->::type
-sum_columns(matrix_expression<MatA> const& A){
-	//implemented using sum_rows_impl by transposing A
-	typename vector_temporary_type<
-		typename MatA::value_type,
-		dense_random_access_iterator_tag
-	>::type result(A().size1(),0);
-	detail::sum_rows_impl(eval_block(trans(A)),result);
+template<class MatA, class Device>
+typename MatA::value_type max(matrix_expression<MatA, Device> const& A){
+	typedef typename MatA::value_type value_type;
+	typedef typename device_traits<Device>:: template max<value_type> functor_type;
+	auto const& elem_result = eval_block(A);
+	value_type result = 0;
+	kernels::matrix_fold<functor_type>(elem_result,result);
 	return result;
 }
 
-
-template<class MatA>
-typename MatA::value_type sum(matrix_expression<MatA> const& A){
-	return detail::sum_impl(eval_block(A));
+template<class MatA, class Device>
+typename MatA::value_type min(matrix_expression<MatA, Device> const& A){
+	typedef typename MatA::value_type value_type;
+	typedef typename device_traits<Device>:: template min<value_type> functor_type;
+	auto const& elem_result = eval_block(A);
+	value_type result = 0;
+	kernels::matrix_fold<functor_type>(elem_result,result);
+	return result;
 }
 
-template<class MatA>
-typename MatA::value_type max(matrix_expression<MatA> const& A){
-	return detail::max_impl(eval_block(A));
-}
-
-template<class MatA>
-typename MatA::value_type min(matrix_expression<MatA> const& A){
-	return detail::min_impl(eval_block(A));
-}
-
-/// \brief Returns the frobenius inner-product between matrices exprssions 1 and e2.
+/// \brief Returns the frobenius inner-product between matrices exprssions 1 and B.
 ///
 ///The frobenius inner product is defined as \f$ <A,B>_F=\sum_{ij} A_ij*B_{ij} \f$. It induces the
 /// Frobenius norm \f$ ||A||_F = \sqrt{<A,A>_F} \f$
-template<class E1, class E2>
-decltype(typename E1::value_type() * typename E2::value_type())
+template<class MatA, class MatB, class Device>
+decltype(typename MatA::value_type() * typename MatB::value_type())
 frobenius_prod(
-	matrix_expression<E1> const& e1,
-	matrix_expression<E2> const& e2
+	matrix_expression<MatA, Device> const& A,
+	matrix_expression<MatB, Device> const& B
 ) {
-	return sum(eval_block(e1)*eval_block(e2));
+	SIZE_CHECK(A().size1() == B().size1());
+	SIZE_CHECK(A().size2() == B().size2());
+	return sum(eval_block(A*B));
 }
 
-
-template<class E>
-typename matrix_norm_1<E>::result_type
-norm_1(const matrix_expression<E> &e) {
-	return matrix_norm_1<E>::apply(eval_block(e));
+/// \brief Computes the matrix 1-norm |A|_1
+/// 
+/// It is defined as \f$ \max_i \sum_j |A_{ij}| \f$ 
+template<class MatA, class Device>
+typename real_traits<typename MatA::value_type>::type
+norm_1(matrix_expression<MatA, Device> const& A) {
+	return max(sum_rows(abs(A)));
 }
 
-template<class E>
-typename real_traits<typename E::value_type>::type
-norm_frobenius(const matrix_expression<E> &e) {
+/// \brief computes the frobenius norm |A|_F
+///
+/// It is defined as \f$ \sqrt{Tr(A^TA)}=\sqrt{\sum_{ij} A_{ij}^2} \f$
+template<class MatA, class Device>
+typename real_traits<typename MatA::value_type>::type
+norm_frobenius(matrix_expression<MatA, Device> const& A) {
 	using std::sqrt;
-	return sqrt(sum(abs_sqr(eval_block(e))));
+	return sqrt(sum(sqr(eval_block(A))));
 }
 
-template<class E>
-typename matrix_norm_inf<E>::result_type
-norm_inf(const matrix_expression<E> &e) {
-	return matrix_norm_inf<E>::apply(eval_block(e));
+/// \brief Computes the matrix inf-norm |A|_inf
+/// 
+/// It is defined as \f$ \max_i \sum_j |A_{ij}| \f$ 
+template<class MatA, class Device>
+typename real_traits<typename MatA::value_type>::type
+norm_inf(matrix_expression<MatA, Device> const& A) {
+	return max(sum_columns(abs(A)));
 }
 
-/// \brief Evaluates the trace of matrix m
+/// \brief Evaluates the trace of matrix A
 ///
-/// The rtace is defined as the sum of the diagonal elements of m,
-/// \f$ \text{trace}(m) = \sum_i m_{ii}\f$
+/// The rtace is defined as the sum of the diagonal elements of A,
+/// \f$ \text{trace}(A) = \sum_i A_{ii}\f$
 ///
-/// \param  m square matrix
-/// \return the sum of the values at the diagonal of \em m
-template < class MatrixT >
-typename MatrixT::value_type trace(matrix_expression<MatrixT> const& m)
+/// \param  A square matrix
+/// \return the sum of the values at the diagonal of \em A
+template < class MatA, class Device>
+typename MatA::value_type trace(matrix_expression<MatA, Device> const& A)
 {
-	SIZE_CHECK(m().size1() == m().size2());
-	return sum(shark::blas::diag (m));
+	SIZE_CHECK(A().size1() == A().size2());
+	return sum(remora::diag (A));
 }
-
-/// \brief An diagonal matrix with values stored inside a diagonal vector
-///
-/// the matrix stores a Vector representing the diagonal.
-template<class VectorType>
-class diagonal_matrix: public matrix_expression<diagonal_matrix< VectorType > > {
-	typedef diagonal_matrix< VectorType > self_type;
-public:
-	typedef std::size_t size_type;
-	typedef std::ptrdiff_t difference_type;
-	typedef typename VectorType::value_type value_type;
-	typedef typename VectorType::scalar_type scalar_type;
-	typedef typename VectorType::const_reference const_reference;
-	typedef typename VectorType::reference reference;
-	typedef typename VectorType::pointer pointer;
-	typedef typename VectorType::const_pointer const_pointer;
-
-	typedef std::size_t index_type;
-	typedef index_type const* const_index_pointer;
-	typedef index_type index_pointer;
-
-	typedef const matrix_reference<const self_type> const_closure_type;
-	typedef matrix_reference<self_type> closure_type;
-	typedef sparse_tag storage_category;
-	typedef elementwise_tag evaluation_category;
-	typedef row_major orientation;
-
-	// Construction and destruction
-	diagonal_matrix():m_zero(){}
-	diagonal_matrix(VectorType const& diagonal):m_zero(),m_diagonal(diagonal){}
-
-	// Accessors
-	size_type size1() const {
-		return m_diagonal.size();
-	}
-	size_type size2() const {
-		return m_diagonal.size();
-	}
-	
-	// Element access
-	const_reference operator()(index_type i, index_type j) const {
-		if (i == j)
-			return m_diagonal(i);
-		else
-			return m_zero;
-	}
-
-	void set_element(size_type i, size_type j,value_type t){
-		RANGE_CHECK(i == j);
-		m_diagonal(i) = t;
-	}
-
-	// Assignment
-	diagonal_matrix& operator = (diagonal_matrix const& m) {
-		m_diagonal = m.m_diagonal;
-		return *this;
-	}
-
-	// Swapping
-	void swap(diagonal_matrix& m) {
-		swap(m_diagonal,m.m_diagonal);
-	}
-	friend void swap(diagonal_matrix& m1, diagonal_matrix& m2) {
-		m1.swap(m2);
-	}
-	
-	//Iterators
-	
-	class const_row_iterator:public bidirectional_iterator_base<const_row_iterator, value_type> {
-	public:
-		typedef typename diagonal_matrix::value_type value_type;
-		typedef typename diagonal_matrix::difference_type difference_type;
-		typedef typename diagonal_matrix::const_reference reference;
-		typedef value_type const* pointer;
-
-		// Construction and destruction
-		const_row_iterator(){}
-		const_row_iterator(index_type index, value_type value, bool isEnd)
-			:m_index(index),m_value(value),m_isEnd(isEnd){}
-
-		// Arithmetic
-		const_row_iterator& operator ++ () {
-			m_isEnd = true;
-			return *this;
-		}
-		const_row_iterator& operator -- () {
-			m_isEnd = false;
-			return *this;
-		}
-
-		// Dereference
-		const_reference operator*() const {
-			return m_value;
-		}
-
-		// Indices
-		index_type index() const{
-			return m_index;
-		}
-
-		// Assignment
-		const_row_iterator& operator = (const_row_iterator const& it) {
-			m_index = it.m_index;
-			return *this;
-		}
-
-		// Comparison
-		bool operator == (const_row_iterator const& it) const {
-			RANGE_CHECK(m_index == it.m_index);
-			return m_isEnd == it.m_isEnd;
-		}
-
-	private:
-		index_type m_index;
-		value_type m_value;
-		bool m_isEnd;
-	};
-	typedef const_row_iterator const_column_iterator;
-	typedef const_row_iterator row_iterator;
-	typedef const_column_iterator column_iterator;
-
-	
-	const_row_iterator row_begin(index_type i) const {
-		return row_iterator(i, m_diagonal(i),false);
-	}
-	const_row_iterator row_end(index_type i) const {
-		return const_row_iterator(i, m_zero,true);
-	}
-	const_column_iterator column_begin(index_type i) const {
-		return column_iterator(i, m_diagonal(i),false);
-	}
-	const_column_iterator column_end(index_type i) const {
-		return const_column_iterator(i, m_zero,true);
-	}
-
-private:
-	value_type const m_zero;
-	VectorType m_diagonal; 
-};
 
 /** \brief An identity matrix with values of type \c T
  *
  * Elements or cordinates \f$(i,i)\f$ are equal to 1 (one) and all others to 0 (zero).
  */
 template<class T>
-class identity_matrix: public diagonal_matrix<scalar_vector<T> > {
-	typedef diagonal_matrix<scalar_vector<T> > base_type;
+class identity_matrix: public diagonal_matrix<scalar_vector<T, cpu_tag> > {
+	typedef diagonal_matrix<scalar_vector<T, cpu_tag> > base_type;
 public:
 	identity_matrix(){}
-	identity_matrix(std::size_t size):base_type(scalar_vector<T>(size,T(1))){}
+	identity_matrix(std::size_t size):base_type(scalar_vector<T, cpu_tag>(size,T(1))){}
 };
 
+
+template<class MatA, class Device>
+diagonal_matrix<MatA> to_diagonal(vector_expression<MatA, Device> const& A){
+	return diagonal_matrix<MatA>(A());
 }
+
+
+// Block-Matrix Creation
+
+/// \brief Forms the block matrix (A|B) where B is to the right of A
+template<class MatA, class MatB, class Device>
+matrix_concat<MatA, MatB, true> operator|(
+	matrix_expression<MatA, Device> const& A,
+	matrix_expression<MatB, Device> const& B
+){
+	return matrix_concat<MatA, MatB, true>(A(),B());
+}
+
+/// \brief Forms the block matrix (A|v) where v is a column vector to the right of A
+template<class MatA, class VecV, class Device>
+auto operator|(
+	matrix_expression<MatA, Device> const& A,
+	vector_expression<VecV, Device> const& v
+) -> decltype(A | trans(repeat(v,1))){
+	return A | trans(repeat(v,1));
+}
+
+/// \brief Forms the block matrix (v|A) where v is a column vector to the left of A
+template<class MatA, class VecV, class Device>
+auto operator|(
+	vector_expression<VecV, Device> const& v,
+	matrix_expression<MatA, Device> const& A
+) -> decltype(trans(repeat(v,1)) | A){
+	return trans(repeat(v,1)) | A;
+}
+
+/// \brief Forms the block matrix (A|t)
+///
+/// The scalar t is interpreted as column vector
+template<class MatA, class T, class Device>
+typename boost::enable_if<
+	std::is_convertible<T, typename MatA::value_type>, 
+	matrix_concat<MatA, scalar_matrix<T, Device>, true > 
+>::type operator|(
+	matrix_expression<MatA, Device> const& A,
+	T const& t
+){
+	return A | repeat(t,A().size1(), 1);
+}
+
+/// \brief Forms the block matrix (t|A)
+///
+/// The scalar t is interpreted as column vector
+template<class MatA, class T, class Device>
+typename boost::enable_if<
+	std::is_convertible<T, typename MatA::value_type>, 
+	matrix_concat<scalar_matrix<T, Device>, MatA, true > 
+>::type operator|(
+	T const& t,
+	matrix_expression<MatA, Device> const& A
+){
+	return repeat(t,A().size1(), 1) | A;
+}
+
+///\brief Forms the block matrix A&B where A is on top of B
+template<class MatA, class MatB, class Device>
+matrix_concat<MatA, MatB, false> operator&(
+	matrix_expression<MatA, Device> const& A,
+	matrix_expression<MatB, Device> const& B
+){
+	return matrix_concat<MatA, MatB, false>(A(),B());
+}
+
+/// \brief Forms the block matrix (A & v) where v is a row vector on the bottom of A
+template<class MatA, class VecV, class Device>
+auto operator&(
+	matrix_expression<MatA, Device> const& A,
+	vector_expression<VecV, Device> const& v
+) -> decltype(A & repeat(v,1)){
+	return A & repeat(v,1);
+}
+
+/// \brief Forms the block matrix (A & v) where v is a row vector on the top of A
+template<class MatA, class VecV, class Device>
+auto operator&(
+	vector_expression<VecV, Device> const& v,
+	matrix_expression<MatA, Device> const& A
+) -> decltype(repeat(v,1) & A){
+	return repeat(v,1) & A;
+}
+
+/// \brief Forms the block matrix (A & t)
+///
+/// The scalar t is interpreted as row vector
+template<class MatA, class T, class Device>
+typename boost::enable_if<
+	std::is_convertible<T, typename MatA::value_type>, 
+	matrix_concat<MatA, scalar_matrix<T, Device>, false > 
+>::type operator&(
+	matrix_expression<MatA, Device> const& A,
+	T const& t
+){
+	return A & repeat(t, 1, A().size2());
+}
+
+/// \brief Forms the block matrix (t & A)
+///
+/// The scalar t is interpreted as row vector
+template<class MatA, class T, class Device>
+typename boost::enable_if<
+	std::is_convertible<T, typename MatA::value_type>, 
+	matrix_concat<scalar_matrix<T, Device>, MatA, false > 
+>::type operator&(
+	T const& t,
+	matrix_expression<MatA, Device> const& A
+){
+	return repeat(t,1, A().size2()) & A;
+}
+
 }
 
 #endif

@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -19,11 +20,11 @@
  * \date        -
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -78,7 +79,7 @@ public:
         , m_lambda( 200 )
         , m_userSetMu(false)
         ,m_userSetLambda(false)
-        , m_initSigma(-1)
+        , m_initSigma(0)
         , mpe_rng(&rng){
                 m_features |= REQUIRES_VALUE;
         }
@@ -134,6 +135,14 @@ public:
         std::size_t lambda() const {
                 return m_lambda;
         }
+        
+        RealVector eigenValues()const{
+                return sqr(remora::diag (m_mutationDistribution.lowerCholeskyFactor()));
+        }
+        
+        double sigma()const{
+                return m_sigma;
+        }
 protected:
         /// \brief The type of individual used by the CMSA
         typedef Individual< RealVector, double, LightChromosome > IndividualType;
@@ -167,7 +176,7 @@ private:
 
         RealVector m_mean; ///< The current cog of the population.
 
-        MultiVariateNormalDistribution m_mutationDistribution; ///< Multi-variate normal mutation distribution.   
+        MultiVariateNormalDistributionCholesky m_mutationDistribution; ///< Multi-variate normal mutation distribution.   
         DefaultRngType* mpe_rng;
 };
 }

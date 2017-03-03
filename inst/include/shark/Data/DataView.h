@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -13,11 +14,11 @@
  * \date        2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -172,12 +173,23 @@ public:
 		Index const& index = m_indices[position];
 		return get(m_dataset.batch(index.batch),index.positionInBatch);
 	}
-	/// \brief returns the position of the element inside the dataset
+
+	/// \brief Position of the element in the dataset.
 	///
 	/// This is useful for bagging, when identical elements among
 	/// several subsets are to be identified.
 	std::size_t index(std::size_t position)const{
 		return m_indices[position].datasetIndex;
+	}
+
+	/// \brief Index of the batch holding the element.
+	std::size_t batch(std::size_t position) const {
+		return m_indices[position].batch;
+	}
+
+	/// \brief Index inside the batch holding the element.
+	std::size_t positionInBatch(std::size_t position) const {
+		return m_indices[position].positionInBatch;
 	}
 
 	std::size_t size() const{

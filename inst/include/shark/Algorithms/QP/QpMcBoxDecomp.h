@@ -11,11 +11,11 @@
  * \date        2007-2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -37,7 +37,6 @@
 #ifndef SHARK_ALGORITHMS_QP_QPMCBOXDECOMP_H
 #define SHARK_ALGORITHMS_QP_QPMCBOXDECOMP_H
 
-#include <Rcpp.h>
 #include <shark/Algorithms/QP/QpSolver.h>
 #include <shark/Algorithms/QP/QpSparseArray.h>
 #include <shark/Algorithms/QP/Impl/AnalyticProblems.h>
@@ -143,6 +142,10 @@ public:
 			solutionMatrix(originalIndex(v),m_variables[v].p) = m_alpha(v);
 		}
 		return solutionMatrix;
+	}
+	
+	double alpha(std::size_t i, std::size_t p)const{
+		return m_alpha(m_cardP * i + p);
 	}
 	/// \brief Return the gradient of the solution.
 	RealMatrix solutionGradient() const{
@@ -328,7 +331,7 @@ public:
 		return true;
 	}
 
-	///Activate all m_numVariables
+	///Activate all variables
 	void unshrink()
 	{
 		if (m_activeVar == m_numVariables) return;
@@ -463,7 +466,7 @@ public:
 	
 protected:
 	
-	void gradientUpdate(std::size_t r, double mu, float* q)
+	void gradientUpdate(std::size_t r, double mu, QpFloatType* q)
 	{
 		for ( std::size_t a= 0; a< m_activeEx; a++)
 		{
@@ -646,7 +649,8 @@ public:
 		RealVector& bias,
 		QpStoppingCondition& stop,
 		QpSparseArray<QpFloatType> const& nu,
-		bool sumToZero = false
+		bool sumToZero,
+		QpSolutionProperties* prop = NULL
 	){
 		std::size_t classes = bias.size();
 		std::size_t numExamples = m_problem->getNumExamples();
@@ -655,9 +659,14 @@ public:
 		RealVector prev(classes,0);
 		RealVector step(classes);
 		
+		double start_time = Timer::now();
+		unsigned int iterations = 0;
+		
 		do{
+			QpSolutionProperties propInner;
 			QpSolver<QpMcBoxDecomp<Matrix> > solver(*m_problem);
-			solver.solve(stop);
+			solver.solve(stop, &propInner);
+			iterations += propInner.iterations;
 
 			// Rprop loop to update the bias
 			while (true)
@@ -678,10 +687,21 @@ public:
 						}
 					}
 				}
+				
+				//~ for (std::size_t i=0; i<numExamples; i++){
+					//~ unsigned int y = m_problem->label(i);
+					//~ for (std::size_t p=0; p<cardP; p++){
+						//~ double a = m_problem->alpha(i,p);
+						//~ if(a == 0) continue;
+						//~ typename QpSparseArray<QpFloatType>::Row const& row = nu.row(y * cardP + p);
+						//~ for (std::size_t b=0; b<row.size; b++) 
+							//~ grad(row.entry[b].index) -= row.entry[b].value * a;
+					//~ }
+				//~ }
 
 				if (sumToZero)
 				{
-					// project the m_gradient
+					// project the gradient
 					grad -= sum(grad) / classes;
 				}
 
@@ -711,11 +731,20 @@ public:
 				// update the solution and the dual m_gradient
 				bias += step;
 				performBiasUpdate(step,nu);
-				//~ Rcpp::Rcout<<grad<<" "<<m_problem->checkKKT()<<" "<<stepsize<<" "<<bias<<std::endl;
 				
 				if (max(stepsize) < 0.01 * stop.minAccuracy) break;
 			}
 		}while(m_problem->checkKKT()> stop.minAccuracy);
+		
+		if (prop != NULL)
+		{
+			double finish_time = Timer::now();
+
+			prop->accuracy = m_problem->checkKKT();
+			prop->value = m_problem->functionValue();
+			prop->iterations = iterations;
+			prop->seconds = finish_time - start_time;
+		}
 	}
 private:
 	void performBiasUpdate(
@@ -727,7 +756,6 @@ private:
 		for (std::size_t i=0; i<numExamples; i++){
 			for (std::size_t p=0; p<cardP; p++){
 				unsigned int y = m_problem->label(i);
-				// delta = \sum_m \nu_{m,p,y_i} \Delta b(m)
 				typename QpSparseArray<QpFloatType>::Row const& row = nu.row(y * cardP +p);
 				for (std::size_t b=0; b<row.size; b++)
 				{

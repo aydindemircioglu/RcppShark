@@ -13,11 +13,11 @@
  * \date        2007-2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -125,8 +125,8 @@ public:
     /// swap two variables
     void flipColumnsAndRows(std::size_t i, std::size_t j)
     {
-        swap_rows(matrix,i, j);
-        swap_columns(matrix,i, j);
+	matrix.swap_rows(i, j);
+        matrix.swap_columns(i, j);
     }
 
     /// return the size of the quadratic matrix

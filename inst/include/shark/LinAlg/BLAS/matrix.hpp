@@ -25,17 +25,14 @@
  * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SHARK_LINALG_BLAS_MATRIX_HPP
-#define SHARK_LINALG_BLAS_MATRIX_HPP
+#ifndef REMORA_MATRIX_HPP
+#define REMORA_MATRIX_HPP
 
-#include "matrix_proxy.hpp"
-#include "vector_proxy.hpp"
-#include "kernels/matrix_assign.hpp"
+#include "detail/matrix_proxy_classes.hpp"
 #include <array>
 #include <initializer_list>
 
-namespace shark {
-namespace blas {
+namespace remora {
 
 /** \brief A dense matrix of values of type \c T.
  *
@@ -50,27 +47,20 @@ namespace blas {
  * \tparam L the storage organization. It can be either \c row_major or \c column_major. Default is \c row_major
  */
 template<class T, class L=row_major>
-class matrix:public matrix_container<matrix<T, L> > {
+class matrix:public matrix_container<matrix<T, L>, cpu_tag > {
         typedef matrix<T, L> self_type;
         typedef std::vector<T> array_type;
 public:
-        typedef typename array_type::size_type size_type;
-        typedef typename array_type::difference_type difference_type;
         typedef typename array_type::value_type value_type;
-        typedef value_type scalar_type;
         typedef typename array_type::const_reference const_reference;
         typedef typename array_type::reference reference;
-        typedef const T* const_pointer;
-        typedef T* pointer;
+        typedef typename array_type::size_type size_type;
 
-        typedef std::size_t index_type;
-        typedef index_type const* const_index_pointer;
-        typedef index_type index_pointer;
-
-        typedef matrix_reference<self_type const> const const_closure_type;
+        typedef matrix_reference<self_type const> const_closure_type;
         typedef matrix_reference<self_type> closure_type;
-        typedef dense_tag storage_category;
-        typedef elementwise_tag evaluation_category;
+        typedef dense_matrix_storage<T> storage_type;
+        typedef dense_matrix_storage<T const> const_storage_type;
+        typedef elementwise<dense_tag> evaluation_category;
         typedef L orientation;
 
         // Construction
@@ -126,7 +116,7 @@ public:
         ///
         /// \param e is a matrix expression
         template<class E>
-        matrix(matrix_expression<E> const& e)
+        matrix(matrix_expression<E, cpu_tag> const& e)
         : m_size1(e().size1())
         , m_size2(e().size2())
         , m_data(m_size1 * m_size2) {
@@ -156,7 +146,7 @@ public:
         ///
         /// \param m is a matrix expression
         template<class C>
-        matrix& operator = (matrix_container<C> const& m) {
+        matrix& operator = (matrix_container<C, cpu_tag> const& m) {
                 resize(m().size1(), m().size2());
                 assign(*this, m);
                 return *this;
@@ -169,15 +159,11 @@ public:
         ///
         /// \param e is a matrix expression
         template<class E>
-        matrix& operator = (matrix_expression<E> const& e) {
+        matrix& operator = (matrix_expression<E, cpu_tag> const& e) {
                 self_type temporary(e);
                 swap(temporary);
                 return *this;
         }
-
-        // ---------
-        // Dense low level interface
-        // ---------
         
         ///\brief Returns the number of rows of the matrix.
         size_type size1() const {
@@ -188,29 +174,17 @@ public:
                 return m_size2;
         }
         
-        ///\brief Returns the stride in memory between two rows.
-        difference_type stride1()const{
-                return orientation::stride1(m_size1,m_size2);
-        }
-        ///\brief Returns the stride in memory between two columns.
-        difference_type stride2()const{
-                return orientation::stride2(m_size1,m_size2);
+        ///\brief Returns the underlying storage structure for low level access
+        storage_type raw_storage(){
+                return {m_data.data(), orientation::index_m(m_size1,m_size2)};
         }
         
-        ///\brief Returns the pointer to the beginning of the matrix storage
-        ///
-        /// Grants low-level access to the matrix internals. Element order depends on whether the matrix is row_major or column_major.
-        /// to access element _(i,j) use storage()[i*stride1()+j*stride2()].
-        const_pointer storage()const{
-                return m_data.data();
+        ///\brief Returns the underlying storage structure for low level access
+        const_storage_type raw_storage()const{
+                return {m_data.data(), orientation::index_m(m_size1,m_size2)};
         }
-        
-        ///\brief Returns the pointer to the beginning of the matrix storage
-        ///
-        /// Grants low-level access to the matrix internals. Element order depends on whether the matrix is row_major or column_major.
-        /// to access element (i,j) use storage()[i*stride1()+j*stride2()].
-        pointer storage(){
-                return m_data.data();
+        typename device_traits<cpu_tag>::queue_type& queue(){
+                return device_traits<cpu_tag>::default_queue();
         }
         
         // ---------
@@ -232,12 +206,12 @@ public:
         }
 
         // Element access
-        const_reference operator()(index_type i, index_type j) const {
+        const_reference operator()(size_type i, size_type j) const {
                 SIZE_CHECK(i < size1());
                 SIZE_CHECK(j < size2());
                 return m_data[orientation::element(i, m_size1, j, m_size2)];
         }
-        reference operator()(index_type i, index_type j) {
+        reference operator()(size_type i, size_type j) {
                 SIZE_CHECK(i < size1());
                 SIZE_CHECK(j < size2());
                 return m_data[orientation::element(i, m_size1, j, m_size2)];
@@ -259,7 +233,7 @@ public:
                 m1.swap(m2);
         }
         
-        friend void swap_rows(matrix& a, index_type i, matrix& b, index_type j){
+        friend void swap_rows(matrix& a, size_type i, matrix& b, size_type j){
                 SIZE_CHECK(i < a.size1());
                 SIZE_CHECK(j < b.size1());
                 SIZE_CHECK(a.size2() == b.size2());
@@ -268,13 +242,15 @@ public:
                 }
         }
         
-        friend void swap_rows(matrix& a, index_type i, index_type j) {
+        void swap_rows(size_type i, size_type j) {
                 if(i == j) return;
-                swap_rows(a,i,a,j);
+                for(std::size_t k = 0; k != size2(); ++k){
+                        std::swap((*this)(i,k),(*this)(j,k));
+                }
         }
         
         
-        friend void swap_columns(matrix& a, index_type i, matrix& b, index_type j){
+        friend void swap_columns(matrix& a, size_type i, matrix& b, size_type j){
                 SIZE_CHECK(i < a.size2());
                 SIZE_CHECK(j < b.size2());
                 SIZE_CHECK(a.size1() == b.size1());
@@ -283,47 +259,49 @@ public:
                 }
         }
         
-        friend void swap_columns(matrix& a, index_type i, index_type j) {
+        void swap_columns(size_type i, size_type j) {
                 if(i == j) return;
-                swap_columns(a,i,a,j);
+                for(std::size_t k = 0; k != size1(); ++k){
+                        std::swap((*this)(k,i),(*this)(k,j));
+                }
         }
 
         //Iterators
-        typedef dense_storage_iterator<value_type> row_iterator;
-        typedef dense_storage_iterator<value_type> column_iterator;
-        typedef dense_storage_iterator<value_type const> const_row_iterator;
-        typedef dense_storage_iterator<value_type const> const_column_iterator;
+        typedef iterators::dense_storage_iterator<value_type> row_iterator;
+        typedef iterators::dense_storage_iterator<value_type> column_iterator;
+        typedef iterators::dense_storage_iterator<value_type const> const_row_iterator;
+        typedef iterators::dense_storage_iterator<value_type const> const_column_iterator;
 
-        const_row_iterator row_begin(index_type i) const {
-                return const_row_iterator(storage() + i*stride1(),0,stride2());
+        const_row_iterator row_begin(size_type i) const {
+                return const_row_iterator(m_data.data() + i*stride1(),0,stride2());
         }
-        const_row_iterator row_end(index_type i) const {
-                return const_row_iterator(storage() + i*stride1()+stride2()*size2(),size2(),stride2());
+        const_row_iterator row_end(size_type i) const {
+                return const_row_iterator(m_data.data() + i*stride1()+stride2()*size2(),size2(),stride2());
         }
-        row_iterator row_begin(index_type i){
-                return row_iterator(storage() + i*stride1(),0,stride2());
+        row_iterator row_begin(size_type i){
+                return row_iterator(m_data.data() + i*stride1(),0,stride2());
         }
-        row_iterator row_end(index_type i){
-                return row_iterator(storage() + i*stride1()+stride2()*size2(),size2(),stride2());
+        row_iterator row_end(size_type i){
+                return row_iterator(m_data.data() + i*stride1()+stride2()*size2(),size2(),stride2());
         }
         
         const_row_iterator column_begin(std::size_t j) const {
-                return const_column_iterator(storage() + j*stride2(),0,stride1());
+                return const_column_iterator(m_data.data() + j*stride2(),0,stride1());
         }
         const_column_iterator column_end(std::size_t j) const {
-                return const_column_iterator(storage() + j*stride2()+ stride1()*size1(),size1(),stride1());
+                return const_column_iterator(m_data.data() + j*stride2()+ stride1()*size1(),size1(),stride1());
         }
         column_iterator column_begin(std::size_t j){
-                return column_iterator(storage() + j*stride2(),0,stride1());
+                return column_iterator(m_data.data() + j*stride2(),0,stride1());
         }
         column_iterator column_end(std::size_t j){
-                return column_iterator(storage() + j * stride2()+ stride1() * size1(), size1(), stride1());
+                return column_iterator(m_data.data() + j * stride2()+ stride1() * size1(), size1(), stride1());
         }
         
-        typedef typename blas::major_iterator<self_type>::type major_iterator;
+        typedef typename major_iterator<self_type>::type major_iterator;
         
         //sparse interface
-        major_iterator set_element(major_iterator pos, index_type index, value_type value) {
+        major_iterator set_element(major_iterator pos, size_type index, value_type value) {
                 RANGE_CHECK(pos.index() == index);
                 *pos=value;
                 return pos;
@@ -345,30 +323,27 @@ public:
 
         // Serialization
         private:
+        size_type stride1() const {
+                return orientation::stride1(m_size1, m_size2);
+        }
+        size_type stride2() const {
+                return orientation::stride2(m_size1, m_size2);
+        }
+
         size_type m_size1;
         size_type m_size2;
         array_type m_data;
 };
 template<class T, class L>
-struct matrix_temporary_type<T,L,dense_random_access_iterator_tag>{
+struct matrix_temporary_type<T,L,dense_tag, cpu_tag>{
         typedef matrix<T,L> type;
 };
 
 template<class T>
-struct matrix_temporary_type<T,unknown_orientation,dense_random_access_iterator_tag>{
+struct matrix_temporary_type<T,unknown_orientation,dense_tag, cpu_tag>{
         typedef matrix<T,row_major> type;
 };
 
-template<class T, class Orientation>
-struct const_expression<matrix<T,Orientation> >{
-        typedef matrix<T,Orientation> const type;
-};
-template<class T, class Orientation>
-struct const_expression<matrix<T,Orientation> const>{
-        typedef matrix<T,Orientation> const type;
-};
-
-}
 }
 
 #endif

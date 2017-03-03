@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * \brief       Defines Fortran naming conventions when binding to lapack routines
@@ -29,8 +30,8 @@
  *
  */
 
-#ifndef SHARK_LINALG_BLAS_KERNELS_LAPACK_FORTRAN_H
-#define SHARK_LINALG_BLAS_KERNELS_LAPACK_FORTRAN_H
+#ifndef REMORA_KERNELS_LAPACK_FORTRAN_H
+#define REMORA_KERNELS_LAPACK_FORTRAN_H
 
 #if defined(BIND_FORTRAN_LOWERCASE_UNDERSCORE) || defined(BIND_FORTRAN_LOWERCASE)
 // Allow manual override of the defaults, e.g. if you want to use a fortran

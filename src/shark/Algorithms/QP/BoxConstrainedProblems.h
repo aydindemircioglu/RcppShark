@@ -9,11 +9,11 @@
  * \date        2013
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -77,8 +77,8 @@ struct WS2MaximumGradientCriterion{
 struct MaximumGradientCriterion{
 	template<class Problem>
 	double operator()(Problem& problem, std::size_t& i, std::size_t& j){
-		WS2MaximumGradientCriterion criterium;
-		double value = criterium(problem, i,j);
+		WS2MaximumGradientCriterion criterion;
+		double value = criterion(problem, i,j);
 		j = i; //we just use one variable here
 		return value;
 	}
@@ -273,6 +273,48 @@ public:
 	void reshrink(){}
 	void unshrink(){}
 
+	/// \brief Define the initial solution for the iterative solver.
+	///
+	/// This method can be used to warm-start the solver. It requires a
+	/// feasible solution (alpha) and the corresponding gradient of the
+	/// dual objective function.
+	void setInitialSolution(RealVector const& alpha, RealVector const& gradient)
+	{
+		std::size_t n = dimensions();
+		SIZE_CHECK(alpha.size() == n);
+		SIZE_CHECK(gradient.size() == n);
+		for (std::size_t i=0; i<n; i++)
+		{
+			std::size_t j = permutation(i);
+			SHARK_ASSERT(alpha(j) >= boxMin(j) && alpha(j) <= boxMax(j));
+			m_problem.alpha(i) = alpha(j);
+			m_gradient(i) = gradient(j);
+			updateAlphaStatus(i);
+		}
+	}
+
+	/// \brief Define the initial solution for the iterative solver.
+	///
+	/// This method can be used to warm-start the solver. It requires a
+	/// feasible solution (alpha), for which it computes the gradient of
+	/// the dual objective function. Note that this is a quadratic time
+	/// operation in the number of non-zero coefficients.
+	void setInitialSolution(RealVector const& alpha)
+	{
+		std::size_t n = dimensions();
+		SIZE_CHECK(alpha.size() == n);
+		RealVector gradient = m_problem.linear;
+		blas::vector<QpFloatType> q(n);
+		for (std::size_t i=0; i<n; i++)
+		{
+			double a = alpha(i);
+			if (a == 0.0) continue;
+			m_problem.quadratic.row(i, 0, n, q.storage());
+			noalias(gradient) -= a * q;
+		}
+		setInitialSolution(alpha, gradient);
+	}
+
 	///\brief Remove the i-th example from the problem.
 	virtual void deactivateVariable(std::size_t i){
 		SIZE_CHECK(i < dimensions());
@@ -358,8 +400,9 @@ public:
 	: base_type(problem)
 	, m_isUnshrinked(false)
 	, m_shrink(shrink)
-	, m_gradientEdge(problem.linear){}
-		
+	, m_gradientEdge(problem.linear)
+	{ }
+
 	using base_type::alpha;
 	using base_type::gradient;
 	using base_type::linear;
@@ -370,7 +413,8 @@ public:
 	using base_type::isUpperBound;
 	using base_type::boxMin;
 	using base_type::boxMax;
-		
+	using base_type::setInitialSolution;
+
 	virtual void updateSMO(std::size_t i, std::size_t j){
 		double aiOld = alpha(i);
 		double ajOld = alpha(j);
@@ -384,9 +428,9 @@ public:
 		updateGradientEdge(j,ajOld,aj);
 	}
 
-	bool shrink(double epsilon){
-		if(!m_shrink) return false;
-		
+	bool shrink(double epsilon) {
+		if (! m_shrink) return false;
+
 		double largestUp;
 		double smallestDown;
 		getMaxKKTViolations(largestUp,smallestDown,active());
@@ -396,13 +440,13 @@ public:
 		{
 			unshrink();
 			//recalculate maximum KKT violation for immediate re-shrinking
-			getMaxKKTViolations(largestUp,smallestDown,dimensions());
+			getMaxKKTViolations(largestUp, smallestDown, dimensions());
 		}
 		//shrink
-		smallestDown = std::min(smallestDown,0.0);
-		largestUp = std::max(largestUp,0.0);
-		for (std::size_t a = this->active(); a > 0; --a){
-			if(testShrinkVariable(a-1,largestUp,smallestDown)){
+		smallestDown = std::min(smallestDown, 0.0);
+		largestUp = std::max(largestUp, 0.0);
+		for (std::size_t a = this->active(); a > 0; --a) {
+			if (testShrinkVariable(a-1, largestUp, smallestDown)) {
 				flipCoordinates(a-1,active()-1);
 				--this->m_active;
 			}
@@ -415,14 +459,14 @@ public:
 		if (active() == dimensions()) return;
 		m_isUnshrinked = true;
 		
-		// recompute the gradient of the whole problem.
-		// we assume here that all shrinked variables are on the border of the problem.
-		// the gradient of the active components is already correct and
+		// Recompute the gradient of the whole problem.
+		// We assume here that all shrinked variables are on the border of the problem.
+		// The gradient of the active components is already correct and
 		// we store the gradient of the subset of variables which are on the
 		// borders of the box for the whole set.
 		// Thus we only have to recompute the part of the gradient which is
 		// based on variables in the active set which are not on the border.
-		for (std::size_t a = active(); a < dimensions(); a++) 
+		for (std::size_t a = active(); a < dimensions(); a++)
 			this->m_gradient(a) = m_gradientEdge(a);
 
 		for (std::size_t i = 0; i < active(); i++)
@@ -432,7 +476,7 @@ public:
 			
 			QpFloatType* q = quadratic().row(i, 0, dimensions());
 			for (std::size_t a = active(); a < dimensions(); a++) 
-				this->m_gradient(a) -= alpha(i) * q[a] ;
+				this->m_gradient(a) -= alpha(i) * q[a];
 		}
 
 		this->m_active = dimensions();
@@ -443,7 +487,55 @@ public:
 		if(!shrinking)
 			unshrink();
 	}
-	
+
+	/// \brief Define the initial solution for the iterative solver.
+	///
+	/// This method can be used to warm-start the solver. It requires a
+	/// feasible solution (alpha) and the corresponding gradient of the
+	/// dual objective function.
+	void setInitialSolution(RealVector const& alpha, RealVector const& gradient, RealVector const& gradientEdge)
+	{
+		std::size_t n = dimensions();
+		SIZE_CHECK(alpha.size() == n);
+		SIZE_CHECK(gradient.size() == n);
+		for (std::size_t i=0; i<n; i++)
+		{
+			std::size_t j = this->permutation(i);
+			SHARK_ASSERT(alpha(j) >= boxMin(j) && alpha(j) <= boxMax(j));
+			this->m_problem.alpha(i) = alpha(j);
+			this->m_gradient(i) = gradient(j);
+			m_gradientEdge(i) = gradientEdge(j);
+			this->updateAlphaStatus(i);
+		}
+	}
+
+	/// \brief Define the initial solution for the iterative solver.
+	///
+	/// This method can be used to warm-start the solver. It requires a
+	/// feasible solution (alpha), for which it computes the gradient of
+	/// the dual objective function. Note that this is a quadratic time
+	/// operation in the number of non-zero coefficients.
+	void setInitialSolution(RealVector const& alpha)
+	{
+		std::size_t n = dimensions();
+		SIZE_CHECK(alpha.size() == n);
+		RealVector gradient = this->m_problem.linear;
+		RealVector gradientEdge = this->m_problem.linear;
+		blas::vector<QpFloatType> q(n);
+		std::vector<std::size_t> inverse(n);
+		for (std::size_t i=0; i<n; i++) inverse[this->permutation(i)] = i;
+		for (std::size_t i=0; i<n; i++)
+		{
+			double a = alpha(i);
+			if (a == 0.0) continue;
+			this->m_problem.quadratic.row(i, 0, n, q.raw_storage().values);
+			noalias(gradient) -= a * q;
+			std::size_t j = inverse[i];
+			if (a == boxMin(j) || a == boxMax(j)) gradientEdge -= a * q;
+		}
+		setInitialSolution(alpha, gradient, gradientEdge);
+	}
+
 	/// \brief Scales all box constraints by a constant factor and adapts the solution by scaling it by the same factor.
 	void scaleBoxConstraints(double factor, double variableScalingFactor){
 		base_type::scaleBoxConstraints(factor,variableScalingFactor);

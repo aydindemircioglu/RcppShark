@@ -5,11 +5,11 @@
 /// \date        2016
 ///
 ///
-/// \par Copyright 1995-2016 Shark Development Team
+/// \par Copyright 1995-2017 Shark Development Team
 /// 
 /// <BR><HR>
 /// This file is part of Shark.
-/// <http://image.diku.dk/shark/>
+/// <http://shark-ml.org/>
 /// 
 /// Shark is free software: you can redistribute it and/or modify
 /// it under the terms of the GNU Lesser General Public License as published 
@@ -74,7 +74,7 @@ private:
 		Point(): frt(1){}
 
 		Point(RealVector const& objvec)
-		: obj(objvec.storage())
+		: obj(objvec.raw_storage().values)
 		, frt(1)
 		, m_size(objvec.size())
 		{}

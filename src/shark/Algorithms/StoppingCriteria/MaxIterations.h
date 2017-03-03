@@ -9,11 +9,11 @@
  * \date        2010
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -35,7 +35,7 @@
 
 #include "AbstractStoppingCriterion.h"
 #include <shark/Core/ResultSets.h>
-
+#include <shark/LinAlg/Base.h>
 namespace shark{
 
 /// This stopping criterion stops after a fixed number of iterations

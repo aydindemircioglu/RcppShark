@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 /*!
  * \brief       Iterators for elementwise vector expression evaluation
@@ -26,17 +27,19 @@
  * along with Shark.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SHARK_LINALG_BLAS_DETAIL_ITERATOR_HPP
-#define SHARK_LINALG_BLAS_DETAIL_ITERATOR_HPP
+#ifndef REMORA_DETAIL_ITERATOR_HPP
+#define REMORA_DETAIL_ITERATOR_HPP
 
 #include <boost/mpl/if.hpp> 
-#include <shark/Core/Exception.h>
 #include <iterator>
 #include <type_traits>
+#include <limits>
+#include <algorithm>
+#include <cstdlib>
 
+#include "check.hpp"
 
-namespace shark {
-namespace blas {
+namespace remora{ namespace iterators{
 
 // Iterator tags -- hierarchical definition of storage characteristics
 struct sparse_bidirectional_iterator_tag: public std::bidirectional_iterator_tag{};
@@ -395,8 +398,7 @@ class compressed_storage_iterator:
 	>{
 public:
 	typedef typename std::remove_const<T>::type value_type;
-	typedef typename std::remove_const<I>::type index_type;
-	typedef std::size_t size_type;
+	typedef typename std::remove_const<I>::type size_type;
 	typedef std::ptrdiff_t difference_type;
 	typedef T& reference;
 	typedef T* pointer;
@@ -405,7 +407,7 @@ public:
 	compressed_storage_iterator() {}
 	compressed_storage_iterator(
 		T* value_array, I* index_array, 
-		size_type position, index_type row = 0
+		size_type position, size_type row = 0
 	)
 	: m_values(value_array),m_indices(index_array)
 	, m_position(position), m_row(row){}
@@ -442,7 +444,7 @@ public:
 	reference operator* () const {
 		return m_values[m_position];
 	}
-	index_type index() const {
+	size_type index() const {
 		return m_indices[m_position];
 	}
 	
@@ -610,7 +612,7 @@ public:
 
 	// Construction and destruction
 	constant_iterator() {}
-	constant_iterator(size_type position, value_type value)
+	constant_iterator(value_type value, size_type position)
 		:m_position(position),m_value(value) {}
 
 	// Arithmetic
@@ -669,13 +671,13 @@ private:
 
 template<class BaseIterator, class F>
 class transform_iterator:
-	public blas::iterator_base_traits<typename BaseIterator::iterator_category>::template
+	public iterator_base_traits<typename BaseIterator::iterator_category>::template
 		iterator_base<transform_iterator<BaseIterator,F>, typename BaseIterator::value_type>::type {
 public:
 	typedef typename BaseIterator::iterator_category iterator_category;
 	typedef std::size_t size_type;
 	typedef std::ptrdiff_t difference_type;
-	typedef typename F::result_type value_type;
+	typedef typename std::result_of<F(typename BaseIterator::value_type)>::type value_type;
 	typedef value_type reference;
 	typedef value_type *pointer;
 
@@ -739,6 +741,60 @@ private:
 	F m_functor;
 };
 
+template<class T>
+class one_hot_iterator:public bidirectional_iterator_base<one_hot_iterator<T>, T> {
+public:
+	typedef T value_type;
+	typedef std::ptrdiff_t difference_type;
+	typedef std::size_t size_type;
+	typedef T& reference;
+	typedef T const& const_reference;
+	typedef value_type const* pointer;
+
+	// Construction and destruction
+	one_hot_iterator(){}
+	one_hot_iterator(size_type index, value_type value, bool isEnd)
+		:m_index(index),m_value(value),m_isEnd(isEnd){}
+
+	// Arithmetic
+	one_hot_iterator& operator ++ () {
+		m_isEnd = true;
+		return *this;
+	}
+	one_hot_iterator& operator -- () {
+		m_isEnd = false;
+		return *this;
+	}
+
+	// Dereference
+	reference operator*() const {
+		return m_value;
+	}
+
+	// Indices
+	size_type index() const{
+		return m_index;
+	}
+
+	// Assignment
+	one_hot_iterator& operator = (one_hot_iterator const& it) {
+		m_index = it.m_index;
+		m_value = it.m_value;
+		return *this;
+	}
+
+	// Comparison
+	bool operator == (one_hot_iterator const& it) const {
+		RANGE_CHECK(m_index == it.m_index);
+		return m_isEnd == it.m_isEnd;
+	}
+
+private:
+	size_type m_index;
+	value_type m_value;
+	bool m_isEnd;
+};
+
 
 template<class I1, class I2>
 struct iterator_restrict_traits {
@@ -769,7 +825,7 @@ public iterator_base_traits<
 	>::iterator_category
 >::template iterator_base<
 	binary_transform_iterator<Iterator1,Iterator2,F>,
-	typename F::result_type
+	typename std::result_of<F(typename Iterator1::value_type, typename Iterator2::value_type)>::type
 >::type{
 private:
 	typedef typename Iterator1::iterator_category category1;
@@ -781,7 +837,7 @@ public:
 	>::iterator_category iterator_category;
 	typedef std::size_t size_type;
 	typedef std::ptrdiff_t difference_type;
-	typedef typename F::result_type value_type;
+	typedef typename std::result_of<F(typename Iterator1::value_type, typename Iterator2::value_type)>::type value_type;
 	typedef value_type reference;
 	typedef value_type *pointer;
 
@@ -1153,8 +1209,7 @@ private:
 	F m_functor;
 };
 
-}
-}
+}}
 
 #endif
 

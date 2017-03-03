@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 //===========================================================================
 /*!
@@ -12,11 +13,11 @@
  * \date        2007-2012
  *
  *
- * \par Copyright 1995-2015 Shark Development Team
+ * \par Copyright 1995-2017 Shark Development Team
  * 
  * <BR><HR>
  * This file is part of Shark.
- * <http://image.diku.dk/shark/>
+ * <http://shark-ml.org/>
  * 
  * Shark is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published 
@@ -49,11 +50,11 @@ namespace shark{
 ///  \param dataset the set of points used in the gram matrix
 ///  \param matrix the target kernel matrix
 ///  \param regularizer the regularizer of the matrix which is always >= 0. default is 0.
-template<class InputType, class M>
+template<class InputType, class M, class Device>
 void calculateRegularizedKernelMatrix(
 	AbstractKernelFunction<InputType>const& kernel,
 	Data<InputType> const& dataset,
-	blas::matrix_expression<M>& matrix,
+	blas::matrix_expression<M, Device>& matrix,
 	double regularizer = 0
 ){
 	SHARK_CHECK(regularizer >= 0, "regularizer must be >=0");
@@ -92,12 +93,12 @@ void calculateRegularizedKernelMatrix(
 ///  \param dataset1 the set of points corresponding to rows of the Gram matrix
 ///  \param dataset2 the set of points corresponding to columns of the Gram matrix
 ///  \param matrix the target kernel matrix
-template<class InputType, class M>
+template<class InputType, class M, class Device>
 void calculateMixedKernelMatrix(
 	AbstractKernelFunction<InputType>const& kernel,
 	Data<InputType> const& dataset1,
 	Data<InputType> const& dataset2,
-	blas::matrix_expression<M>& matrix
+	blas::matrix_expression<M, Device>& matrix
 ){
 	std::size_t B1 = dataset1.numberOfBatches();
 	std::size_t B2 = dataset2.numberOfBatches();
@@ -218,3 +219,4 @@ RealVector calculateKernelMatrixParameterDerivative(
 
 }
 #endif
+

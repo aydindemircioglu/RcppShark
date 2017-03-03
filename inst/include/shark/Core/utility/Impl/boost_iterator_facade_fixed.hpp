@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(BH)]]
 // (C) Copyright David Abrahams 2002.
 // (C) Copyright Jeremy Siek    2002.

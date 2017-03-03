@@ -34,4 +34,3 @@ See more on http://image.diku.dk/shark/sphinx_pages/build/html/rest_sources/tuto
 \note{
 Currently works only for binary classification. Uses only RBF kernel.
 }
-

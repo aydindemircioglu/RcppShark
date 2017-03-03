@@ -1,9 +1,9 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
-* Updated Shark source code to a current git version (i.e. to Shark 3.1)
+* Updated Shark source code to a current git version (i.e. to Shark 3.1 head)
 
-* Fixed the build warnings, Prof. Brian Ripley pointed out
+* Along the way, fixed the build warning regarding dates of vignette and inst/doc
 
 
  
@@ -15,23 +15,19 @@ This is a resubmission. In this version I have:
 
 ## R CMD check results
 Status: 1 NOTE
-See
-  ‘/tmp/Rtmp7OTpDp/RcppShark.Rcheck/00check.log’
-for details.
-
 
 R CMD check results
 0 errors | 0 warnings | 1 note 
 checking installed package size ... NOTE
-  installed size is 167.4Mb
+  installed size is 170.2Mb
   sub-directories of 1Mb or more:
-    include    4.4Mb
-    lib      127.2Mb
-    libs      35.7Mb
+    include    4.6Mb
+    lib      129.3Mb
+    libs      36.1Mb
 
-	The installed size is quite large, as the whole Shark Library 3.0 (beta) is wrapped,
+	The installed size is quite large, as the whole Shark Library 3.1 is wrapped,
 	which is a machine learning library programmed in templated C++.
-	For more information on Shark, please refer to http://shark-project.sourceforge.net.
+	For more information on Shark, please refer to http://image.diku.dk/shark/.
 
 	
 ## Downstream dependencies
