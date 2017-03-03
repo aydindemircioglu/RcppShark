@@ -2,7 +2,7 @@ Package: RcppShark
 Type: Package
 Title: R Interface to the Shark Machine Learning Library
 Version: 3.1.1
-Date: 2017-02-19
+Date: 2017-03-04
 Author: Aydin Demircioglu
 Maintainer: Aydin Demircioglu <aydin.demircioglu@ini.rub.de>
 Description: An R interface to the C++/Boost Shark machine learning library.
